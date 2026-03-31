@@ -97,4 +97,26 @@ public class MercadoService {
             return registro.getJugador().getNickname() + " ha sido enviado al banquillo.";
         }
     }
+
+    @Transactional
+    public String venderJugador(Long equipoId, Long jugadorId) {
+
+        // 1. Buscamos el registro en la plantilla
+        Plantilla registro = plantillaRepository.findByEquipoIdAndJugadorId(equipoId, jugadorId)
+                .orElseThrow(() -> new RuntimeException("No puedes vender a un jugador que no está en tu equipo."));
+
+        // Extraemos el equipo y el jugador de ese registro para trabajar más cómodos
+        Equipo equipo = registro.getEquipo();
+        Jugador jugador = registro.getJugador();
+
+        // 2. Ingresamos el dinero en la cuenta del equipo
+        double nuevoSaldo = equipo.getPresupuestoDisponible() + jugador.getPrecioBase();
+        equipo.setPresupuestoDisponible(nuevoSaldo);
+        equipoRepository.save(equipo);
+
+        // 3. Borramos la fila de la tabla intermedia
+        plantillaRepository.delete(registro);
+
+        return "Has vendido a " + jugador.getNickname() + " por " + jugador.getPrecioBase() + " monedas. Tu nuevo saldo es: " + nuevoSaldo;
+    }
 }

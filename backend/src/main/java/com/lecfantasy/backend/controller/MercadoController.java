@@ -36,4 +36,14 @@ public class MercadoController {
         List<Jugador> jugadores = jugadorService.obtenerTodosLosJugadores();
         return ResponseEntity.ok(jugadores);
     }
+
+    @PostMapping("/vender")
+    public ResponseEntity<?> vender(@RequestBody com.lecfantasy.backend.dto.VentaRequest request) {
+        try {
+            String mensaje = mercadoService.venderJugador(request.getEquipoId(), request.getJugadorId());
+            return ResponseEntity.ok(mensaje);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }
