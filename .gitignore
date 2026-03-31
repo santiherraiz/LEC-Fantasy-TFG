@@ -1,0 +1,19 @@
+# Docker
+.env
+
+# Java / Spring Boot
+backend/target/
+*.jar
+*.class
+
+# IDEs (IntelliJ, VS Code)
+.idea/
+.vscode/
+*.iml
+.env
+backend/target/
+*.jar
+*.class
+.idea/
+.vscode/
+*.iml
