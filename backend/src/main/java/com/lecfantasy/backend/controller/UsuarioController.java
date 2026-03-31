@@ -3,6 +3,7 @@ package com.lecfantasy.backend.controller;
 import com.lecfantasy.backend.entity.Usuario;
 import com.lecfantasy.backend.repository.UsuarioRepository;
 import com.lecfantasy.backend.service.JugadorService;
+import com.lecfantasy.backend.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 public class UsuarioController {
 
     @Autowired
-    private UsuarioRepository usuarioRepository;
+    private UsuarioService usuarioService;
 
     @Autowired
     private JugadorService jugadorService;
@@ -20,15 +21,12 @@ public class UsuarioController {
     // POST http://localhost:8080/api/usuarios/registro
     @PostMapping("/registro")
     public ResponseEntity<Usuario> registrarUsuario(@RequestBody Usuario nuevoUsuario) {
-
-        // ¡IMPORTANTE! Para el MVP lo guardamos en texto plano, pero aquí
-        // en el futuro deberíamos encriptar la contraseña (ej. usando BCrypt).
-
         try {
-            Usuario usuarioGuardado = usuarioRepository.save(nuevoUsuario);
+            // Llamamos a nuestro nuevo método mágico
+            Usuario usuarioGuardado = usuarioService.registrarNuevoUsuario(nuevoUsuario);
             return ResponseEntity.ok(usuarioGuardado);
         } catch (Exception e) {
-            // Si el email o nickname ya existen, MariaDB se quejará y saltará aquí
+            // Si el email o nickname ya existen, fallará de forma segura y devolverá un 400
             return ResponseEntity.badRequest().build();
         }
     }
