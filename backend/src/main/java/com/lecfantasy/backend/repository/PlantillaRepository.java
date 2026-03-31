@@ -1,10 +1,12 @@
 package com.lecfantasy.backend.repository;
 
+import com.lecfantasy.backend.entity.EstadoAlineacion;
 import com.lecfantasy.backend.entity.Plantilla;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface PlantillaRepository extends JpaRepository<Plantilla, Long> {
@@ -13,4 +15,13 @@ public interface PlantillaRepository extends JpaRepository<Plantilla, Long> {
 
     // Buscar a todos los jugadores de un equipo concreto
     List<Plantilla> findByEquipoId(Long equipoId);
+
+    // Buscar un registro específico
+    Optional<Plantilla> findByEquipoIdAndJugadorId(Long equipoId, Long jugadorId);
+
+    // Nos devuelve la lista entera de jugadores que están en un estado concreto (ej. TITULAR)
+    List<Plantilla> findByEquipoIdAndEstado(Long equipoId, EstadoAlineacion estado);
+
+    // Contar cuántos titulares tiene un equipo
+    long countByEquipoIdAndEstado(Long equipoId, EstadoAlineacion estado);
 }

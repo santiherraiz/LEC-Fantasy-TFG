@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 public class MercadoService {
 
@@ -55,5 +57,44 @@ public class MercadoService {
 
         return "¡Fichaje exitoso! Has fichado a " + jugador.getNickname() +
                 ". Saldo restante: " + equipo.getPresupuestoDisponible();
+    }
+
+    @Transactional
+    public String cambiarEstadoAlineacion(Long equipoId, Long jugadorId) {
+
+        Plantilla registro = plantillaRepository.findByEquipoIdAndJugadorId(equipoId, jugadorId)
+                .orElseThrow(() -> new RuntimeException("Este jugador no pertenece a tu equipo."));
+
+        if (registro.getEstado() == EstadoAlineacion.BANQUILLO) {
+
+            // 1. Nos traemos a todos los titulares actuales
+            List<Plantilla> titularesActuales = plantillaRepository.findByEquipoIdAndEstado(equipoId, EstadoAlineacion.TITULAR);
+
+            // 2. Comprobamos el límite de 5 por si acaso
+            if (titularesActuales.size() >= 5) {
+                throw new RuntimeException("Ya tienes 5 titulares. Debes sentar a alguien primero.");
+            }
+
+            // 3. LA MAGIA: Comprobamos si ya hay alguien jugando en ese rol
+            String rolDelNuevo = registro.getJugador().getRol();
+
+            boolean posicionOcupada = titularesActuales.stream()
+                    .anyMatch(titular -> titular.getJugador().getRol().equals(rolDelNuevo));
+
+            if (posicionOcupada) {
+                throw new RuntimeException("Operación denegada: Ya tienes a un jugador titular en la posición de " + rolDelNuevo + ".");
+            }
+
+            // 4. Si pasa todas las aduanas, lo hacemos titular
+            registro.setEstado(EstadoAlineacion.TITULAR);
+            plantillaRepository.save(registro);
+            return "¡" + registro.getJugador().getNickname() + " ahora es titular en la posición de " + rolDelNuevo + "!";
+
+        } else {
+            // Si ya era titular, simplemente lo sentamos
+            registro.setEstado(EstadoAlineacion.BANQUILLO);
+            plantillaRepository.save(registro);
+            return registro.getJugador().getNickname() + " ha sido enviado al banquillo.";
+        }
     }
 }
