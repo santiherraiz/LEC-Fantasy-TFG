@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import tools.jackson.databind.ObjectMapper;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -74,5 +75,10 @@ public class JugadorService {
         } catch (Exception e) {
             System.err.println("❌ Error: " + e.getMessage());
         }
+    }
+
+    public List<Jugador> obtenerTodosLosJugadores() {
+        // findAll() es un método mágico de Spring que hace un "SELECT * FROM jugadores"
+        return jugadorRepository.findAll();
     }
 }
