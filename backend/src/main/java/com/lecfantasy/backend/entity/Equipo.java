@@ -21,8 +21,6 @@ public class Equipo {
     @Column(name = "puntuacion_total", nullable = false)
     private Double puntuacionTotal = 0.0; // Empiezan con 0 puntos
 
-    // --- LA MAGIA DE LAS RELACIONES ---
-
     @OneToOne
     @JoinColumn(name = "usuario_id", referencedColumnName = "id", nullable = false, unique = true)
     private Usuario usuario;
