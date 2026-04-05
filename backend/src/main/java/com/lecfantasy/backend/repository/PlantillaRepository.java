@@ -22,6 +22,5 @@ public interface PlantillaRepository extends JpaRepository<Plantilla, Long> {
     // Nos devuelve la lista entera de jugadores que están en un estado concreto (ej. TITULAR)
     List<Plantilla> findByEquipoIdAndEstado(Long equipoId, EstadoAlineacion estado);
 
-    // Contar cuántos titulares tiene un equipo
-    long countByEquipoIdAndEstado(Long equipoId, EstadoAlineacion estado);
+    List<Plantilla> findByJugadorNicknameAndEstado(String nickname, EstadoAlineacion estado);
 }

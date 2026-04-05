@@ -25,5 +25,8 @@ public class LeaguepediaResponse {
 
         @JsonProperty("Role")
         private String role;
+
+        @JsonProperty("Team")
+        private String team;
     }
 }

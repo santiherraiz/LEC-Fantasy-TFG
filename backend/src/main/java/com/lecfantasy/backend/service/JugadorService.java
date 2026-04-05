@@ -10,7 +10,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,61 +23,68 @@ public class JugadorService {
     public void importarJugadoresDeLeaguepedia() {
         RestTemplate restTemplate = new RestTemplate();
 
-        // Usamos la URL para traernos 50 jugadores al azar para probar
-        String url = "https://lol.fandom.com/api.php?action=cargoquery&format=json&tables=Players&fields=ID,Name,Role&limit=50";
+        String torneo = "LEC/2026 Season/Spring Season";
+
+        String url = "https://lol.fandom.com/api.php?action=cargoquery&format=json&tables=TournamentPlayers&fields=Player=ID,Role,Team&where=Tournament='"
+                + torneo + "'&limit=100";
 
         HttpHeaders headers = new HttpHeaders();
-        // 1. El Bot Educado: Fandom confía más en los bots que se identifican claramente.
         headers.set("User-Agent", "LECFantasyApp/1.0 (Proyecto TFG; santiherra06@gmail.com)");
-        // 2. Le decimos que aceptamos JSON explícitamente
-        headers.set("Accept", "application/json");
-        // 3. Simulamos un comportamiento de navegador estándar
-        headers.set("Connection", "keep-alive");
-
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
         try {
             System.out.println("Conectando con Leaguepedia...");
 
-            // Hacemos la petición
-            ResponseEntity<String> rawResponse = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
-            System.out.println("Respuesta cruda de la API: " + rawResponse.getBody());
+            // Ahora sí, Spring cogerá la variable 'torneo' y la inyectará en la URL de
+            // forma segura
+            ResponseEntity<LeaguepediaResponse> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    entity,
+                    LeaguepediaResponse.class,
+                    torneo);
 
-            ObjectMapper mapper = new ObjectMapper();
-            LeaguepediaResponse response = mapper.readValue(rawResponse.getBody(), LeaguepediaResponse.class);
+            LeaguepediaResponse responseBody = response.getBody();
 
-            if (response != null && response.getCargoquery() != null && !response.getCargoquery().isEmpty()) {
-                System.out.println("¡Mapeo exitoso! Procesando jugadores...");
-                for (LeaguepediaResponse.CargoItem item : response.getCargoquery()) {
-                    String nickname = item.getTitle().getId();
-                    String nombreReal = item.getTitle().getName();
-                    String rol = item.getTitle().getRole();
+            if (responseBody != null && responseBody.getCargoquery() != null
+                    && !responseBody.getCargoquery().isEmpty()) {
+                System.out
+                        .println("¡Mapeo exitoso! Procesando " + responseBody.getCargoquery().size() + " registros...");
 
-                    if (nickname == null || rol == null) continue;
+                for (LeaguepediaResponse.CargoItem item : responseBody.getCargoquery()) {
+                    LeaguepediaResponse.PlayerTitle title = item.getTitle();
+                    String nickname = title.getId();
+                    String nombreReal = title.getName();
+                    String rol = title.getRole();
+
+                    if (nickname == null || rol == null) {
+                        continue;
+                    }
 
                     Optional<Jugador> existe = jugadorRepository.findByNickname(nickname);
                     if (existe.isEmpty()) {
                         Jugador nuevoJugador = new Jugador();
                         nuevoJugador.setNickname(nickname);
+                        // Si no hay nombre real, usamos el nickname
                         nuevoJugador.setNombreReal(nombreReal != null && !nombreReal.isEmpty() ? nombreReal : nickname);
                         nuevoJugador.setRol(rol);
                         nuevoJugador.setPrecioBase(5000.0);
 
                         jugadorRepository.save(nuevoJugador);
-                        System.out.println("✅ Fichado en BD: " + nickname + " (" + rol + ")");
+                        System.out.println("✅ Guardado en BD: " + nickname + " (" + rol + ")");
                     }
                 }
                 System.out.println("Importación finalizada con éxito.");
             } else {
-                System.out.println("⚠️ No hay 'cargoquery' en el JSON. Revisa la respuesta cruda arriba.");
+                System.out.println("⚠️ La respuesta de la API no contiene datos o el formato es incorrecto.");
             }
         } catch (Exception e) {
-            System.err.println("❌ Error: " + e.getMessage());
+            System.err.println("❌ Error durante la importación: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
     public List<Jugador> obtenerTodosLosJugadores() {
-        // findAll() es un método mágico de Spring que hace un "SELECT * FROM jugadores"
         return jugadorRepository.findAll();
     }
 }
