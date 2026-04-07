@@ -5,6 +5,7 @@ import java.util.List;
 
 @Data
 public class EquipoDetalleDTO {
+    private Long equipoId;
     private String nombreEquipo;
     private Double presupuestoDisponible;
     private Double puntuacionTotal;

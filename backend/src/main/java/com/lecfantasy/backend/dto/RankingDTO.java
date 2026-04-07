@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class RankingDTO {
-    private String nombreEquipo;
-    private String nicknameUsuario;
-    private Double puntuacionTotal;
+    private Long equipoId;
+    private String nombreUsuario; // Nickname del usuario
+    private Double puntosTotales;
 }

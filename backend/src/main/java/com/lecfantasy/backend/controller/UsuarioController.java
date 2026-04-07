@@ -36,9 +36,9 @@ public class UsuarioController {
     }
 
     @PostMapping("/registro")
-    public ResponseEntity<Usuario> registrarUsuario(@RequestBody Usuario nuevoUsuario) {
-        Usuario usuarioGuardado = usuarioService.registrarNuevoUsuario(nuevoUsuario);
-        return ResponseEntity.ok(usuarioGuardado);
+    public ResponseEntity<String> registrarUsuario(@RequestBody Usuario nuevoUsuario) {
+        usuarioService.registrarNuevoUsuario(nuevoUsuario);
+        return ResponseEntity.ok("Usuario registrado con éxito");
     }
 
     @GetMapping("/perfil/{id}")

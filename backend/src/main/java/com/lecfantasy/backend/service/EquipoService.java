@@ -31,6 +31,7 @@ public class EquipoService {
 
         // 3. Montamos la respuesta limpia (DTO)
         EquipoDetalleDTO respuesta = new EquipoDetalleDTO();
+        respuesta.setEquipoId(equipo.getId());
         respuesta.setNombreEquipo(equipo.getNombreEquipo());
         respuesta.setPresupuestoDisponible(equipo.getPresupuestoDisponible());
         respuesta.setPuntuacionTotal(equipo.getPuntuacionTotal());
@@ -57,9 +58,9 @@ public class EquipoService {
         // 2. Los transformamos a una lista de DTOs para no devolver emails/passwords
         return equipos.stream().map(e -> {
             RankingDTO dto = new RankingDTO();
-            dto.setNombreEquipo(e.getNombreEquipo());
-            dto.setNicknameUsuario(e.getUsuario().getNickname());
-            dto.setPuntuacionTotal(e.getPuntuacionTotal());
+            dto.setEquipoId(e.getId());
+            dto.setNombreUsuario(e.getUsuario().getNickname());
+            dto.setPuntosTotales(e.getPuntuacionTotal());
             return dto;
         }).collect(Collectors.toList());
     }
