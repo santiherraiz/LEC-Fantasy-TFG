@@ -1,7 +1,6 @@
 package com.lecfantasy.backend.controller;
 
 import com.lecfantasy.backend.entity.Usuario;
-import com.lecfantasy.backend.repository.UsuarioRepository;
 import com.lecfantasy.backend.service.JugadorService;
 import com.lecfantasy.backend.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;

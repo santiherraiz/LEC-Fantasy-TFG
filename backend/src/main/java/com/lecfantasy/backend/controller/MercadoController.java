@@ -9,6 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/mercado")
@@ -45,5 +47,16 @@ public class MercadoController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    @GetMapping("/equipos-lec")
+    public ResponseEntity<Map<String, List<Jugador>>> obtenerEquiposLec() {
+        List<Jugador> todos = jugadorService.obtenerTodosLosJugadores();
+
+        Map<String, List<Jugador>> agrupadosPorEquipo = todos.stream()
+                .filter(j -> j.getEquipoLec() != null) // Filtro de seguridad
+                .collect(Collectors.groupingBy(Jugador::getEquipoLec));
+
+        return ResponseEntity.ok(agrupadosPorEquipo);
     }
 }

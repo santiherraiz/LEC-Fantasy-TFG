@@ -16,11 +16,14 @@ public class Jugador {
     private String nombreReal;
 
     @Column(nullable = false, unique = true)
-    private String nickname; // Ej: "Caps", "Razork", "Elyoya"
+    private String nickname;
 
     @Column(nullable = false)
-    private String rol; // TOP, JGL, MID, ADC, SUP
+    private String rol;
 
     @Column(name = "precio_base", nullable = false)
-    private Double precioBase; // Lo que cuesta ficharlo al principio
+    private Double precioBase;
+
+    @Column(name = "equipo_lec")
+    private String equipoLec;
 }

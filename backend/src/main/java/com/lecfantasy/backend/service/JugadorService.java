@@ -25,18 +25,21 @@ public class JugadorService {
 
         String torneo = "LEC/2026 Season/Spring Season";
 
-        String url = "https://lol.fandom.com/api.php?action=cargoquery&format=json&tables=TournamentPlayers&fields=Player=ID,Role,Team&where=Tournament='"
-                + torneo + "'&limit=100";
+        // Query para sacar jugadores y sus nombres reales uniendo TournamentPlayers con Players
+        String url = "https://lol.fandom.com/api.php?action=cargoquery&format=json"
+                + "&tables=TournamentPlayers=TP,Players=P"
+                + "&fields=TP.Player=ID,P.Name=Name,TP.Role=Role,TP.Team=Team"
+                + "&where=TP.OverviewPage='{torneo}'"
+                + "&join_on=TP.Player=P.ID"
+                + "&limit=100";
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("User-Agent", "LECFantasyApp/1.0 (Proyecto TFG; santiherra06@gmail.com)");
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
         try {
-            System.out.println("Conectando con Leaguepedia...");
+            System.out.println("Conectando con Leaguepedia para el torneo: " + torneo);
 
-            // Ahora sí, Spring cogerá la variable 'torneo' y la inyectará en la URL de
-            // forma segura
             ResponseEntity<LeaguepediaResponse> response = restTemplate.exchange(
                     url,
                     HttpMethod.GET,
@@ -65,13 +68,13 @@ public class JugadorService {
                     if (existe.isEmpty()) {
                         Jugador nuevoJugador = new Jugador();
                         nuevoJugador.setNickname(nickname);
-                        // Si no hay nombre real, usamos el nickname
                         nuevoJugador.setNombreReal(nombreReal != null && !nombreReal.isEmpty() ? nombreReal : nickname);
                         nuevoJugador.setRol(rol);
                         nuevoJugador.setPrecioBase(5000.0);
+                        nuevoJugador.setEquipoLec(title.getTeam());
 
                         jugadorRepository.save(nuevoJugador);
-                        System.out.println("✅ Guardado en BD: " + nickname + " (" + rol + ")");
+                        System.out.println("✅ Guardado en BD: " + nickname + " (" + rol + ") - " + title.getTeam());
                     }
                 }
                 System.out.println("Importación finalizada con éxito.");
