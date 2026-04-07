@@ -1,7 +1,10 @@
 package com.lecfantasy.backend.service;
 
+import com.lecfantasy.backend.dto.JugadorEstadisticaDTO;
 import com.lecfantasy.backend.dto.LeaguepediaResponse;
+import com.lecfantasy.backend.entity.EstadisticaPartido;
 import com.lecfantasy.backend.entity.Jugador;
+import com.lecfantasy.backend.repository.EstadisticaPartidoRepository;
 import com.lecfantasy.backend.repository.JugadorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
@@ -13,12 +16,16 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class JugadorService {
 
     @Autowired
     private JugadorRepository jugadorRepository;
+
+    @Autowired
+    private EstadisticaPartidoRepository estadisticaPartidoRepository;
 
     public void importarJugadoresDeLeaguepedia() {
         RestTemplate restTemplate = new RestTemplate();
@@ -92,5 +99,29 @@ public class JugadorService {
 
     public List<Jugador> obtenerTodosLosJugadores() {
         return jugadorRepository.findAll();
+    }
+
+    public List<JugadorEstadisticaDTO> obtenerEstadisticasJugador(Long idJugador) {
+        // Buscamos todas las filas en la tabla estadisticas_partidos para este jugador
+        List<EstadisticaPartido> estadisticas = estadisticaPartidoRepository.findByJugadorId(idJugador);
+
+        // Convertimos cada fila a un objeto DTO limpio para el frontend
+        return estadisticas.stream().map(e -> {
+            JugadorEstadisticaDTO dto = new JugadorEstadisticaDTO();
+            dto.setGameId(e.getPartido().getGameId());
+            dto.setMatchName(e.getPartido().getTeam1() + " vs " + e.getPartido().getTeam2());
+            dto.setFecha(e.getPartido().getDateTimeUtc());
+            dto.setKills(e.getKills());
+            dto.setDeaths(e.getDeaths());
+            dto.setAssists(e.getAssists());
+            dto.setCs(e.getCs());
+            dto.setPuntosGenerados(e.getPuntosGenerados());
+            return dto;
+        }).collect(Collectors.toList());
+    }
+    
+    public Jugador obtenerDetalleJugador(Long id) {
+        return jugadorRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Jugador no encontrado con ID: " + id));
     }
 }

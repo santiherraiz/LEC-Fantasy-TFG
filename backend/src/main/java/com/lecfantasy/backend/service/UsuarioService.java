@@ -5,8 +5,11 @@ import com.lecfantasy.backend.entity.Usuario;
 import com.lecfantasy.backend.repository.EquipoRepository;
 import com.lecfantasy.backend.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 @Service
 public class UsuarioService {
@@ -17,27 +20,46 @@ public class UsuarioService {
     @Autowired
     private EquipoRepository equipoRepository;
 
-    // ¡Usamos @Transactional porque vamos a guardar en dos tablas distintas a la vez!
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @Transactional
     public Usuario registrarNuevoUsuario(Usuario nuevoUsuario) {
+        // Encriptamos la contraseña antes de guardar
+        nuevoUsuario.setPassword(passwordEncoder.encode(nuevoUsuario.getPassword()));
 
-        // 1. Guardamos al usuario en la base de datos para que MariaDB le asigne un ID
         Usuario usuarioGuardado = usuarioRepository.save(nuevoUsuario);
 
-        // 2. Fabricamos su equipo de bienvenida
         Equipo equipoInicial = new Equipo();
-        // Le ponemos un nombre por defecto amigable
         equipoInicial.setNombreEquipo("Equipo de " + usuarioGuardado.getNickname());
-        equipoInicial.setPresupuestoDisponible(50000.0); // Los 50k iniciales
+        equipoInicial.setPresupuestoDisponible(50000.0);
         equipoInicial.setPuntuacionTotal(0.0);
-
-        // 3. ¡Lo enlazamos! Le decimos que este equipo pertenece al usuario que acabamos de guardar
         equipoInicial.setUsuario(usuarioGuardado);
 
-        // 4. Guardamos el equipo en la base de datos
         equipoRepository.save(equipoInicial);
 
-        // Devolvemos el usuario para que el controlador pueda responder con él
         return usuarioGuardado;
+    }
+
+    public Usuario login(String email, String password) {
+        Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(email);
+
+        if (usuarioOpt.isEmpty()) {
+            throw new RuntimeException("Email no registrado.");
+        }
+
+        Usuario usuario = usuarioOpt.get();
+
+        // Comprobamos la contraseña usando el encoder
+        if (!passwordEncoder.matches(password, usuario.getPassword())) {
+            throw new RuntimeException("Contraseña incorrecta.");
+        }
+
+        return usuario;
+    }
+
+    public Usuario obtenerPerfil(Long id) {
+        return usuarioRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + id));
     }
 }

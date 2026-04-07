@@ -1,6 +1,7 @@
 package com.lecfantasy.backend.service;
 
 import com.lecfantasy.backend.dto.EquipoDetalleDTO;
+import com.lecfantasy.backend.dto.RankingDTO;
 import com.lecfantasy.backend.entity.Equipo;
 import com.lecfantasy.backend.entity.Plantilla;
 import com.lecfantasy.backend.repository.EquipoRepository;
@@ -47,5 +48,19 @@ public class EquipoService {
         respuesta.setJugadores(jugadoresDTO);
 
         return respuesta;
+    }
+
+    public List<RankingDTO> obtenerRanking() {
+        // 1. Buscamos todos los equipos ordenados por puntos de mayor a menor
+        List<Equipo> equipos = equipoRepository.findAllByOrderByPuntuacionTotalDesc();
+
+        // 2. Los transformamos a una lista de DTOs para no devolver emails/passwords
+        return equipos.stream().map(e -> {
+            RankingDTO dto = new RankingDTO();
+            dto.setNombreEquipo(e.getNombreEquipo());
+            dto.setNicknameUsuario(e.getUsuario().getNickname());
+            dto.setPuntuacionTotal(e.getPuntuacionTotal());
+            return dto;
+        }).collect(Collectors.toList());
     }
 }

@@ -14,21 +14,13 @@ public class AdminController {
 
     @PostMapping("/procesar-pendientes")
     public ResponseEntity<String> procesarPartidosPendientes() {
-        try {
-            String resultado = puntuacionService.procesarPartidosPendientes();
-            return ResponseEntity.ok(resultado);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
-        }
+        String resultado = puntuacionService.procesarPartidosPendientes();
+        return ResponseEntity.ok(resultado);
     }
 
     @PostMapping("/importar-partidos")
     public ResponseEntity<String> importarPartidos() {
-        try {
-            puntuacionService.importarPartidosDeLeaguepedia();
-            return ResponseEntity.ok("Importación de partidos completada. Revisa la consola.");
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
-        }
+        puntuacionService.importarPartidosDeLeaguepedia();
+        return ResponseEntity.ok("Importación de partidos completada. Revisa la consola.");
     }
 }

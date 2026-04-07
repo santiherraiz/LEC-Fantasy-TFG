@@ -1,5 +1,6 @@
 package com.lecfantasy.backend.controller;
 
+import com.lecfantasy.backend.dto.LoginRequest;
 import com.lecfantasy.backend.entity.Usuario;
 import com.lecfantasy.backend.service.JugadorService;
 import com.lecfantasy.backend.service.UsuarioService;
@@ -8,7 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/usuarios") // Todas las rutas de esta clase empezarán por aquí
+@RequestMapping("/api/usuarios")
 public class UsuarioController {
 
     @Autowired
@@ -17,17 +18,23 @@ public class UsuarioController {
     @Autowired
     private JugadorService jugadorService;
 
-    // POST http://localhost:8080/api/usuarios/registro
+    @PostMapping("/login")
+    public ResponseEntity<Usuario> login(@RequestBody LoginRequest request) {
+        // La excepción ahora la maneja el GlobalExceptionHandler automáticamente
+        Usuario usuario = usuarioService.login(request.getEmail(), request.getPassword());
+        return ResponseEntity.ok(usuario);
+    }
+
     @PostMapping("/registro")
     public ResponseEntity<Usuario> registrarUsuario(@RequestBody Usuario nuevoUsuario) {
-        try {
-            // Llamamos a nuestro nuevo método mágico
-            Usuario usuarioGuardado = usuarioService.registrarNuevoUsuario(nuevoUsuario);
-            return ResponseEntity.ok(usuarioGuardado);
-        } catch (Exception e) {
-            // Si el email o nickname ya existen, fallará de forma segura y devolverá un 400
-            return ResponseEntity.badRequest().build();
-        }
+        Usuario usuarioGuardado = usuarioService.registrarNuevoUsuario(nuevoUsuario);
+        return ResponseEntity.ok(usuarioGuardado);
+    }
+
+    @GetMapping("/perfil/{id}")
+    public ResponseEntity<Usuario> obtenerPerfil(@PathVariable Long id) {
+        Usuario usuario = usuarioService.obtenerPerfil(id);
+        return ResponseEntity.ok(usuario);
     }
 
     @PostMapping("/importar-jugadores")

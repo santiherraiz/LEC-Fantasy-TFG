@@ -24,13 +24,9 @@ public class MercadoController {
     private JugadorService jugadorService;
 
     @PostMapping("/fichar")
-    public ResponseEntity<?> fichar(@RequestBody FichajeRequest request) {
-        try {
-            String mensaje = mercadoService.ficharJugador(request.getUsuarioId(), request.getJugadorId());
-            return ResponseEntity.ok(mensaje);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<String> fichar(@RequestBody FichajeRequest request) {
+        String mensaje = mercadoService.ficharJugador(request.getUsuarioId(), request.getJugadorId());
+        return ResponseEntity.ok(mensaje);
     }
 
     @GetMapping("/jugadores")
@@ -40,13 +36,9 @@ public class MercadoController {
     }
 
     @PostMapping("/vender")
-    public ResponseEntity<?> vender(@RequestBody com.lecfantasy.backend.dto.VentaRequest request) {
-        try {
-            String mensaje = mercadoService.venderJugador(request.getEquipoId(), request.getJugadorId());
-            return ResponseEntity.ok(mensaje);
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<String> vender(@RequestBody com.lecfantasy.backend.dto.VentaRequest request) {
+        String mensaje = mercadoService.venderJugador(request.getEquipoId(), request.getJugadorId());
+        return ResponseEntity.ok(mensaje);
     }
 
     @GetMapping("/equipos-lec")
