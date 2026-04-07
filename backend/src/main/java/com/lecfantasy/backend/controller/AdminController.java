@@ -21,4 +21,14 @@ public class AdminController {
             return ResponseEntity.badRequest().body("Error: " + e.getMessage());
         }
     }
+
+    @PostMapping("/importar-partidos")
+    public ResponseEntity<String> importarPartidos() {
+        try {
+            puntuacionService.importarPartidosDeLeaguepedia();
+            return ResponseEntity.ok("Importación de partidos completada. Revisa la consola.");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
+        }
+    }
 }

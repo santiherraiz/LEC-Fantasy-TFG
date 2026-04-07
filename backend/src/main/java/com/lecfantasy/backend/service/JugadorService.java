@@ -56,13 +56,16 @@ public class JugadorService {
 
                 for (LeaguepediaResponse.CargoItem item : responseBody.getCargoquery()) {
                     LeaguepediaResponse.PlayerTitle title = item.getTitle();
-                    String nickname = title.getId();
+                    String rawNickname = title.getId();
                     String nombreReal = title.getName();
                     String rol = title.getRole();
 
-                    if (nickname == null || rol == null) {
+                    if (rawNickname == null || rol == null || rol.equalsIgnoreCase("Coach")) {
                         continue;
                     }
+
+                    // Limpieza del nickname: "Noah (Oh Hyeon-taek)" -> "Noah"
+                    String nickname = rawNickname.split(" \\(")[0].trim();
 
                     Optional<Jugador> existe = jugadorRepository.findByNickname(nickname);
                     if (existe.isEmpty()) {

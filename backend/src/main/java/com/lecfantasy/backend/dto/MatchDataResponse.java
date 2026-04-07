@@ -15,15 +15,18 @@ public class MatchDataResponse {
 
     @Data
     public static class MatchStats {
+        @JsonProperty("GameId")
+        private String gameId;
+
         @JsonProperty("Name")
         private String nickname; // El ID/Nickname del jugador
         @JsonProperty("Kills")
-        private int kills;
+        private String kills;
         @JsonProperty("Deaths")
-        private int deaths;
+        private String deaths;
         @JsonProperty("Assists")
-        private int assists;
+        private String assists;
         @JsonProperty("CS")
-        private int cs;
+        private String cs;
     }
 }

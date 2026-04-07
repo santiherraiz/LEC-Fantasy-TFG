@@ -25,6 +25,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class PuntuacionService {
@@ -44,6 +45,60 @@ public class PuntuacionService {
     @Autowired
     private JugadorRepository jugadorRepository;
 
+    public void importarPartidosDeLeaguepedia() {
+        RestTemplate restTemplate = new RestTemplate();
+        String torneo = "LEC/2026 Season/Spring Season";
+
+        // Query para traer los partidos terminados de este torneo
+        String url = "https://lol.fandom.com/api.php?action=cargoquery&format=json" +
+                "&tables=ScoreboardGames" +
+                "&fields=GameId,Tournament,Team1,Team2,Team1Score,Team2Score,WinTeam,LossTeam,DateTime_UTC" +
+                "&where=OverviewPage='{torneo}' AND WinTeam IS NOT NULL" +
+                "&limit=100";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("User-Agent", "LECFantasyApp/1.0 (Proyecto TFG; santiherra06@gmail.com)");
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+
+        try {
+            System.out.println("Importando partidos desde Leaguepedia para: " + torneo);
+
+            ResponseEntity<com.lecfantasy.backend.dto.PartidoLeaguepediaDTO> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    entity,
+                    com.lecfantasy.backend.dto.PartidoLeaguepediaDTO.class,
+                    torneo);
+
+            com.lecfantasy.backend.dto.PartidoLeaguepediaDTO body = response.getBody();
+
+            if (body != null && body.getCargoquery() != null) {
+                for (com.lecfantasy.backend.dto.PartidoLeaguepediaDTO.CargoItem item : body.getCargoquery()) {
+                    com.lecfantasy.backend.dto.PartidoLeaguepediaDTO.PartidoData data = item.getTitle();
+
+                    if (!partidoRepository.existsById(data.getGameId())) {
+                        Partido nuevoPartido = new Partido();
+                        nuevoPartido.setGameId(data.getGameId());
+                        nuevoPartido.setTorneo(data.getTournament());
+                        nuevoPartido.setTeam1(data.getTeam1());
+                        nuevoPartido.setTeam2(data.getTeam2());
+                        nuevoPartido.setTeam1Score(data.getTeam1Score());
+                        nuevoPartido.setTeam2Score(data.getTeam2Score());
+                        nuevoPartido.setWinTeam(data.getWinTeam());
+                        nuevoPartido.setLossTeam(data.getLossTeam());
+                        nuevoPartido.setDateTimeUtc(data.getDateTimeUtc());
+                        nuevoPartido.setPuntosCalculados(false);
+
+                        partidoRepository.save(nuevoPartido);
+                        System.out.println("✅ Partido guardado: " + data.getGameId());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error importando partidos: " + e.getMessage());
+        }
+    }
+
     private static final double PUNTOS_POR_KILL = 3.0;
     private static final double PUNTOS_POR_ASSIST = 1.5;
     private static final double PUNTOS_POR_DEATH = -1.0;
@@ -59,89 +114,104 @@ public class PuntuacionService {
     public String procesarPartidosPendientes() {
         // 1. Buscamos TODOS los partidos que tengan la bandera en 'false'
         List<Partido> partidosPendientes = partidoRepository.findByPuntosCalculadosFalse();
-        int partidosProcesados = 0;
 
         if (partidosPendientes.isEmpty()) {
             return "No hay partidos nuevos que procesar.";
         }
 
-        RestTemplate restTemplate = new RestTemplate();
+        // Extraemos los IDs para hacer una sola consulta a la API
+        List<String> gameIds = partidosPendientes.stream()
+                .map(Partido::getGameId)
+                .collect(Collectors.toList());
 
-        for (Partido partido : partidosPendientes) {
-            try {
-                System.out.println("Procesando estadísticas para el partido: " + partido.getGameId());
+        // Construimos el WHERE con un IN ('id1', 'id2'...)
+        String gameIdsCsv = "'" + String.join("','", gameIds) + "'";
+        String whereClause = "GameId IN (" + gameIdsCsv + ")";
+        String fields = "GameId,Name,Kills,Deaths,Assists,CS";
 
-                // 2. Apuntamos a la tabla 'ScoreboardPlayers' y filtramos por el GameId exacto
-                String whereClause = "GameId='" + partido.getGameId() + "'";
-                String fields = "Name,Kills,Deaths,Assists,CS";
+        try {
+            RestTemplate restTemplate = new RestTemplate();
+            String encodedWhere = URLEncoder.encode(whereClause, StandardCharsets.UTF_8.toString());
+            String encodedFields = URLEncoder.encode(fields, StandardCharsets.UTF_8.toString());
 
-                String encodedWhere = URLEncoder.encode(whereClause, StandardCharsets.UTF_8.toString());
-                String encodedFields = URLEncoder.encode(fields, StandardCharsets.UTF_8.toString());
+            // Aumentamos el limit a 500 (10 jugadores x 50 partidos max)
+            String fullUrl = "https://lol.fandom.com/api.php?action=cargoquery&format=json" +
+                    "&tables=ScoreboardPlayers&fields=" + encodedFields +
+                    "&where=" + encodedWhere + "&limit=500";
 
-                String fullUrl = "https://lol.fandom.com/api.php?action=cargoquery&format=json" +
-                        "&tables=ScoreboardPlayers&fields=" + encodedFields +
-                        "&where=" + encodedWhere + "&limit=50";
+            URI uri = new URI(fullUrl);
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("User-Agent", "LECFantasyApp/1.0 (TFG Project; contact: santiherra06@gmail.com)");
+            HttpEntity<String> entity = new HttpEntity<>(headers);
 
-                URI uri = new URI(fullUrl);
-                HttpHeaders headers = new HttpHeaders();
-                headers.set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36");
-                HttpEntity<String> entity = new HttpEntity<>(headers);
+            System.out.println("Solicitando estadísticas masivas a Leaguepedia...");
+            ResponseEntity<MatchDataResponse> response = restTemplate.exchange(
+                    uri, HttpMethod.GET, entity, MatchDataResponse.class);
 
-                ResponseEntity<MatchDataResponse> response = restTemplate.exchange(
-                        uri, HttpMethod.GET, entity, MatchDataResponse.class);
+            if (response.getBody() != null && response.getBody().getCargoquery() != null) {
+                int statsProcesadas = 0;
+                
+                for (MatchDataResponse.CargoItem item : response.getBody().getCargoquery()) {
+                    MatchDataResponse.MatchStats stats = item.getTitle();
+                    String gameId = stats.getGameId();
+                    
+                    String nicknameLimpio = stats.getNickname().split(" \\(")[0].trim();
+                    Optional<Jugador> jugadorOpt = jugadorRepository.findByNickname(nicknameLimpio);
 
-                if (response.getBody() != null && response.getBody().getCargoquery() != null) {
-                    for (MatchDataResponse.CargoItem item : response.getBody().getCargoquery()) {
-                        MatchDataResponse.MatchStats stats = item.getTitle();
+                    if (jugadorOpt.isPresent()) {
+                        Jugador jugador = jugadorOpt.get();
+                        
+                        // Buscamos el objeto Partido correspondiente
+                        Optional<Partido> partidoOpt = partidosPendientes.stream()
+                                .filter(p -> p.getGameId().equals(gameId))
+                                .findFirst();
 
-                        // 3. Verificamos si este jugador pertenece a nuestro catálogo de la LEC 2026
-                        Optional<Jugador> jugadorOpt = jugadorRepository.findByNickname(stats.getNickname());
+                        if (partidoOpt.isPresent() && !estadisticaPartidoRepository.existsByPartidoGameIdAndJugadorId(gameId, jugador.getId())) {
+                            Partido partido = partidoOpt.get();
+                            
+                            int kills = Integer.parseInt(stats.getKills());
+                            int deaths = Integer.parseInt(stats.getDeaths());
+                            int assists = Integer.parseInt(stats.getAssists());
+                            int cs = Integer.parseInt(stats.getCs());
 
-                        if (jugadorOpt.isPresent()) {
-                            Jugador jugador = jugadorOpt.get();
+                            double puntos = calcularPuntosPartido(kills, deaths, assists, cs);
 
-                            // 4. Comprobación de seguridad: ¿Ya habíamos guardado esta estadística por
-                            // error?
-                            if (!estadisticaPartidoRepository.existsByPartidoGameIdAndJugadorId(partido.getGameId(),
-                                    jugador.getId())) {
+                            EstadisticaPartido estadistica = new EstadisticaPartido();
+                            estadistica.setPartido(partido);
+                            estadistica.setJugador(jugador);
+                            estadistica.setKills(kills);
+                            estadistica.setDeaths(deaths);
+                            estadistica.setAssists(assists);
+                            estadistica.setCs(cs);
+                            estadistica.setPuntosGenerados(puntos);
+                            estadisticaPartidoRepository.save(estadistica);
 
-                                // Calculamos sus puntos con tu fórmula
-                                double puntos = calcularPuntosPartido(stats.getKills(), stats.getDeaths(),
-                                        stats.getAssists(), stats.getCs());
-
-                                // --- A. GUARDAMOS EL HISTORIAL (LA NUEVA TABLA) ---
-                                EstadisticaPartido estadistica = new EstadisticaPartido();
-                                estadistica.setPartido(partido);
-                                estadistica.setJugador(jugador);
-                                estadistica.setKills(stats.getKills());
-                                estadistica.setDeaths(stats.getDeaths());
-                                estadistica.setAssists(stats.getAssists());
-                                estadistica.setCs(stats.getCs());
-                                estadistica.setPuntosGenerados(puntos);
-                                estadisticaPartidoRepository.save(estadistica);
-
-                                // --- B. REPARTIMOS EL PREMIO A LOS MÁNAGERS ---
-                                List<Plantilla> usuarios = plantillaRepository.findByJugadorNicknameAndEstado(
-                                        jugador.getNickname(), EstadoAlineacion.TITULAR);
-                                for (Plantilla p : usuarios) {
-                                    Equipo e = p.getEquipo();
-                                    e.setPuntuacionTotal(e.getPuntuacionTotal() + puntos);
-                                    equipoRepository.save(e);
-                                }
+                            // Reparto de puntos
+                            List<Plantilla> usuarios = plantillaRepository.findByJugadorNicknameAndEstado(
+                                    jugador.getNickname(), EstadoAlineacion.TITULAR);
+                            for (Plantilla p : usuarios) {
+                                Equipo e = p.getEquipo();
+                                e.setPuntuacionTotal(e.getPuntuacionTotal() + puntos);
+                                equipoRepository.save(e);
                             }
+                            statsProcesadas++;
                         }
                     }
-                    // 5. ¡Partido completado! Cerramos el grifo para no volver a darle puntos a la
-                    // gente
-                    partido.setPuntosCalculados(true);
-                    partidoRepository.save(partido);
-                    partidosProcesados++;
                 }
-            } catch (Exception e) {
-                System.err.println("Error procesando el partido " + partido.getGameId() + ": " + e.getMessage());
+
+                // Marcamos todos los partidos como calculados
+                for (Partido p : partidosPendientes) {
+                    p.setPuntosCalculados(true);
+                    partidoRepository.save(p);
+                }
+
+                return "Éxito: Se han procesado " + partidosPendientes.size() + " partidos (" + statsProcesadas + " estadísticas individuales).";
             }
+        } catch (Exception e) {
+            System.err.println("Error en el procesamiento masivo: " + e.getMessage());
+            e.printStackTrace();
+            return "Error: " + e.getMessage();
         }
-        return "Éxito: Se han procesado " + partidosProcesados
-                + " partidos, guardado estadísticas y repartido los puntos.";
+        return "No se pudieron obtener estadísticas de la API.";
     }
 }
