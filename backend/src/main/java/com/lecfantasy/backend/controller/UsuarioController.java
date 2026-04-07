@@ -1,5 +1,7 @@
 package com.lecfantasy.backend.controller;
 
+import com.lecfantasy.backend.config.JwtUtils;
+import com.lecfantasy.backend.dto.AuthResponse;
 import com.lecfantasy.backend.dto.LoginRequest;
 import com.lecfantasy.backend.entity.Usuario;
 import com.lecfantasy.backend.service.JugadorService;
@@ -18,11 +20,19 @@ public class UsuarioController {
     @Autowired
     private JugadorService jugadorService;
 
+    @Autowired
+    private JwtUtils jwtUtils;
+
     @PostMapping("/login")
-    public ResponseEntity<Usuario> login(@RequestBody LoginRequest request) {
-        // La excepción ahora la maneja el GlobalExceptionHandler automáticamente
+    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
+        // Validamos al usuario
         Usuario usuario = usuarioService.login(request.getEmail(), request.getPassword());
-        return ResponseEntity.ok(usuario);
+        
+        // Generamos su token JWT
+        String token = jwtUtils.generateToken(usuario.getEmail());
+        
+        // Devolvemos el token + los datos del usuario
+        return ResponseEntity.ok(new AuthResponse(token, usuario));
     }
 
     @PostMapping("/registro")
