@@ -7,7 +7,7 @@ import { Jugador, JugadorEnPlantillaDTO } from '../../types';
 import { ChevronDown, ChevronRight, ShoppingCart, Trash2 } from 'lucide-react-native';
 
 export default function MercadoScreen({ navigation }: any) {
-  const { user } = useAuthStore();
+  const { user, selectedLigaId } = useAuthStore();
   const [equiposLec, setEquiposLec] = useState<Record<string, Jugador[]>>({});
   const [expandedTeam, setExpandedTeam] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -16,11 +16,11 @@ export default function MercadoScreen({ navigation }: any) {
   const [equipoId, setEquipoId] = useState<number | null>(null);
 
   const fetchData = async () => {
-    if (!user?.id) return;
+    if (!user?.id || !selectedLigaId) return;
     try {
       const [mercadoRes, miEquipoRes] = await Promise.all([
         api.get('/mercado/equipos-lec'),
-        api.get(`/equipos/mi-equipo/${user.id}`)
+        api.get(`/equipos/mi-equipo/${user.id}`, { params: { ligaId: selectedLigaId } })
       ]);
       
       setEquiposLec(mercadoRes.data || {});
@@ -42,37 +42,32 @@ export default function MercadoScreen({ navigation }: any) {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [selectedLigaId]);
 
   const handleFichar = async (jugadorId: number) => {
     try {
       const response = await api.post('/mercado/fichar', { 
         usuarioId: user?.id, 
-        jugadorId 
+        jugadorId,
+        ligaId: selectedLigaId
       });
       Alert.alert('Éxito', typeof response.data === 'string' ? response.data : 'Jugador fichado');
       await fetchData();
     } catch (error: any) {
       const errorData = error.response?.data;
-      const msg = errorData?.message || 'No tienes saldo suficiente o el jugador ya no está disponible';
-      Alert.alert('Error al fichar', msg);
+      Alert.alert('Error al fichar', errorData?.message || 'Error');
     }
   };
 
   const handleVender = async (jugadorId: number) => {
-    if (!equipoId) {
-      Alert.alert('Error', 'No se pudo identificar tu equipo. Intenta recargar.');
-      return;
-    }
-    
+    if (!equipoId) return;
     try {
       const response = await api.post('/mercado/vender', { equipoId, jugadorId });
       Alert.alert('Éxito', typeof response.data === 'string' ? response.data : 'Jugador vendido');
       await fetchData();
     } catch (error: any) {
       const errorData = error.response?.data;
-      const msg = errorData?.message || 'No se pudo vender al jugador';
-      Alert.alert('Error al vender', msg);
+      Alert.alert('Error al vender', errorData?.message || 'Error');
     }
   };
 
@@ -82,9 +77,7 @@ export default function MercadoScreen({ navigation }: any) {
 
   if (loading && !refreshing) {
     return (
-      <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="#3b82f6" />
-      </View>
+      <View style={styles.loaderContainer}><ActivityIndicator size="large" color="#3b82f6" /></View>
     );
   }
 
@@ -98,67 +91,45 @@ export default function MercadoScreen({ navigation }: any) {
       >
         <Text style={styles.title}>Mercado</Text>
         
-        {equiposEntries.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No hay jugadores disponibles.</Text>
-          </View>
-        ) : (
-          equiposEntries.map(([teamName, players]) => (
-            <View key={teamName} style={styles.teamCard}>
-              <TouchableOpacity 
-                onPress={() => toggleTeam(teamName)}
-                style={styles.teamHeader}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={styles.teamIcon}>
-                    <Text style={styles.teamIconText}>{teamName.substring(0, 1)}</Text>
-                  </View>
-                  <Text style={styles.teamNameText}>{teamName}</Text>
-                </View>
-                {expandedTeam === teamName ? <ChevronDown color="white" /> : <ChevronRight color="white" />}
-              </TouchableOpacity>
+        {equiposEntries.map(([teamName, players]) => (
+          <View key={teamName} style={styles.teamCard}>
+            <TouchableOpacity onPress={() => toggleTeam(teamName)} style={styles.teamHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={styles.teamIcon}><Text style={styles.teamIconText}>{teamName.substring(0, 1)}</Text></View>
+                <Text style={styles.teamNameText}>{teamName}</Text>
+              </View>
+              {expandedTeam === teamName ? <ChevronDown color="white" /> : <ChevronRight color="white" />}
+            </TouchableOpacity>
 
-              {expandedTeam === teamName && (
-                <View style={styles.playersList}>
-                  {(players || []).map(jugador => {
-                    const isOwned = myPlayerIds.includes(jugador.id);
-                    return (
-                      <View key={jugador.id} style={styles.playerRow}>
-                        <TouchableOpacity 
-                          style={{ flex: 1 }}
-                          onPress={() => navigation.navigate('JugadorDetail', { id: jugador.id })}
-                        >
-                          <Text style={styles.playerName}>{jugador.nickname}</Text>
-                          <Text style={styles.playerPos}>{jugador.rol}</Text>
-                        </TouchableOpacity>
-                        
-                        <View style={{ alignItems: 'flex-end', marginRight: 16 }}>
-                          <Text style={styles.playerPrice}>{jugador.precioBase != null ? jugador.precioBase.toLocaleString() : '0'} €</Text>
-                        </View>
-
-                        {isOwned ? (
-                          <TouchableOpacity 
-                            onPress={() => handleVender(jugador.id)}
-                            style={styles.sellBtn}
-                          >
-                            <Trash2 size={18} color="#F87171" />
-                          </TouchableOpacity>
-                        ) : (
-                          <TouchableOpacity 
-                            onPress={() => handleFichar(jugador.id)}
-                            style={styles.buyBtn}
-                          >
-                            <ShoppingCart size={18} color="white" />
-                          </TouchableOpacity>
-                        )}
+            {expandedTeam === teamName && (
+              <View style={styles.playersList}>
+                {(players || []).map(jugador => {
+                  const isOwned = myPlayerIds.includes(jugador.id);
+                  return (
+                    <View key={jugador.id} style={styles.playerRow}>
+                      <TouchableOpacity style={{ flex: 1 }} onPress={() => navigation.navigate('JugadorDetail', { id: jugador.id })}>
+                        <Text style={styles.playerName}>{jugador.nickname}</Text>
+                        <Text style={styles.playerPos}>{jugador.rol}</Text>
+                      </TouchableOpacity>
+                      <View style={{ alignItems: 'flex-end', marginRight: 16 }}>
+                        <Text style={styles.playerPrice}>{jugador.precioBase?.toLocaleString()} €</Text>
                       </View>
-                    );
-                  })}
-                </View>
-              )}
-            </View>
-          ))
-        )}
+                      {isOwned ? (
+                        <TouchableOpacity onPress={() => handleVender(jugador.id)} style={styles.sellBtn}>
+                          <Trash2 size={18} color="#F87171" />
+                        </TouchableOpacity>
+                      ) : (
+                        <TouchableOpacity onPress={() => handleFichar(jugador.id)} style={styles.buyBtn}>
+                          <ShoppingCart size={18} color="white" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        ))}
         <View style={{ height: 80 }} />
       </ScrollView>
     </SafeAreaView>
@@ -167,7 +138,7 @@ export default function MercadoScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#111827' },
-  loaderContainer: { flex: 1, backgroundColor: '#111827', alignItems: 'center', justifyContent: 'center' },
+  loaderContainer: { flex: 1, backgroundColor: '#111827', justifyContent: 'center', alignItems: 'center' },
   title: { color: 'white', fontSize: 28, fontWeight: 'bold', marginBottom: 24 },
   teamCard: { marginBottom: 16, backgroundColor: '#1F2937', borderRadius: 16, overflow: 'hidden' },
   teamHeader: { padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
@@ -180,7 +151,5 @@ const styles = StyleSheet.create({
   playerPos: { color: '#3B82F6', fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase' },
   playerPrice: { color: '#10B981', fontWeight: 'bold' },
   sellBtn: { backgroundColor: '#7F1D1D40', padding: 8, borderRadius: 8, borderWidth: 1, borderColor: '#EF444450' },
-  buyBtn: { backgroundColor: '#2563EB', padding: 8, borderRadius: 8 },
-  emptyContainer: { alignItems: 'center', paddingTop: 100 },
-  emptyText: { color: '#9CA3AF', textAlign: 'center' }
+  buyBtn: { backgroundColor: '#2563EB', padding: 8, borderRadius: 8 }
 });

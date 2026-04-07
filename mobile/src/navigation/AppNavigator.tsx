@@ -1,7 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Users, ShoppingBag, Trophy, Layout } from 'lucide-react-native';
+import { ShoppingBag, Trophy, Layout } from 'lucide-react-native';
 import { useAuthStore } from '../store/authStore';
 
 import LoginScreen from '../screens/auth/LoginScreen';
@@ -10,6 +10,7 @@ import MiEquipoScreen from '../screens/main/MiEquipoScreen';
 import MercadoScreen from '../screens/main/MercadoScreen';
 import RankingScreen from '../screens/main/RankingScreen';
 import JugadorDetailScreen from '../screens/main/JugadorDetailScreen';
+import LeagueSelectionScreen from '../screens/main/LeagueSelectionScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -22,8 +23,8 @@ function MainTabs() {
         tabBarStyle: {
           backgroundColor: '#111827',
           borderTopColor: '#1f2937',
-          paddingBottom: 25, // Aumentado para mayor separación
-          height: 80, // Aumentado para acomodar el padding
+          paddingBottom: 25,
+          height: 80,
         },
         tabBarActiveTintColor: '#3b82f6',
         tabBarInactiveTintColor: '#9ca3af',
@@ -58,7 +59,7 @@ function MainTabs() {
 }
 
 export default function AppNavigator() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, selectedLigaId } = useAuthStore();
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -67,6 +68,8 @@ export default function AppNavigator() {
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
         </>
+      ) : !selectedLigaId ? (
+        <Stack.Screen name="LeagueSelection" component={LeagueSelectionScreen} />
       ) : (
         <>
           <Stack.Screen name="Main" component={MainTabs} />

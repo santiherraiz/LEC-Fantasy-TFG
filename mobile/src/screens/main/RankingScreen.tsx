@@ -3,16 +3,21 @@ import { Text, View, ScrollView, RefreshControl, ActivityIndicator, StyleSheet }
 import { SafeAreaView } from 'react-native-safe-area-context';
 import api from '../../api/api';
 import { RankingEntry } from '../../types';
+import { useAuthStore } from '../../store/authStore';
 import { Trophy, Medal } from 'lucide-react-native';
 
 export default function RankingScreen() {
+  const { selectedLigaId } = useAuthStore();
   const [ranking, setRanking] = useState<RankingEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchRanking = async () => {
+    if (!selectedLigaId) return;
     try {
-      const response = await api.get('/equipos/ranking');
+      const response = await api.get('/equipos/ranking', {
+        params: { ligaId: selectedLigaId }
+      });
       setRanking(response.data);
     } catch (error) {
       console.error(error);
@@ -24,7 +29,7 @@ export default function RankingScreen() {
 
   useEffect(() => {
     fetchRanking();
-  }, []);
+  }, [selectedLigaId]);
 
   const getRankIcon = (index: number) => {
     if (index === 0) return <Trophy color="#eab308" size={24} />;
@@ -35,9 +40,7 @@ export default function RankingScreen() {
 
   if (loading && !refreshing) {
     return (
-      <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="#3b82f6" />
-      </View>
+      <View style={styles.loaderContainer}><ActivityIndicator size="large" color="#3b82f6" /></View>
     );
   }
 
@@ -49,7 +52,7 @@ export default function RankingScreen() {
         style={{ padding: 16 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => {setRefreshing(true); fetchRanking();}} tintColor="#3b82f6" />}
       >
-        <Text style={styles.title}>Ranking Global</Text>
+        <Text style={styles.title}>Ranking de la Liga</Text>
         
         <View>
           {safeRanking.map((entry, index) => (
@@ -57,26 +60,19 @@ export default function RankingScreen() {
               key={entry.equipoId ? entry.equipoId.toString() : `rank-${index}`} 
               style={[styles.rankCard, index < 3 && styles.topRankCard]}
             >
-              <View style={styles.iconContainer}>
-                {getRankIcon(index)}
-              </View>
-              
+              <View style={styles.iconContainer}>{getRankIcon(index)}</View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.userName}>{entry.nombreUsuario || 'Usuario'}</Text>
                 <Text style={styles.userSub}>ENTRENADOR</Text>
               </View>
-              
               <View style={{ alignItems: 'flex-end' }}>
                 <Text style={styles.pointsValue}>{entry.puntosTotales ?? 0}</Text>
                 <Text style={styles.pointsLabel}>PTS</Text>
               </View>
             </View>
           ))}
-          
           {safeRanking.length === 0 && !loading && (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No hay datos disponibles</Text>
-            </View>
+            <View style={styles.emptyContainer}><Text style={styles.emptyText}>No hay datos en esta liga.</Text></View>
           )}
         </View>
         <View style={{ height: 80 }} />
@@ -87,7 +83,7 @@ export default function RankingScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#111827' },
-  loaderContainer: { flex: 1, backgroundColor: '#111827', alignItems: 'center', justifyContent: 'center' },
+  loaderContainer: { flex: 1, backgroundColor: '#111827', justifyContent: 'center', alignItems: 'center' },
   title: { color: 'white', fontSize: 28, fontWeight: 'bold', marginBottom: 24 },
   rankCard: { backgroundColor: '#1F2937', padding: 20, borderRadius: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   topRankCard: { borderLeftWidth: 4, borderLeftColor: '#3B82F6' },

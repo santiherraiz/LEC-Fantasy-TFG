@@ -10,15 +10,19 @@ interface User {
 interface AuthState {
   user: User | null;
   token: string | null;
+  selectedLigaId: number | null;
   isAuthenticated: boolean;
   setAuth: (user: User, token: string) => void;
+  setSelectedLiga: (ligaId: number | null) => void;
   logout: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   token: null,
+  selectedLigaId: null,
   isAuthenticated: false,
   setAuth: (user, token) => set({ user, token, isAuthenticated: true }),
-  logout: () => set({ user: null, token: null, isAuthenticated: false }),
+  setSelectedLiga: (ligaId) => set({ selectedLigaId: ligaId }),
+  logout: () => set({ user: null, token: null, selectedLigaId: null, isAuthenticated: false }),
 }));
