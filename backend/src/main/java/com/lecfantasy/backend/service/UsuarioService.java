@@ -1,8 +1,6 @@
 package com.lecfantasy.backend.service;
 
-import com.lecfantasy.backend.entity.Equipo;
 import com.lecfantasy.backend.entity.Usuario;
-import com.lecfantasy.backend.repository.EquipoRepository;
 import com.lecfantasy.backend.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,9 +14,6 @@ public class UsuarioService {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
-
-    @Autowired
-    private EquipoRepository equipoRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
