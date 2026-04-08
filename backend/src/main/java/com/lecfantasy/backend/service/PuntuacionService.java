@@ -12,6 +12,7 @@ import com.lecfantasy.backend.repository.EstadisticaPartidoRepository;
 import com.lecfantasy.backend.repository.JugadorRepository;
 import com.lecfantasy.backend.repository.PartidoRepository;
 import com.lecfantasy.backend.repository.PlantillaRepository;
+import com.lecfantasy.backend.dto.PartidoLeaguepediaDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -52,7 +53,7 @@ public class PuntuacionService {
         // Query para traer los partidos terminados de este torneo
         String url = "https://lol.fandom.com/api.php?action=cargoquery&format=json" +
                 "&tables=ScoreboardGames" +
-                "&fields=GameId,Tournament,Team1,Team2,Team1Score,Team2Score,WinTeam,LossTeam,DateTime_UTC" +
+                "&fields=GameId,Team1,Team2,WinTeam,LossTeam,DateTime_UTC=dateTimeUtc" +
                 "&where=OverviewPage='{torneo}' AND WinTeam IS NOT NULL" +
                 "&limit=100";
 
@@ -63,30 +64,27 @@ public class PuntuacionService {
         try {
             System.out.println("Importando partidos desde Leaguepedia para: " + torneo);
 
-            ResponseEntity<com.lecfantasy.backend.dto.PartidoLeaguepediaDTO> response = restTemplate.exchange(
+            ResponseEntity<PartidoLeaguepediaDTO> response = restTemplate.exchange(
                     url,
                     HttpMethod.GET,
                     entity,
-                    com.lecfantasy.backend.dto.PartidoLeaguepediaDTO.class,
+                    PartidoLeaguepediaDTO.class,
                     torneo);
 
-            com.lecfantasy.backend.dto.PartidoLeaguepediaDTO body = response.getBody();
+            PartidoLeaguepediaDTO body = response.getBody();
 
             if (body != null && body.getCargoquery() != null) {
-                for (com.lecfantasy.backend.dto.PartidoLeaguepediaDTO.CargoItem item : body.getCargoquery()) {
-                    com.lecfantasy.backend.dto.PartidoLeaguepediaDTO.PartidoData data = item.getTitle();
+                for (PartidoLeaguepediaDTO.CargoItem item : body.getCargoquery()) {
+                    PartidoLeaguepediaDTO.PartidoData data = item.getTitle();
 
                     if (!partidoRepository.existsById(data.getGameId())) {
                         Partido nuevoPartido = new Partido();
                         nuevoPartido.setGameId(data.getGameId());
-                        nuevoPartido.setTorneo(data.getTournament());
                         nuevoPartido.setTeam1(data.getTeam1());
                         nuevoPartido.setTeam2(data.getTeam2());
-                        nuevoPartido.setTeam1Score(data.getTeam1Score());
-                        nuevoPartido.setTeam2Score(data.getTeam2Score());
                         nuevoPartido.setWinTeam(data.getWinTeam());
                         nuevoPartido.setLossTeam(data.getLossTeam());
-                        nuevoPartido.setDateTimeUtc(data.getDateTimeUtc());
+                        nuevoPartido.setFechaUtc(data.getDateTimeUtc());
                         nuevoPartido.setPuntosCalculados(false);
 
                         partidoRepository.save(nuevoPartido);
@@ -150,25 +148,26 @@ public class PuntuacionService {
 
             if (response.getBody() != null && response.getBody().getCargoquery() != null) {
                 int statsProcesadas = 0;
-                
+
                 for (MatchDataResponse.CargoItem item : response.getBody().getCargoquery()) {
                     MatchDataResponse.MatchStats stats = item.getTitle();
                     String gameId = stats.getGameId();
-                    
+
                     String nicknameLimpio = stats.getNickname().split(" \\(")[0].trim();
                     Optional<Jugador> jugadorOpt = jugadorRepository.findByNickname(nicknameLimpio);
 
                     if (jugadorOpt.isPresent()) {
                         Jugador jugador = jugadorOpt.get();
-                        
+
                         // Buscamos el objeto Partido correspondiente
                         Optional<Partido> partidoOpt = partidosPendientes.stream()
                                 .filter(p -> p.getGameId().equals(gameId))
                                 .findFirst();
 
-                        if (partidoOpt.isPresent() && !estadisticaPartidoRepository.existsByPartidoGameIdAndJugadorId(gameId, jugador.getId())) {
+                        if (partidoOpt.isPresent() && !estadisticaPartidoRepository
+                                .existsByPartidoGameIdAndJugadorId(gameId, jugador.getId())) {
                             Partido partido = partidoOpt.get();
-                            
+
                             int kills = Integer.parseInt(stats.getKills());
                             int deaths = Integer.parseInt(stats.getDeaths());
                             int assists = Integer.parseInt(stats.getAssists());
@@ -205,7 +204,8 @@ public class PuntuacionService {
                     partidoRepository.save(p);
                 }
 
-                return "Éxito: Se han procesado " + partidosPendientes.size() + " partidos (" + statsProcesadas + " estadísticas individuales).";
+                return "Éxito: Se han procesado " + partidosPendientes.size() + " partidos (" + statsProcesadas
+                        + " estadísticas individuales).";
             }
         } catch (Exception e) {
             System.err.println("Error en el procesamiento masivo: " + e.getMessage());

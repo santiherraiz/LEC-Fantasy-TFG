@@ -46,10 +46,4 @@ public class UsuarioController {
         Usuario usuario = usuarioService.obtenerPerfil(id);
         return ResponseEntity.ok(usuario);
     }
-
-    @PostMapping("/importar-jugadores")
-    public ResponseEntity<String> forzarImportacion() {
-        jugadorService.importarJugadoresDeLeaguepedia();
-        return ResponseEntity.ok("Proceso de importación lanzado. Revisa la consola de Java.");
-    }
 }

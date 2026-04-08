@@ -24,4 +24,8 @@ public class Equipo {
     @OneToOne
     @JoinColumn(name = "usuario_id", referencedColumnName = "id", nullable = false, unique = true)
     private Usuario usuario;
+
+    @ManyToOne
+    @JoinColumn(name = "liga_id", nullable = false)
+    private Liga liga;
 }

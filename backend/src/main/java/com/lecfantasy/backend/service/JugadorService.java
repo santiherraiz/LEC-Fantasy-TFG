@@ -110,7 +110,7 @@ public class JugadorService {
             JugadorEstadisticaDTO dto = new JugadorEstadisticaDTO();
             dto.setGameId(e.getPartido().getGameId());
             dto.setMatchName(e.getPartido().getTeam1() + " vs " + e.getPartido().getTeam2());
-            dto.setFecha(e.getPartido().getDateTimeUtc());
+            dto.setFecha(e.getPartido().getFechaUtc());
             dto.setKills(e.getKills());
             dto.setDeaths(e.getDeaths());
             dto.setAssists(e.getAssists());

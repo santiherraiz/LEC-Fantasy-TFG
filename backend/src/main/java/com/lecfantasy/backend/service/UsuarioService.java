@@ -28,17 +28,7 @@ public class UsuarioService {
         // Encriptamos la contraseña antes de guardar
         nuevoUsuario.setPassword(passwordEncoder.encode(nuevoUsuario.getPassword()));
 
-        Usuario usuarioGuardado = usuarioRepository.save(nuevoUsuario);
-
-        Equipo equipoInicial = new Equipo();
-        equipoInicial.setNombreEquipo("Equipo de " + usuarioGuardado.getNickname());
-        equipoInicial.setPresupuestoDisponible(50000.0);
-        equipoInicial.setPuntuacionTotal(0.0);
-        equipoInicial.setUsuario(usuarioGuardado);
-
-        equipoRepository.save(equipoInicial);
-
-        return usuarioGuardado;
+        return usuarioRepository.save(nuevoUsuario);
     }
 
     public Usuario login(String email, String password) {

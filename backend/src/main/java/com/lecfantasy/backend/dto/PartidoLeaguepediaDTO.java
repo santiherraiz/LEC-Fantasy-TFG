@@ -18,20 +18,11 @@ public class PartidoLeaguepediaDTO {
         @JsonProperty("GameId")
         private String gameId;
 
-        @JsonProperty("Tournament")
-        private String tournament;
-
         @JsonProperty("Team1")
         private String team1;
 
         @JsonProperty("Team2")
         private String team2;
-
-        @JsonProperty("Team1Score")
-        private String team1Score;
-
-        @JsonProperty("Team2Score")
-        private String team2Score;
 
         @JsonProperty("WinTeam")
         private String winTeam;
@@ -39,7 +30,7 @@ public class PartidoLeaguepediaDTO {
         @JsonProperty("LossTeam")
         private String lossTeam;
 
-        @JsonProperty("DateTime_UTC")
+        @JsonProperty("dateTimeUtc")
         private String dateTimeUtc;
     }
 }
