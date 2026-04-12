@@ -39,3 +39,6 @@ build/
 backend/target/
 *.jar
 *.class
+
+# Gemini
+.gemini/

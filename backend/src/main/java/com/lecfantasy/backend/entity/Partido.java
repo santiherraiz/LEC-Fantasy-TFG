@@ -19,6 +19,15 @@ public class Partido {
     @Column(name = "fecha_utc")
     private String fechaUtc;
 
+    @Column(name = "semana")
+    private Integer semana;
+
+    @Column(name = "serie_id")
+    private String serieId;
+
+    @Column(name = "resultado")
+    private String resultado; // "WIN" o "LOSS" para el equipo que estamos trackeando (o simplemente el resultado del mapa)
+
     @Column(name = "puntos_calculados", nullable = false)
     private boolean puntosCalculados = false;
 }

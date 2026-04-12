@@ -111,6 +111,14 @@ public class JugadorService {
             dto.setGameId(e.getPartido().getGameId());
             dto.setMatchName(e.getPartido().getTeam1() + " vs " + e.getPartido().getTeam2());
             dto.setFecha(e.getPartido().getFechaUtc());
+            dto.setSemana(e.getPartido().getSemana());
+            dto.setSerieId(e.getPartido().getSerieId());
+            
+            // Determinar si ganó o perdió el mapa
+            if (e.getJugador().getEquipoLec() != null && e.getPartido().getWinTeam() != null) {
+                dto.setResultado(e.getJugador().getEquipoLec().equalsIgnoreCase(e.getPartido().getWinTeam()) ? "WIN" : "LOSS");
+            }
+            
             dto.setKills(e.getKills());
             dto.setDeaths(e.getDeaths());
             dto.setAssists(e.getAssists());

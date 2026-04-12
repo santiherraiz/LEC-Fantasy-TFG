@@ -29,6 +29,15 @@ export interface RankingEntry {
 }
 
 export interface JugadorEstadistica {
+  gameId: string;
   matchName: string;
+  fecha: string;
+  semana: number;
+  serieId: string;
+  resultado?: "WIN" | "LOSS";
+  kills: number;
+  deaths: number;
+  assists: number;
+  cs: number;
   puntosGenerados: number;
 }

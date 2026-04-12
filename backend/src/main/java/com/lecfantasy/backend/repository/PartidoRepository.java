@@ -11,4 +11,6 @@ public interface PartidoRepository extends JpaRepository<Partido, String> {
 
     // Método clave para el futuro: "Dame todos los partidos que aún no he puntuado"
     List<Partido> findByPuntosCalculadosFalse();
+
+    List<Partido> findBySemana(Integer semana);
 }

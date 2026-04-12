@@ -32,5 +32,11 @@ public class PartidoLeaguepediaDTO {
 
         @JsonProperty("dateTimeUtc")
         private String dateTimeUtc;
+
+        @JsonProperty("MatchId")
+        private String matchId;
+
+        @JsonProperty("Round")
+        private String round;
     }
 }
