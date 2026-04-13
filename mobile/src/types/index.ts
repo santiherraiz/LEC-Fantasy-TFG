@@ -28,6 +28,11 @@ export interface RankingEntry {
   puntosTotales: number;
 }
 
+export interface JugadorPuntuacionTotal {
+  jugador: Jugador;
+  puntosTotales: number;
+}
+
 export interface JugadorEstadistica {
   gameId: string;
   matchName: string;

@@ -68,7 +68,7 @@ export default function JugadorDetailScreen({ route, navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <ChevronLeft color="white" size={28} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Detalle</Text>
+        <Text style={styles.headerTitle}>Detalle del Jugador</Text>
       </View>
 
       <ScrollView style={{ flex: 1 }}>
@@ -99,14 +99,12 @@ export default function JugadorDetailScreen({ route, navigation }: any) {
           <View style={{ marginTop: 24 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
               <History color="white" size={20} />
-              <Text style={{ color: 'white', fontSize: 20, fontWeight: 'bold', marginLeft: 8 }}>Historial</Text>
+              <Text style={{ color: 'white', fontSize: 20, fontWeight: 'bold', marginLeft: 8 }}>Historial de Puntos</Text>
             </View>
             
             {weeks.map(week => {
               const weekStats = groupedStats[week];
               const totalWeekPoints = Object.values(weekStats).reduce((acc, seriesMaps) => {
-                // Los puntos generados ya vienen como media en cada mapa del Bo3 si se llamó al motor
-                // Si sumamos los de una serie (que son el mismo valor), tomamos el primero
                 return acc + (seriesMaps[0].puntosGenerados || 0);
               }, 0);
 
@@ -148,23 +146,44 @@ export default function JugadorDetailScreen({ route, navigation }: any) {
 
                             {expandedSeries[serieId] && (
                               <View style={styles.mapsContainer}>
-                                {maps.map((map, midx) => (
-                                  <View key={midx} style={styles.mapRow}>
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                                      <View style={[styles.resultDot, { backgroundColor: map.resultado === 'WIN' ? '#10B981' : '#EF4444' }]} />
-                                      <Text style={styles.mapText}>Partida {midx + 1} ({map.resultado})</Text>
+                                {maps.map((map, idx) => (
+                                  <View key={idx} style={styles.mapCard}>
+                                    <View style={styles.mapHeader}>
+                                      <Text style={styles.mapName}>MAPA {idx + 1}</Text>
+                                      <View style={[styles.resultBadge, map.resultado === 'WIN' ? styles.winBadge : styles.lossBadge]}>
+                                        <Text style={styles.resultText}>{map.resultado}</Text>
+                                      </View>
                                     </View>
-                                    <View style={{ flexDirection: 'row', gap: 10 }}>
-                                      <Text style={styles.mapKda}>{map.kills}/{map.deaths}/{map.assists}</Text>
-                                      <Text style={styles.mapBruto}>{(map.kills * 3 + map.assists * 1.5 - map.deaths + map.cs * 0.02).toFixed(1)}</Text>
+                                    
+                                    <View style={styles.statsGrid}>
+                                      <View style={styles.statItem}>
+                                        <Text style={styles.statLabel}>KILLS</Text>
+                                        <Text style={styles.statValue}>{map.kills}</Text>
+                                        <Text style={styles.statPts}>(+{(map.kills * 3).toFixed(1)} pts)</Text>
+                                      </View>
+                                      <View style={styles.statItem}>
+                                        <Text style={styles.statLabel}>DEATHS</Text>
+                                        <Text style={styles.statValue}>{map.deaths}</Text>
+                                        <Text style={[styles.statPts, { color: '#EF4444' }]}>( -{(map.deaths * 1).toFixed(1)} pts)</Text>
+                                      </View>
+                                      <View style={styles.statItem}>
+                                        <Text style={styles.statLabel}>ASSISTS</Text>
+                                        <Text style={styles.statValue}>{map.assists}</Text>
+                                        <Text style={styles.statPts}>(+{(map.assists * 1.5).toFixed(1)} pts)</Text>
+                                      </View>
+                                      <View style={styles.statItem}>
+                                        <Text style={styles.statLabel}>CS</Text>
+                                        <Text style={styles.statValue}>{map.cs}</Text>
+                                        <Text style={styles.statPts}>(+{(map.cs * 0.02).toFixed(1)} pts)</Text>
+                                      </View>
+                                    </View>
+
+                                    <View style={styles.totalMapPoints}>
+                                      <Text style={styles.totalLabel}>TOTAL MAPA:</Text>
+                                      <Text style={styles.totalValue}>{map.puntosGenerados.toFixed(1)} PTS</Text>
                                     </View>
                                   </View>
                                 ))}
-                                <View style={styles.infoNote}>
-                                  <Text style={styles.infoNoteText}>
-                                    Total Serie: {maps.reduce((acc, m) => acc + (m.kills * 3 + m.assists * 1.5 - m.deaths + m.cs * 0.02), 0).toFixed(1)} ÷ {maps.length} mapas = {avgSerie.toFixed(1)} Pts
-                                  </Text>
-                                </View>
                               </View>
                             )}
                           </View>
@@ -175,12 +194,6 @@ export default function JugadorDetailScreen({ route, navigation }: any) {
                 </View>
               );
             })}
-
-            {weeks.length === 0 && (
-              <Text style={{ color: '#9CA3AF', fontStyle: 'italic', textAlign: 'center', marginTop: 20 }}>
-                Sin estadísticas registradas aún.
-              </Text>
-            )}
           </View>
         </View>
         <View style={{ height: 40 }} />
@@ -191,34 +204,42 @@ export default function JugadorDetailScreen({ route, navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#111827' },
-  loaderContainer: { flex: 1, backgroundColor: '#111827', alignItems: 'center', justifyContent: 'center' },
+  loaderContainer: { flex: 1, backgroundColor: '#111827', justifyContent: 'center', alignItems: 'center' },
   header: { padding: 16, flexDirection: 'row', alignItems: 'center' },
-  backBtn: { padding: 8 },
-  headerTitle: { color: 'white', fontSize: 20, fontWeight: 'bold', marginLeft: 16 },
-  heroSection: { alignItems: 'center', padding: 40, backgroundColor: '#1E3A8A40', borderBottomWidth: 1, borderBottomColor: '#3B82F620' },
-  avatar: { width: 120, height: 120, backgroundColor: '#1F2937', borderRadius: 999, alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: '#3B82F6', marginBottom: 16 },
-  avatarText: { color: 'white', fontSize: 48, fontWeight: 'black' },
-  playerName: { color: 'white', fontSize: 32, fontWeight: 'bold' },
-  teamBadge: { backgroundColor: '#2563EB', paddingHorizontal: 16, paddingVertical: 4, borderRadius: 999, marginTop: 8 },
-  teamText: { color: 'white', fontWeight: 'bold' },
-  infoCard: { width: '48%', backgroundColor: '#1F2937', padding: 16, borderRadius: 24, marginBottom: 16 },
-  infoLabel: { color: '#9CA3AF', fontSize: 10, marginTop: 4, fontWeight: 'bold' },
-  infoValue: { color: 'white', fontSize: 18, fontWeight: 'bold' },
-  infoValueGreen: { color: '#10B981', fontSize: 18, fontWeight: 'bold' },
-  weekHeader: { backgroundColor: '#1F2937', padding: 16, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  activeWeekHeader: { borderBottomLeftRadius: 0, borderBottomRightRadius: 0, borderBottomWidth: 1, borderBottomColor: '#374151' },
-  weekTitle: { color: 'white', fontWeight: 'bold', fontSize: 16, marginLeft: 8 },
-  weekPointsBadge: { backgroundColor: '#3B82F620', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, borderWidth: 1, borderColor: '#3B82F640' },
-  weekPointsText: { color: '#60A5FA', fontWeight: 'bold' },
-  serieHeader: { backgroundColor: '#37415140', padding: 12, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
-  serieTitle: { color: '#D1D5DB', fontSize: 14, fontWeight: '600', flex: 1 },
+  backBtn: { padding: 8, backgroundColor: '#1F2937', borderRadius: 12 },
+  headerTitle: { color: 'white', fontSize: 18, fontWeight: 'bold', marginLeft: 16 },
+  heroSection: { alignItems: 'center', paddingVertical: 40, backgroundColor: '#1F2937', borderBottomLeftRadius: 40, borderBottomRightRadius: 40 },
+  avatar: { width: 100, height: 100, backgroundColor: '#3B82F6', borderRadius: 50, alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 4, borderColor: '#1F2937' },
+  avatarText: { color: 'white', fontSize: 48, fontWeight: 'bold' },
+  playerName: { color: 'white', fontSize: 32, fontWeight: '900' },
+  teamBadge: { marginTop: 8, backgroundColor: '#1E40AF', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20 },
+  teamText: { color: '#BFDBFE', fontSize: 14, fontWeight: 'bold' },
+  infoCard: { backgroundColor: '#1F2937', padding: 20, borderRadius: 24, width: '48%', alignItems: 'center' },
+  infoLabel: { color: '#9CA3AF', fontSize: 10, fontWeight: 'bold', marginTop: 8 },
+  infoValue: { color: 'white', fontSize: 18, fontWeight: 'bold', marginTop: 4 },
+  infoValueGreen: { color: '#10B981', fontSize: 18, fontWeight: 'bold', marginTop: 4 },
+  weekHeader: { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#1F2937', borderRadius: 16, marginBottom: 8 },
+  activeWeekHeader: { backgroundColor: '#374151' },
+  weekTitle: { color: 'white', fontSize: 16, fontWeight: 'bold', marginLeft: 8 },
+  weekPointsBadge: { backgroundColor: '#3B82F6', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  weekPointsText: { color: 'white', fontSize: 12, fontWeight: 'bold' },
+  serieHeader: { flexDirection: 'row', alignItems: 'center', padding: 12, marginBottom: 4 },
+  serieTitle: { color: '#E5E7EB', fontSize: 14, fontWeight: '600', flex: 1 },
   serieAvgText: { color: '#9CA3AF', fontSize: 12, fontWeight: 'bold' },
-  mapsContainer: { backgroundColor: '#111827', padding: 8, borderRadius: 12, marginBottom: 8, marginTop: 2 },
-  mapRow: { flexDirection: 'row', paddingVertical: 6, paddingHorizontal: 8, alignItems: 'center', borderBottomWidth: 0.5, borderBottomColor: '#1F2937' },
-  resultDot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
-  mapText: { color: '#9CA3AF', fontSize: 12 },
-  mapKda: { color: '#6B7280', fontSize: 11 },
-  mapBruto: { color: 'white', fontSize: 12, fontWeight: 'bold', minWidth: 30, textAlign: 'right' },
-  infoNote: { padding: 8, marginTop: 4 },
-  infoNoteText: { color: '#4B5563', fontSize: 10, fontStyle: 'italic', textAlign: 'center' }
+  mapsContainer: { paddingVertical: 8, marginBottom: 12 },
+  mapCard: { backgroundColor: '#111827', borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#374151' },
+  mapHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  mapName: { color: '#60A5FA', fontWeight: 'bold', fontSize: 12 },
+  resultBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
+  winBadge: { backgroundColor: '#10B98140' },
+  lossBadge: { backgroundColor: '#EF444440' },
+  resultText: { fontSize: 10, fontWeight: 'bold', color: 'white' },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  statItem: { width: '48%', marginBottom: 12 },
+  statLabel: { color: '#6B7280', fontSize: 10, fontWeight: 'bold' },
+  statValue: { color: 'white', fontSize: 16, fontWeight: 'bold' },
+  statPts: { color: '#10B981', fontSize: 10, fontWeight: 'bold' },
+  totalMapPoints: { marginTop: 8, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#374151', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  totalLabel: { color: '#9CA3AF', fontSize: 12, fontWeight: 'bold' },
+  totalValue: { color: '#3B82F6', fontSize: 18, fontWeight: 'bold' }
 });

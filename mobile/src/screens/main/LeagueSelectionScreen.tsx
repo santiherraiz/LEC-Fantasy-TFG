@@ -87,7 +87,7 @@ export default function LeagueSelectionScreen() {
             <TouchableOpacity 
               key={liga.id} 
               style={styles.ligaCard}
-              onPress={() => setSelectedLiga(liga.id)}
+              onPress={() => setSelectedLiga(liga.id, liga.nombre)}
             >
               <View style={styles.ligaIcon}>
                 <Trophy color="#3B82F6" size={24} />

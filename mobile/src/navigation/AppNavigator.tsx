@@ -1,6 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createDrawerNavigator } from '@react-navigation/drawer';
 import { ShoppingBag, Trophy, Layout } from 'lucide-react-native';
 import { useAuthStore } from '../store/authStore';
 
@@ -11,9 +12,12 @@ import MercadoScreen from '../screens/main/MercadoScreen';
 import RankingScreen from '../screens/main/RankingScreen';
 import JugadorDetailScreen from '../screens/main/JugadorDetailScreen';
 import LeagueSelectionScreen from '../screens/main/LeagueSelectionScreen';
+import JugadoresListScreen from '../screens/main/JugadoresListScreen';
+import CustomDrawerContent from './CustomDrawerContent';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
+const Drawer = createDrawerNavigator();
 
 function MainTabs() {
   return (
@@ -30,31 +34,49 @@ function MainTabs() {
         tabBarInactiveTintColor: '#9ca3af',
       }}
     >
-      <Tab.Screen 
-        name="MiEquipo" 
-        component={MiEquipoScreen} 
+      <Tab.Screen
+        name="MiEquipo"
+        component={MiEquipoScreen}
         options={{
           tabBarLabel: 'Mi Equipo',
           tabBarIcon: ({ color, size }) => <Layout color={color} size={size} />,
         }}
       />
-      <Tab.Screen 
-        name="Mercado" 
-        component={MercadoScreen} 
+      <Tab.Screen
+        name="Mercado"
+        component={MercadoScreen}
         options={{
           tabBarLabel: 'Mercado',
           tabBarIcon: ({ color, size }) => <ShoppingBag color={color} size={size} />,
         }}
       />
-      <Tab.Screen 
-        name="Ranking" 
-        component={RankingScreen} 
+      <Tab.Screen
+        name="Ranking"
+        component={RankingScreen}
         options={{
           tabBarLabel: 'Ranking',
           tabBarIcon: ({ color, size }) => <Trophy color={color} size={size} />,
         }}
       />
     </Tab.Navigator>
+  );
+}
+
+function MainDrawer() {
+  return (
+    <Drawer.Navigator
+      drawerContent={(props) => <CustomDrawerContent {...props} />}
+      screenOptions={{
+        headerShown: false,
+        drawerStyle: {
+          backgroundColor: '#111827',
+          width: 280,
+        },
+      }}
+    >
+      <Drawer.Screen name="Tabs" component={MainTabs} />
+      <Drawer.Screen name="JugadoresList" component={JugadoresListScreen} />
+    </Drawer.Navigator>
   );
 }
 
@@ -72,7 +94,7 @@ export default function AppNavigator() {
         <Stack.Screen name="LeagueSelection" component={LeagueSelectionScreen} />
       ) : (
         <>
-          <Stack.Screen name="Main" component={MainTabs} />
+          <Stack.Screen name="Main" component={MainDrawer} />
           <Stack.Screen name="JugadorDetail" component={JugadorDetailScreen} />
         </>
       )}

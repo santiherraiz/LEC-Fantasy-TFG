@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Text, View, ScrollView, TouchableOpacity, RefreshControl, StyleSheet, Alert, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../api/api';
 import { EquipoDetalleDTO, JugadorEnPlantillaDTO } from '../../types';
-import { User, LogOut, ArrowRightLeft, ChevronLeft } from 'lucide-react-native';
+import { User, ArrowRightLeft } from 'lucide-react-native';
+import CustomHeader from '../../components/CustomHeader';
 
-export default function MiEquipoScreen() {
-  const { user, logout, selectedLigaId, setSelectedLiga } = useAuthStore();
+export default function MiEquipoScreen({ navigation }: any) {
+  const { user, selectedLigaId } = useAuthStore();
   const [equipo, setEquipo] = useState<EquipoDetalleDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -48,7 +48,10 @@ export default function MiEquipoScreen() {
   };
 
   const JugadorCard = ({ jugador }: { jugador: JugadorEnPlantillaDTO }) => (
-    <View style={[styles.card, jugador.estado === 'TITULAR' ? styles.cardTitular : styles.cardSuplente]}>
+    <TouchableOpacity 
+      style={[styles.card, jugador.estado === 'TITULAR' ? styles.cardTitular : styles.cardSuplente]}
+      onPress={() => navigation.navigate('JugadorDetail', { id: jugador.idJugador })}
+    >
       <View style={styles.posBadge}><User color="#9CA3AF" size={24} /></View>
       <View style={{ flex: 1 }}>
         <Text style={styles.playerName}>{jugador.nickname}</Text>
@@ -60,7 +63,7 @@ export default function MiEquipoScreen() {
       <TouchableOpacity onPress={() => handleAlinear(jugador.idJugador)} style={styles.swapBtn}>
         <ArrowRightLeft size={20} color="white" />
       </TouchableOpacity>
-    </View>
+    </TouchableOpacity>
   );
 
   if (loading && !refreshing) {
@@ -73,22 +76,18 @@ export default function MiEquipoScreen() {
   const suplentes = equipo?.jugadores?.filter(j => j.estado === 'BANQUILLO') || [];
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => setSelectedLiga(null)} style={{ padding: 8 }}>
-          <ChevronLeft color="white" size={24} />
-        </TouchableOpacity>
-        <View style={{ flex: 1, marginLeft: 8 }}>
-          <Text style={styles.userName}>{user?.nickname}</Text>
-          <Text style={{ color: '#3B82F6', fontSize: 12, fontWeight: 'bold' }}>{equipo?.nombreEquipo}</Text>
-        </View>
-        <TouchableOpacity onPress={logout}><LogOut color="#EF4444" size={24} /></TouchableOpacity>
-      </View>
+    <View style={styles.container}>
+      <CustomHeader />
 
       <ScrollView 
         style={{ padding: 16 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => {setRefreshing(true); fetchEquipo();}} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => {setRefreshing(true); fetchEquipo();}} tintColor="#3b82f6" />}
       >
+        <View style={styles.userInfo}>
+           <Text style={styles.userName}>{user?.nickname}</Text>
+           <Text style={styles.equipoName}>{equipo?.nombreEquipo}</Text>
+        </View>
+
         <View style={styles.statsContainer}>
           <View>
             <Text style={styles.statLabel}>Presupuesto</Text>
@@ -109,16 +108,17 @@ export default function MiEquipoScreen() {
         
         <View style={{ height: 40 }} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#111827' },
   loaderContainer: { flex: 1, backgroundColor: '#111827', justifyContent: 'center', alignItems: 'center' },
-  header: { padding: 16, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#1F2937' },
-  userName: { color: 'white', fontWeight: 'bold', fontSize: 18 },
-  statsContainer: { flexDirection: 'row', justifyContent: 'space-between', marginVertical: 20, backgroundColor: '#1F2937', padding: 24, borderRadius: 24 },
+  userInfo: { marginBottom: 16, marginTop: 8 },
+  userName: { color: 'white', fontWeight: 'bold', fontSize: 24 },
+  equipoName: { color: '#3B82F6', fontSize: 14, fontWeight: 'bold' },
+  statsContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, backgroundColor: '#1F2937', padding: 24, borderRadius: 24 },
   statLabel: { color: '#9CA3AF', fontSize: 12 },
   statValueGreen: { color: '#10B981', fontSize: 24, fontWeight: 'bold' },
   statValueBlue: { color: '#3B82F6', fontSize: 24, fontWeight: 'bold' },
