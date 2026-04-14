@@ -25,9 +25,6 @@ public class Partido {
     @Column(name = "serie_id")
     private String serieId;
 
-    @Column(name = "resultado")
-    private String resultado; // "WIN" o "LOSS" para el equipo que estamos trackeando (o simplemente el resultado del mapa)
-
     @Column(name = "puntos_calculados", nullable = false)
     private boolean puntosCalculados = false;
-}
+    }

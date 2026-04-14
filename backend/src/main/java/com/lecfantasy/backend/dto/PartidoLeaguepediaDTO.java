@@ -30,7 +30,7 @@ public class PartidoLeaguepediaDTO {
         @JsonProperty("LossTeam")
         private String lossTeam;
 
-        @JsonProperty("dateTimeUtc")
+        @JsonProperty("DateTime UTC")
         private String dateTimeUtc;
 
         @JsonProperty("MatchId")

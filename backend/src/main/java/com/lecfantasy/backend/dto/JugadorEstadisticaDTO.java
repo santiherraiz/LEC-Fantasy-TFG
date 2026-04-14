@@ -14,5 +14,5 @@ public class JugadorEstadisticaDTO {
     private int deaths;
     private int assists;
     private int cs;
-    private Double puntosGenerados;
+    private Long puntosGenerados;
 }

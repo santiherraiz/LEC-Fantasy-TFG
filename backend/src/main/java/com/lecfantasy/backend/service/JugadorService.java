@@ -1,5 +1,6 @@
 package com.lecfantasy.backend.service;
 
+import com.lecfantasy.backend.dto.JugadorPuntuacionTotalDTO;
 import com.lecfantasy.backend.dto.JugadorEstadisticaDTO;
 import com.lecfantasy.backend.dto.LeaguepediaResponse;
 import com.lecfantasy.backend.entity.EstadisticaPartido;
@@ -99,6 +100,10 @@ public class JugadorService {
 
     public List<Jugador> obtenerTodosLosJugadores() {
         return jugadorRepository.findAll();
+    }
+
+    public List<JugadorPuntuacionTotalDTO> obtenerRankingJugadores() {
+        return jugadorRepository.findAllWithTotalPoints();
     }
 
     public List<JugadorEstadisticaDTO> obtenerEstadisticasJugador(Long idJugador) {

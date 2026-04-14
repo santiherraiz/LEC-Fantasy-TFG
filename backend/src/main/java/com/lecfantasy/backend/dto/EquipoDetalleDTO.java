@@ -8,7 +8,7 @@ public class EquipoDetalleDTO {
     private Long equipoId;
     private String nombreEquipo;
     private Double presupuestoDisponible;
-    private Double puntuacionTotal;
+    private Long puntuacionTotal;
 
     // Una lista con los datos resumidos de los jugadores
     private List<JugadorEnPlantillaDTO> jugadores;

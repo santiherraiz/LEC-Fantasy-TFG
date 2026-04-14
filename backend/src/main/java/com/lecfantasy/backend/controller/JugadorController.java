@@ -1,6 +1,7 @@
 package com.lecfantasy.backend.controller;
 
 import com.lecfantasy.backend.dto.JugadorEstadisticaDTO;
+import com.lecfantasy.backend.dto.JugadorPuntuacionTotalDTO;
 import com.lecfantasy.backend.entity.Jugador;
 import com.lecfantasy.backend.service.JugadorService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,12 @@ public class JugadorController {
 
     @Autowired
     private JugadorService jugadorService;
+
+    // Obtener el ranking global de jugadores por puntos
+    @GetMapping("/ranking")
+    public ResponseEntity<List<JugadorPuntuacionTotalDTO>> obtenerRankingJugadores() {
+        return ResponseEntity.ok(jugadorService.obtenerRankingJugadores());
+    }
 
     // Obtener los datos básicos de un jugador
     @GetMapping("/{id}")
