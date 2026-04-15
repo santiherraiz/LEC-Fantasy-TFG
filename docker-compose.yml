@@ -12,6 +12,25 @@ services:
       - "3307:3306"
     volumes:
       - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: fantasy_backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mariadb://mariadb:3306/lecfantasy
+      - SPRING_DATASOURCE_USERNAME=fantasy_user
+      - SPRING_DATASOURCE_PASSWORD=fantasypassword
+    restart: always
 
 volumes:
   db_data:
