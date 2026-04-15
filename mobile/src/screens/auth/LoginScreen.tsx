@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import { Text, View, TextInput, TouchableOpacity, Alert, ActivityIndicator, StyleSheet } from 'react-native';
+import { Text, View, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import api from '../../api/api';
 import { useAuthStore } from '../../store/authStore';
+import { useToast } from '../../context/ToastContext';
 
 export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { setAuth } = useAuthStore();
+  const { showToast } = useToast();
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Por favor, rellena todos los campos');
+      showToast('Por favor, rellena todos los campos', 'info');
       return;
     }
     setLoading(true);
@@ -22,9 +24,9 @@ export default function LoginScreen({ navigation }: any) {
     } catch (error: any) {
       console.error(error);
       if (!error.response) {
-        Alert.alert('Error de conexión', 'No se pudo conectar con el servidor. Verifica la IP en api.ts y que el backend esté corriendo.');
+        showToast('Error de conexión', 'error');
       } else {
-        Alert.alert('Error', 'Email o contraseña incorrectos');
+        showToast('Email o contraseña incorrectos', 'error');
       }
     } finally {
       setLoading(false);
@@ -40,6 +42,7 @@ export default function LoginScreen({ navigation }: any) {
         <TextInput 
           style={styles.input}
           placeholder="Email" 
+          placeholderTextColor="#9CA3AF"
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
@@ -48,6 +51,7 @@ export default function LoginScreen({ navigation }: any) {
         <TextInput 
           style={styles.input}
           placeholder="Contraseña" 
+          placeholderTextColor="#9CA3AF"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
@@ -77,7 +81,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 36, fontWeight: '900', color: '#2563EB', marginBottom: 8 },
   subtitle: { fontSize: 18, color: '#6B7280', marginBottom: 40 },
   form: { width: '100%' },
-  input: { backgroundColor: 'white', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 16, fontSize: 16 },
+  input: { backgroundColor: 'white', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#E5E7EB', marginBottom: 16, fontSize: 16, color: '#111827' },
   button: { backgroundColor: '#2563EB', padding: 16, borderRadius: 16, alignItems: 'center', marginTop: 8 },
   buttonText: { color: 'white', fontWeight: 'bold', fontSize: 18 },
   link: { marginTop: 24, alignItems: 'center' },

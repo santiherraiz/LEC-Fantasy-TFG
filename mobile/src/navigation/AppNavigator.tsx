@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { ShoppingBag, Trophy, Layout } from 'lucide-react-native';
 import { useAuthStore } from '../store/authStore';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
@@ -20,6 +21,8 @@ const Tab = createBottomTabNavigator();
 const Drawer = createDrawerNavigator();
 
 function MainTabs() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -27,11 +30,19 @@ function MainTabs() {
         tabBarStyle: {
           backgroundColor: '#111827',
           borderTopColor: '#1f2937',
-          paddingBottom: 25,
-          height: 80,
+          height: 65 + insets.bottom,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+          paddingTop: 0,
         },
         tabBarActiveTintColor: '#3b82f6',
         tabBarInactiveTintColor: '#9ca3af',
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '500',
+        },
+        tabBarItemStyle: {
+          paddingVertical: 5,
+        },
       }}
     >
       <Tab.Screen

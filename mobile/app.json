@@ -24,6 +24,10 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.santiherraizz.mobile"
     },
+    "androidNavigationBar": {
+      "visible": false,
+      "behavior": "sticky-immersive"
+    },
     "web": {
       "favicon": "./assets/favicon.png"
     }

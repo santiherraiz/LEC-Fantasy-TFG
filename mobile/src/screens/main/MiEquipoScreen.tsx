@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Text, View, ScrollView, TouchableOpacity, RefreshControl, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuthStore } from '../../store/authStore';
+import { useToast } from '../../context/ToastContext';
 import api from '../../api/api';
 import { EquipoDetalleDTO, JugadorEnPlantillaDTO } from '../../types';
 import { User, ArrowRightLeft } from 'lucide-react-native';
@@ -8,6 +10,7 @@ import CustomHeader from '../../components/CustomHeader';
 
 export default function MiEquipoScreen({ navigation }: any) {
   const { user, selectedLigaId } = useAuthStore();
+  const { showToast } = useToast();
   const [equipo, setEquipo] = useState<EquipoDetalleDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -27,9 +30,11 @@ export default function MiEquipoScreen({ navigation }: any) {
     }
   };
 
-  useEffect(() => {
-    fetchEquipo();
-  }, [selectedLigaId]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchEquipo();
+    }, [selectedLigaId])
+  );
 
   const handleAlinear = async (jugadorId: number) => {
     if (!equipo?.equipoId) return;
@@ -39,11 +44,11 @@ export default function MiEquipoScreen({ navigation }: any) {
         equipoId: equipo.equipoId, 
         jugadorId 
       });
-      Alert.alert('Éxito', typeof response.data === 'string' ? response.data : 'Operación realizada');
+      showToast(typeof response.data === 'string' ? response.data : 'Operación realizada', 'success');
       await fetchEquipo();
     } catch (error: any) {
       const errorData = error.response?.data;
-      Alert.alert('Alineación Denegada', errorData?.message || 'Error');
+      showToast(errorData?.message || 'Error', 'error');
     }
   };
 

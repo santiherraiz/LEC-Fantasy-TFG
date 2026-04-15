@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { Text, View, ScrollView, TouchableOpacity, RefreshControl, Alert, ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../store/authStore';
+import { useToast } from '../../context/ToastContext';
 import api from '../../api/api';
 import { Jugador, JugadorEnPlantillaDTO } from '../../types';
 import { ChevronDown, ChevronRight, ShoppingCart, Trash2 } from 'lucide-react-native';
 
 export default function MercadoScreen({ navigation }: any) {
   const { user, selectedLigaId } = useAuthStore();
+  const { showToast } = useToast();
   const [equiposLec, setEquiposLec] = useState<Record<string, Jugador[]>>({});
   const [expandedTeam, setExpandedTeam] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,11 +53,11 @@ export default function MercadoScreen({ navigation }: any) {
         jugadorId,
         ligaId: selectedLigaId
       });
-      Alert.alert('Éxito', typeof response.data === 'string' ? response.data : 'Jugador fichado');
+      showToast(typeof response.data === 'string' ? response.data : 'Jugador fichado', 'success');
       await fetchData();
     } catch (error: any) {
       const errorData = error.response?.data;
-      Alert.alert('Error al fichar', errorData?.message || 'Error');
+      showToast(errorData?.message || 'Error', 'error');
     }
   };
 
@@ -63,11 +65,11 @@ export default function MercadoScreen({ navigation }: any) {
     if (!equipoId) return;
     try {
       const response = await api.post('/mercado/vender', { equipoId, jugadorId });
-      Alert.alert('Éxito', typeof response.data === 'string' ? response.data : 'Jugador vendido');
+      showToast(typeof response.data === 'string' ? response.data : 'Jugador vendido', 'success');
       await fetchData();
     } catch (error: any) {
       const errorData = error.response?.data;
-      Alert.alert('Error al vender', errorData?.message || 'Error');
+      showToast(errorData?.message || 'Error', 'error');
     }
   };
 
