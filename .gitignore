@@ -20,3 +20,6 @@ backend/target/
 
 
 .gemini/
+GEMINI.md
+
+src/api/config.ts
