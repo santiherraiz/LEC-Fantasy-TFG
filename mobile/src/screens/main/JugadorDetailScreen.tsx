@@ -4,10 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Svg, Polyline, Circle, Line, Polygon, G, Text as SvgText } from 'react-native-svg';
 import api from '../../api/api';
 import { Jugador, JugadorEstadistica } from '../../types';
-import { 
-  ChevronLeft, 
-  DollarSign, 
-  ChevronDown, 
+import {
+  ChevronLeft,
+  DollarSign,
+  ChevronDown,
   ChevronRight,
   Swords,
   TrendingUp,
@@ -62,7 +62,6 @@ export default function JugadorDetailScreen({ route, navigation }: any) {
 
   if (!jugador) return null;
 
-  // Agrupar por semana y serie
   const groupedStats: Record<number, Record<string, JugadorEstadistica[]>> = {};
   estadisticas.forEach(stat => {
     const w = stat.semana || 1;
@@ -72,19 +71,19 @@ export default function JugadorDetailScreen({ route, navigation }: any) {
     groupedStats[w][s].push(stat);
   });
 
-  const weeks = Object.keys(groupedStats).map(Number).sort((a, b) => a - b);
+  const statsWeeks = Object.keys(groupedStats).map(Number);
+  const maxWeek = statsWeeks.length > 0 ? Math.max(...statsWeeks) : 1;
+  const allWeeks = Array.from({ length: maxWeek }, (_, i) => i + 1).sort((a, b) => b - a);
 
-  // Datos para el gráfico de línea (Evolución Semanal)
-  const weeklyData = weeks.map(w => {
+  const weeklyData = statsWeeks.sort((a, b) => a - b).map(w => {
     const weekMatches = groupedStats[w];
     const seriesPoints = Object.values(weekMatches).map(maps => {
       return maps.reduce((acc, m) => acc + m.puntosGenerados, 0) / maps.length;
     });
-    const avgWeek = seriesPoints.reduce((acc, p) => acc + p, 0);
-    return Math.round(avgWeek);
+    const totalWeek = seriesPoints.reduce((acc, p) => acc + p, 0);
+    return Math.round(totalWeek);
   });
 
-  // Datos para el Radar (Comparativa)
   const statsSummary = {
     kda: (estadisticas.reduce((acc, s) => acc + (s.kills + s.assists) / (s.deaths || 1), 0) / (estadisticas.length || 1)).toFixed(2),
     csMin: (estadisticas.reduce((acc, s) => acc + s.cs, 0) / (estadisticas.length * 30 || 1)).toFixed(1),
@@ -94,8 +93,8 @@ export default function JugadorDetailScreen({ route, navigation }: any) {
     vision: 1.4
   };
 
-  const radarPoints = [85, 70, 90, 65, 55, 75]; 
-  const avgRadarPoints = [60, 65, 50, 55, 60, 50]; 
+  const radarPoints = [85, 70, 90, 65, 55, 75];
+  const avgRadarPoints = [60, 65, 50, 55, 60, 50];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -108,8 +107,8 @@ export default function JugadorDetailScreen({ route, navigation }: any) {
 
       <View style={styles.topTabBar}>
         {(['RESUMEN', 'PARTIDOS', 'STATS'] as const).map((tab) => (
-          <TouchableOpacity 
-            key={tab} 
+          <TouchableOpacity
+            key={tab}
             onPress={() => setActiveTab(tab)}
             style={[styles.topTabItem, activeTab === tab && styles.topTabActive]}
           >
@@ -145,28 +144,28 @@ export default function JugadorDetailScreen({ route, navigation }: any) {
                   <Svg height="120" width={width - 72}>
                     <Line x1="0" y1="100" x2={width - 72} y2="100" stroke="#334155" strokeWidth="1" />
                     {weeklyData.map((d, i) => {
-                       const x = (i / (weeklyData.length - 1 || 1)) * (width - 72);
-                       const y = 100 - (d / Math.max(...weeklyData, 50)) * 80;
-                       return (
-                         <G key={i}>
-                           {i > 0 && (
-                             <Line 
-                               x1={((i-1) / (weeklyData.length - 1)) * (width - 72)} 
-                               y1={100 - (weeklyData[i-1] / Math.max(...weeklyData, 50)) * 80}
-                               x2={x} y2={y} stroke="#3B82F6" strokeWidth="3" 
-                             />
-                           )}
-                           <Circle cx={x} cy={y} r="4" fill="#3B82F6" />
-                           <SvgText x={x} y={y - 10} fill="#94A3B8" fontSize="10" textAnchor="middle">{d}</SvgText>
-                           <SvgText x={x} y="115" fill="#64748B" fontSize="8" textAnchor="middle">S{i+1}</SvgText>
-                         </G>
-                       );
+                      const x = (i / (weeklyData.length - 1 || 1)) * (width - 72);
+                      const y = 100 - (d / Math.max(...weeklyData, 50)) * 80;
+                      return (
+                        <G key={i}>
+                          {i > 0 && (
+                            <Line
+                              x1={((i - 1) / (weeklyData.length - 1)) * (width - 72)}
+                              y1={100 - (weeklyData[i - 1] / Math.max(...weeklyData, 50)) * 80}
+                              x2={x} y2={y} stroke="#3B82F6" strokeWidth="3"
+                            />
+                          )}
+                          <Circle cx={x} cy={y} r="4" fill="#3B82F6" />
+                          <SvgText x={x} y={y - 10} fill="#94A3B8" fontSize="10" textAnchor="middle">{d}</SvgText>
+                          <SvgText x={x} y="115" fill="#64748B" fontSize="8" textAnchor="middle">S{statsWeeks.sort((a, b) => a - b)[i]}</SvgText>
+                        </G>
+                      );
                     })}
                   </Svg>
                 </View>
                 <View style={styles.graphFooter}>
                   <Text style={styles.graphStat}>MEDIA: {statsSummary.avgPoints} PTS</Text>
-                  <Text style={styles.graphStat}>TOTAL J1-{weeks.length}: {Math.round(estadisticas.reduce((acc, s) => acc + s.puntosGenerados, 0))} PTS</Text>
+                  <Text style={styles.graphStat}>TOTAL J1-{maxWeek}: {Math.round(estadisticas.reduce((acc, s) => acc + s.puntosGenerados, 0))} PTS</Text>
                 </View>
               </View>
             </View>
@@ -212,8 +211,8 @@ export default function JugadorDetailScreen({ route, navigation }: any) {
                   })}
                 </Svg>
                 <View style={styles.radarLegend}>
-                  <View style={styles.legendItem}><View style={[styles.dot, {backgroundColor: '#3B82F6'}]} /><Text style={styles.legendText}>{jugador.nickname}</Text></View>
-                  <View style={styles.legendItem}><View style={[styles.dot, {backgroundColor: '#4B5563'}]} /><Text style={styles.legendText}>Media Liga</Text></View>
+                  <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#3B82F6' }]} /><Text style={styles.legendText}>{jugador.nickname}</Text></View>
+                  <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#4B5563' }]} /><Text style={styles.legendText}>Media Liga</Text></View>
                 </View>
               </View>
             </View>
@@ -222,8 +221,20 @@ export default function JugadorDetailScreen({ route, navigation }: any) {
 
         {activeTab === 'PARTIDOS' && (
           <View style={{ padding: 16 }}>
-            {weeks.sort((a,b) => b-a).map(week => {
+            {allWeeks.map(week => {
               const weekStats = groupedStats[week];
+
+              if (!weekStats) {
+                return (
+                  <View key={week} style={{ marginBottom: 24 }}>
+                    <Text style={styles.weekTitleLabel}>SEMANA {week}</Text>
+                    <View style={styles.noPlayCard}>
+                      <Text style={styles.noPlayText}>{jugador.equipoLec?.toUpperCase()} no jugó esta semana</Text>
+                    </View>
+                  </View>
+                );
+              }
+
               return (
                 <View key={week} style={{ marginBottom: 24 }}>
                   <Text style={styles.weekTitleLabel}>SEMANA {week}</Text>
@@ -232,30 +243,45 @@ export default function JugadorDetailScreen({ route, navigation }: any) {
                     const isExpanded = expandedSeries[serieId];
                     const currentMapIdx = selectedMapIndex[serieId] || 0;
                     const map = maps[currentMapIdx];
-                    const totalSeriePoints = Math.round(maps.reduce((acc, m) => acc + m.puntosGenerados, 0));
-                    const rival = map.team1.toLowerCase() === jugador.equipoLec?.toLowerCase() ? map.team2 : map.team1;
 
+                    if (!map) return null;
+
+                    const totalSeriePoints = maps.reduce((acc, m) => acc + Math.round(m.puntosGenerados || 0), 0);
+
+                    // Resultado Global (para cuando está cerrado)
+                    const wins = maps.filter(m => m.resultado === 'WIN').length;
+                    const losses = maps.length - wins;
+                    const globalResult = wins > losses ? 'WIN' : 'LOSS';
+
+                    // Resultado Dinámico (Cambia si está expandido)
+                    const displayResult = isExpanded ? (map.resultado || 'LOSS') : globalResult;
+
+                    const rival = (map.team1?.toLowerCase() === jugador.equipoLec?.toLowerCase()) 
+                      ? (map.team2 || 'Rival') 
+                      : (map.team1 || 'Rival');
                     return (
                       <View key={serieId} style={styles.serieCard}>
                         <TouchableOpacity onPress={() => toggleSerie(serieId)} style={styles.serieHeaderTouchable}>
-                           <View>
-                             <Text style={styles.rivalText}>vs {rival}</Text>
-                             <Text style={styles.serieTotalPoints}>{totalSeriePoints} Puntos totales</Text>
-                           </View>
-                           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                             <View style={[styles.resBadge, map.resultado === 'WIN' ? styles.winB : styles.lossB]}>
-                               <Text style={[styles.resText, map.resultado === 'WIN' ? {color: '#10B981'} : {color: '#EF4444'}]}>{map.resultado === 'WIN' ? 'VICTORIA' : 'DERROTA'}</Text>
-                             </View>
-                             {isExpanded ? <ChevronDown color="#64748B" size={24} /> : <ChevronRight color="#64748B" size={24} />}
-                           </View>
+                          <View>
+                            <Text style={styles.rivalText}>vs {rival}</Text>
+                            <Text style={styles.serieTotalPoints}>{totalSeriePoints} Puntos totales</Text>
+                          </View>
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <View style={[styles.resBadge, displayResult === 'WIN' ? styles.winB : styles.lossB]}>
+                              <Text style={[styles.resText, displayResult === 'WIN' ? { color: '#10B981' } : { color: '#EF4444' }]}>
+                                {displayResult === 'WIN' ? 'VICTORIA' : 'DERROTA'}
+                              </Text>
+                            </View>
+                            {isExpanded ? <ChevronDown color="#64748B" size={24} /> : <ChevronRight color="#64748B" size={24} />}
+                          </View>
                         </TouchableOpacity>
 
                         {isExpanded && (
                           <View style={{ marginTop: 16 }}>
                             <View style={styles.mapSelector}>
                               {maps.map((_, idx) => (
-                                <TouchableOpacity 
-                                  key={idx} 
+                                <TouchableOpacity
+                                  key={idx}
                                   onPress={() => selectMap(serieId, idx)}
                                   style={[styles.mapTab, currentMapIdx === idx && styles.mapTabActive]}
                                 >
@@ -265,23 +291,23 @@ export default function JugadorDetailScreen({ route, navigation }: any) {
                             </View>
 
                             <View style={styles.mapDetailContainer}>
-                               <View style={styles.mapStatsGrid}>
-                                  <Text style={styles.fullStat}>Asesinatos: <Text style={styles.whiteStat}>{map.kills}</Text></Text>
-                                  <Text style={styles.fullStat}>Muertes: <Text style={styles.whiteStat}>{map.deaths}</Text></Text>
-                                  <Text style={styles.fullStat}>Asistencias: <Text style={styles.whiteStat}>{map.assists}</Text></Text>
-                                  <Text style={styles.fullStat}>Farmeo (CS): <Text style={styles.whiteStat}>{map.cs}</Text></Text>
-                               </View>
-                               
-                               <View style={styles.bonusRow}>
-                                  {map.resultado === 'WIN' && (
-                                    <Text style={styles.bonusText}>Victoria: +5 pts</Text>
-                                  )}
-                               </View>
+                              <View style={styles.mapStatsGrid}>
+                                <Text style={styles.fullStat}>Asesinatos: <Text style={styles.whiteStat}>{map.kills}</Text></Text>
+                                <Text style={styles.fullStat}>Muertes: <Text style={styles.whiteStat}>{map.deaths}</Text></Text>
+                                <Text style={styles.fullStat}>Asistencias: <Text style={styles.whiteStat}>{map.assists}</Text></Text>
+                                <Text style={styles.fullStat}>Farmeo (CS): <Text style={styles.whiteStat}>{map.cs}</Text></Text>
+                              </View>
 
-                               <View style={styles.mapPointsFinal}>
-                                  <Text style={styles.mapPointsLabel}>PUNTOS MAPA</Text>
-                                  <Text style={styles.mapPointsValue}>{Math.round(map.puntosGenerados)} PTS</Text>
-                                </View>
+                              <View style={styles.bonusRow}>
+                                {map.resultado === 'WIN' && (
+                                  <Text style={styles.bonusText}>Victoria: +5 pts</Text>
+                                )}
+                              </View>
+
+                              <View style={styles.mapPointsFinal}>
+                                <Text style={styles.mapPointsLabel}>PUNTOS MAPA</Text>
+                                <Text style={[styles.mapPointsValue, Math.round(map.puntosGenerados) < 0 && { color: '#EF4444' }]}>{Math.round(map.puntosGenerados)} PTS</Text>
+                              </View>
                             </View>
                           </View>
                         )}
@@ -331,7 +357,7 @@ const styles = StyleSheet.create({
   header: { padding: 16, flexDirection: 'row', alignItems: 'center', backgroundColor: '#0F172A' },
   backBtn: { padding: 8, backgroundColor: '#1E293B', borderRadius: 12 },
   headerTitle: { color: 'white', fontSize: 18, fontWeight: 'bold', marginLeft: 16 },
-  
+
   topTabBar: { flexDirection: 'row', backgroundColor: '#0F172A', paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#1E293B' },
   topTabItem: { paddingVertical: 14, marginRight: 24, borderBottomWidth: 2, borderBottomColor: 'transparent' },
   topTabActive: { borderBottomColor: '#3B82F6' },
@@ -349,7 +375,7 @@ const styles = StyleSheet.create({
   sectionContainer: { marginTop: 24 },
   labelWithIcon: { flexDirection: 'row', alignItems: 'center', marginLeft: 4, marginBottom: 16 },
   sectionLabel: { color: '#64748B', fontSize: 11, fontWeight: '900', letterSpacing: 1.2, marginLeft: 8 },
-  
+
   graphCard: { backgroundColor: '#1E293B', borderRadius: 24, padding: 20 },
   chartContainer: { height: 130, justifyContent: 'center', alignItems: 'center' },
   graphFooter: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#334155' },
@@ -370,6 +396,9 @@ const styles = StyleSheet.create({
   winB: { backgroundColor: '#10B98120' },
   lossB: { backgroundColor: '#EF444420' },
   resText: { fontSize: 11, fontWeight: 'bold' },
+
+  noPlayCard: { backgroundColor: '#1E293B', padding: 20, borderRadius: 24, borderStyle: 'dashed', borderWidth: 1, borderColor: '#334155', alignItems: 'center' },
+  noPlayText: { color: '#64748B', fontSize: 12, fontWeight: 'bold' },
 
   mapSelector: { flexDirection: 'row', marginBottom: 20, backgroundColor: '#0F172A', borderRadius: 12, padding: 4 },
   mapTab: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 8 },
