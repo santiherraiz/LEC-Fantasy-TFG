@@ -51,7 +51,7 @@ export default function JugadoresListScreen({ navigation }: any) {
       </View>
 
       <View style={styles.pointsContainer}>
-        <Text style={styles.pointsValue}>{item.puntosTotales.toFixed(1)}</Text>
+        <Text style={styles.pointsValue}>{Math.round(item.puntosTotales)}</Text>
         <Text style={styles.pointsLabel}>PTS</Text>
       </View>
 
@@ -69,7 +69,10 @@ export default function JugadoresListScreen({ navigation }: any) {
 
   return (
     <View style={styles.container}>
-      <CustomHeader />
+      <CustomHeader 
+        showBackButton={true} 
+        onBackPress={() => navigation.navigate('Tabs')} 
+      />
       <FlatList
         data={ranking}
         renderItem={renderItem}

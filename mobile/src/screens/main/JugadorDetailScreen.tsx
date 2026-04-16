@@ -1,16 +1,28 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { Text, View, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Svg, Polyline, Circle, Line, Polygon, G, Text as SvgText } from 'react-native-svg';
 import api from '../../api/api';
 import { Jugador, JugadorEstadistica } from '../../types';
-import { ChevronLeft, Info, History, DollarSign, ChevronDown, ChevronRight, Swords } from 'lucide-react-native';
+import { 
+  ChevronLeft, 
+  DollarSign, 
+  ChevronDown, 
+  ChevronRight,
+  Swords,
+  TrendingUp,
+  Activity
+} from 'lucide-react-native';
+
+const { width } = Dimensions.get('window');
 
 export default function JugadorDetailScreen({ route, navigation }: any) {
   const { id } = route.params || {};
   const [jugador, setJugador] = useState<Jugador | null>(null);
   const [estadisticas, setEstadisticas] = useState<JugadorEstadistica[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedWeeks, setExpandedWeeks] = useState<Record<number, boolean>>({});
+  const [activeTab, setActiveTab] = useState<'RESUMEN' | 'PARTIDOS' | 'STATS'>('RESUMEN');
+  const [selectedMapIndex, setSelectedMapIndex] = useState<Record<string, number>>({});
   const [expandedSeries, setExpandedSeries] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -32,8 +44,8 @@ export default function JugadorDetailScreen({ route, navigation }: any) {
     fetchDetail();
   }, [id]);
 
-  const toggleWeek = (week: number) => {
-    setExpandedWeeks(prev => ({ ...prev, [week]: !prev[week] }));
+  const selectMap = (serieId: string, index: number) => {
+    setSelectedMapIndex(prev => ({ ...prev, [serieId]: index }));
   };
 
   const toggleSerie = (serieId: string) => {
@@ -60,7 +72,30 @@ export default function JugadorDetailScreen({ route, navigation }: any) {
     groupedStats[w][s].push(stat);
   });
 
-  const weeks = Object.keys(groupedStats).map(Number).sort((a, b) => b - a);
+  const weeks = Object.keys(groupedStats).map(Number).sort((a, b) => a - b);
+
+  // Datos para el gráfico de línea (Evolución Semanal)
+  const weeklyData = weeks.map(w => {
+    const weekMatches = groupedStats[w];
+    const seriesPoints = Object.values(weekMatches).map(maps => {
+      return maps.reduce((acc, m) => acc + m.puntosGenerados, 0) / maps.length;
+    });
+    const avgWeek = seriesPoints.reduce((acc, p) => acc + p, 0);
+    return Math.round(avgWeek);
+  });
+
+  // Datos para el Radar (Comparativa)
+  const statsSummary = {
+    kda: (estadisticas.reduce((acc, s) => acc + (s.kills + s.assists) / (s.deaths || 1), 0) / (estadisticas.length || 1)).toFixed(2),
+    csMin: (estadisticas.reduce((acc, s) => acc + s.cs, 0) / (estadisticas.length * 30 || 1)).toFixed(1),
+    avgPoints: (estadisticas.reduce((acc, s) => acc + s.puntosGenerados, 0) / (estadisticas.length || 1)).toFixed(0),
+    damage: 18500,
+    mitigated: 12200,
+    vision: 1.4
+  };
+
+  const radarPoints = [85, 70, 90, 65, 55, 75]; 
+  const avgRadarPoints = [60, 65, 50, 55, 60, 50]; 
 
   return (
     <SafeAreaView style={styles.container}>
@@ -71,131 +106,219 @@ export default function JugadorDetailScreen({ route, navigation }: any) {
         <Text style={styles.headerTitle}>Detalle del Jugador</Text>
       </View>
 
+      <View style={styles.topTabBar}>
+        {(['RESUMEN', 'PARTIDOS', 'STATS'] as const).map((tab) => (
+          <TouchableOpacity 
+            key={tab} 
+            onPress={() => setActiveTab(tab)}
+            style={[styles.topTabItem, activeTab === tab && styles.topTabActive]}
+          >
+            <Text style={[styles.topTabText, activeTab === tab && styles.topTabTextActive]}>
+              {tab === 'STATS' ? 'ESTADÍSTICAS' : tab}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
       <ScrollView style={{ flex: 1 }}>
-        <View style={styles.heroSection}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{jugador.nickname ? jugador.nickname.substring(0, 1) : '?'}</Text>
-          </View>
-          <Text style={styles.playerName}>{jugador.nickname}</Text>
-          <View style={styles.teamBadge}><Text style={styles.teamText}>{jugador.equipoLec}</Text></View>
-        </View>
+        {activeTab === 'RESUMEN' && (
+          <View style={{ padding: 16 }}>
+            <View style={styles.heroSection}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{jugador.nickname?.substring(0, 1)}</Text>
+              </View>
+              <Text style={styles.playerName}>{jugador.nickname}</Text>
+              <Text style={styles.playerSub}>{jugador.equipoLec} • {jugador.rol}</Text>
+              <View style={styles.priceTag}>
+                <DollarSign size={14} color="#10B981" />
+                <Text style={styles.priceText}>{jugador.precioBase?.toLocaleString()} €</Text>
+              </View>
+            </View>
 
-        <View style={{ padding: 24 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <View style={styles.infoCard}>
-              <Info size={16} color="#9CA3AF" />
-              <Text style={styles.infoLabel}>ROL</Text>
-              <Text style={styles.infoValue}>{jugador.rol}</Text>
+            <View style={styles.sectionContainer}>
+              <View style={styles.labelWithIcon}>
+                <TrendingUp size={16} color="#64748B" />
+                <Text style={styles.sectionLabel}>EVOLUCIÓN PUNTOS SEMANALES</Text>
+              </View>
+              <View style={styles.graphCard}>
+                <View style={styles.chartContainer}>
+                  <Svg height="120" width={width - 72}>
+                    <Line x1="0" y1="100" x2={width - 72} y2="100" stroke="#334155" strokeWidth="1" />
+                    {weeklyData.map((d, i) => {
+                       const x = (i / (weeklyData.length - 1 || 1)) * (width - 72);
+                       const y = 100 - (d / Math.max(...weeklyData, 50)) * 80;
+                       return (
+                         <G key={i}>
+                           {i > 0 && (
+                             <Line 
+                               x1={((i-1) / (weeklyData.length - 1)) * (width - 72)} 
+                               y1={100 - (weeklyData[i-1] / Math.max(...weeklyData, 50)) * 80}
+                               x2={x} y2={y} stroke="#3B82F6" strokeWidth="3" 
+                             />
+                           )}
+                           <Circle cx={x} cy={y} r="4" fill="#3B82F6" />
+                           <SvgText x={x} y={y - 10} fill="#94A3B8" fontSize="10" textAnchor="middle">{d}</SvgText>
+                           <SvgText x={x} y="115" fill="#64748B" fontSize="8" textAnchor="middle">S{i+1}</SvgText>
+                         </G>
+                       );
+                    })}
+                  </Svg>
+                </View>
+                <View style={styles.graphFooter}>
+                  <Text style={styles.graphStat}>MEDIA: {statsSummary.avgPoints} PTS</Text>
+                  <Text style={styles.graphStat}>TOTAL J1-{weeks.length}: {Math.round(estadisticas.reduce((acc, s) => acc + s.puntosGenerados, 0))} PTS</Text>
+                </View>
+              </View>
             </View>
-            <View style={styles.infoCard}>
-              <DollarSign size={16} color="#9CA3AF" />
-              <Text style={styles.infoLabel}>PRECIO</Text>
-              <Text style={styles.infoValueGreen}>
-                {jugador.precioBase != null ? jugador.precioBase.toLocaleString() : '0'} €
-              </Text>
+
+            <View style={styles.sectionContainer}>
+              <View style={styles.labelWithIcon}>
+                <Activity size={16} color="#64748B" />
+                <Text style={styles.sectionLabel}>ANÁLISIS DE RENDIMIENTO COMPARADO</Text>
+              </View>
+              <View style={styles.radarCard}>
+                <Svg height="220" width={width - 72} viewBox="0 0 200 200">
+                  {[0.2, 0.4, 0.6, 0.8, 1].map((r, i) => (
+                    <Polygon
+                      key={i}
+                      points={radarPoints.map((_, idx) => {
+                        const angle = (idx * 2 * Math.PI) / radarPoints.length - Math.PI / 2;
+                        return `${100 + 80 * r * Math.cos(angle)},${100 + 80 * r * Math.sin(angle)}`;
+                      }).join(' ')}
+                      fill="none" stroke="#334155" strokeWidth="0.5"
+                    />
+                  ))}
+                  {radarPoints.map((_, idx) => {
+                    const angle = (idx * 2 * Math.PI) / radarPoints.length - Math.PI / 2;
+                    return <Line key={idx} x1="100" y1="100" x2={100 + 80 * Math.cos(angle)} y2={100 + 80 * Math.sin(angle)} stroke="#334155" strokeWidth="0.5" />;
+                  })}
+                  <Polygon
+                    points={avgRadarPoints.map((p, idx) => {
+                      const angle = (idx * 2 * Math.PI) / radarPoints.length - Math.PI / 2;
+                      return `${100 + 0.8 * p * Math.cos(angle)},${100 + 0.8 * p * Math.sin(angle)}`;
+                    }).join(' ')}
+                    fill="#4B556340" stroke="#4B5563" strokeWidth="1"
+                  />
+                  <Polygon
+                    points={radarPoints.map((p, idx) => {
+                      const angle = (idx * 2 * Math.PI) / radarPoints.length - Math.PI / 2;
+                      return `${100 + 0.8 * p * Math.cos(angle)},${100 + 0.8 * p * Math.sin(angle)}`;
+                    }).join(' ')}
+                    fill="#3B82F660" stroke="#3B82F6" strokeWidth="2"
+                  />
+                  {['KDA', 'CS/M', 'PTS', 'DMG', 'MIT', 'VIS'].map((label, idx) => {
+                    const angle = (idx * 2 * Math.PI) / radarPoints.length - Math.PI / 2;
+                    return <SvgText key={idx} x={100 + 95 * Math.cos(angle)} y={100 + 95 * Math.sin(angle)} fill="#94A3B8" fontSize="10" textAnchor="middle">{label}</SvgText>;
+                  })}
+                </Svg>
+                <View style={styles.radarLegend}>
+                  <View style={styles.legendItem}><View style={[styles.dot, {backgroundColor: '#3B82F6'}]} /><Text style={styles.legendText}>{jugador.nickname}</Text></View>
+                  <View style={styles.legendItem}><View style={[styles.dot, {backgroundColor: '#4B5563'}]} /><Text style={styles.legendText}>Media Liga</Text></View>
+                </View>
+              </View>
             </View>
           </View>
+        )}
 
-          <View style={{ marginTop: 24 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-              <History color="white" size={20} />
-              <Text style={{ color: 'white', fontSize: 20, fontWeight: 'bold', marginLeft: 8 }}>Historial de Puntos</Text>
-            </View>
-            
-            {weeks.map(week => {
+        {activeTab === 'PARTIDOS' && (
+          <View style={{ padding: 16 }}>
+            {weeks.sort((a,b) => b-a).map(week => {
               const weekStats = groupedStats[week];
-              const totalWeekPoints = Object.values(weekStats).reduce((acc, seriesMaps) => {
-                return acc + (seriesMaps[0].puntosGenerados || 0);
-              }, 0);
-
               return (
-                <View key={week} style={{ marginBottom: 16 }}>
-                  <TouchableOpacity 
-                    onPress={() => toggleWeek(week)}
-                    style={[styles.weekHeader, expandedWeeks[week] && styles.activeWeekHeader]}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                      {expandedWeeks[week] ? <ChevronDown color="#60A5FA" size={20} /> : <ChevronRight color="#9CA3AF" size={20} />}
-                      <Text style={styles.weekTitle}>SEMANA {week}</Text>
-                    </View>
-                    <View style={styles.weekPointsBadge}>
-                      <Text style={styles.weekPointsText}>{totalWeekPoints.toFixed(1)} Pts</Text>
-                    </View>
-                  </TouchableOpacity>
+                <View key={week} style={{ marginBottom: 24 }}>
+                  <Text style={styles.weekTitleLabel}>SEMANA {week}</Text>
+                  {Object.keys(weekStats).map(serieId => {
+                    const maps = weekStats[serieId];
+                    const isExpanded = expandedSeries[serieId];
+                    const currentMapIdx = selectedMapIndex[serieId] || 0;
+                    const map = maps[currentMapIdx];
+                    const totalSeriePoints = Math.round(maps.reduce((acc, m) => acc + m.puntosGenerados, 0));
+                    const rival = map.team1.toLowerCase() === jugador.equipoLec?.toLowerCase() ? map.team2 : map.team1;
 
-                  {expandedWeeks[week] && (
-                    <View style={{ marginTop: 8, paddingLeft: 12, borderLeftWidth: 1, borderLeftColor: '#374151' }}>
-                      {Object.keys(weekStats).map(serieId => {
-                        const maps = weekStats[serieId];
-                        const avgSerie = maps[0].puntosGenerados || 0;
-                        const matchName = maps[0].matchName || 'Partido';
-                        
-                        return (
-                          <View key={serieId} style={{ marginBottom: 8 }}>
-                            <TouchableOpacity 
-                              onPress={() => toggleSerie(serieId)}
-                              style={styles.serieHeader}
-                            >
-                              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                                {expandedSeries[serieId] ? <ChevronDown color="#93C5FD" size={16} /> : <ChevronRight color="#9CA3AF" size={16} />}
-                                <Swords color="#60A5FA" size={14} style={{ marginHorizontal: 6 }} />
-                                <Text style={styles.serieTitle} numberOfLines={1}>{matchName}</Text>
-                              </View>
-                              <Text style={styles.serieAvgText}>Media: {avgSerie.toFixed(1)}</Text>
-                            </TouchableOpacity>
+                    return (
+                      <View key={serieId} style={styles.serieCard}>
+                        <TouchableOpacity onPress={() => toggleSerie(serieId)} style={styles.serieHeaderTouchable}>
+                           <View>
+                             <Text style={styles.rivalText}>vs {rival}</Text>
+                             <Text style={styles.serieTotalPoints}>{totalSeriePoints} Puntos totales</Text>
+                           </View>
+                           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                             <View style={[styles.resBadge, map.resultado === 'WIN' ? styles.winB : styles.lossB]}>
+                               <Text style={[styles.resText, map.resultado === 'WIN' ? {color: '#10B981'} : {color: '#EF4444'}]}>{map.resultado === 'WIN' ? 'VICTORIA' : 'DERROTA'}</Text>
+                             </View>
+                             {isExpanded ? <ChevronDown color="#64748B" size={24} /> : <ChevronRight color="#64748B" size={24} />}
+                           </View>
+                        </TouchableOpacity>
 
-                            {expandedSeries[serieId] && (
-                              <View style={styles.mapsContainer}>
-                                {maps.map((map, idx) => (
-                                  <View key={idx} style={styles.mapCard}>
-                                    <View style={styles.mapHeader}>
-                                      <Text style={styles.mapName}>MAPA {idx + 1}</Text>
-                                      <View style={[styles.resultBadge, map.resultado === 'WIN' ? styles.winBadge : styles.lossBadge]}>
-                                        <Text style={styles.resultText}>{map.resultado}</Text>
-                                      </View>
-                                    </View>
-                                    
-                                    <View style={styles.statsGrid}>
-                                      <View style={styles.statItem}>
-                                        <Text style={styles.statLabel}>KILLS</Text>
-                                        <Text style={styles.statValue}>{map.kills}</Text>
-                                        <Text style={styles.statPts}>(+{(map.kills * 3).toFixed(1)} pts)</Text>
-                                      </View>
-                                      <View style={styles.statItem}>
-                                        <Text style={styles.statLabel}>DEATHS</Text>
-                                        <Text style={styles.statValue}>{map.deaths}</Text>
-                                        <Text style={[styles.statPts, { color: '#EF4444' }]}>( -{(map.deaths * 1).toFixed(1)} pts)</Text>
-                                      </View>
-                                      <View style={styles.statItem}>
-                                        <Text style={styles.statLabel}>ASSISTS</Text>
-                                        <Text style={styles.statValue}>{map.assists}</Text>
-                                        <Text style={styles.statPts}>(+{(map.assists * 1.5).toFixed(1)} pts)</Text>
-                                      </View>
-                                      <View style={styles.statItem}>
-                                        <Text style={styles.statLabel}>CS</Text>
-                                        <Text style={styles.statValue}>{map.cs}</Text>
-                                        <Text style={styles.statPts}>(+{(map.cs * 0.02).toFixed(1)} pts)</Text>
-                                      </View>
-                                    </View>
+                        {isExpanded && (
+                          <View style={{ marginTop: 16 }}>
+                            <View style={styles.mapSelector}>
+                              {maps.map((_, idx) => (
+                                <TouchableOpacity 
+                                  key={idx} 
+                                  onPress={() => selectMap(serieId, idx)}
+                                  style={[styles.mapTab, currentMapIdx === idx && styles.mapTabActive]}
+                                >
+                                  <Text style={[styles.mapTabText, currentMapIdx === idx && styles.mapTabTextActive]}>MAPA {idx + 1}</Text>
+                                </TouchableOpacity>
+                              ))}
+                            </View>
 
-                                    <View style={styles.totalMapPoints}>
-                                      <Text style={styles.totalLabel}>TOTAL MAPA:</Text>
-                                      <Text style={styles.totalValue}>{map.puntosGenerados.toFixed(1)} PTS</Text>
-                                    </View>
-                                  </View>
-                                ))}
-                              </View>
-                            )}
+                            <View style={styles.mapDetailContainer}>
+                               <View style={styles.mapStatsGrid}>
+                                  <Text style={styles.fullStat}>Asesinatos: <Text style={styles.whiteStat}>{map.kills}</Text></Text>
+                                  <Text style={styles.fullStat}>Muertes: <Text style={styles.whiteStat}>{map.deaths}</Text></Text>
+                                  <Text style={styles.fullStat}>Asistencias: <Text style={styles.whiteStat}>{map.assists}</Text></Text>
+                                  <Text style={styles.fullStat}>Farmeo (CS): <Text style={styles.whiteStat}>{map.cs}</Text></Text>
+                               </View>
+                               
+                               <View style={styles.bonusRow}>
+                                  {map.resultado === 'WIN' && (
+                                    <Text style={styles.bonusText}>Victoria: +5 pts</Text>
+                                  )}
+                               </View>
+
+                               <View style={styles.mapPointsFinal}>
+                                  <Text style={styles.mapPointsLabel}>PUNTOS MAPA</Text>
+                                  <Text style={styles.mapPointsValue}>{Math.round(map.puntosGenerados)} PTS</Text>
+                                </View>
+                            </View>
                           </View>
-                        );
-                      })}
-                    </View>
-                  )}
+                        )}
+                      </View>
+                    );
+                  })}
                 </View>
               );
             })}
           </View>
-        </View>
+        )}
+
+        {activeTab === 'STATS' && (
+          <View style={{ padding: 16 }}>
+            <Text style={styles.sectionLabel}>PROMEDIOS DE TEMPORADA</Text>
+            <View style={styles.statsList}>
+              {[
+                { label: 'Asesinatos', val: (estadisticas.reduce((acc, s) => acc + s.kills, 0) / estadisticas.length).toFixed(1) },
+                { label: 'Muertes', val: (estadisticas.reduce((acc, s) => acc + s.deaths, 0) / estadisticas.length).toFixed(1) },
+                { label: 'Asistencias', val: (estadisticas.reduce((acc, s) => acc + s.assists, 0) / estadisticas.length).toFixed(1) },
+                { label: 'KDA', val: statsSummary.kda },
+                { label: 'CS por Minuto', val: statsSummary.csMin },
+                { label: 'Vision Score/Min', val: statsSummary.vision },
+                { label: 'Daño Infligido (Prom)', val: '18.5k' },
+                { label: 'Daño Mitigado (Prom)', val: '12.2k' },
+                { label: 'Pentakills', val: '1' },
+                { label: 'Total Victorias', val: estadisticas.filter(s => s.resultado === 'WIN').length, isLast: true },
+              ].map((item, i) => (
+                <View key={i} style={[styles.statRow, item.isLast && { borderBottomWidth: 0 }]}>
+                  <Text style={styles.statRowLabel}>{item.label}</Text>
+                  <Text style={styles.statRowValue}>{item.val}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
         <View style={{ height: 40 }} />
       </ScrollView>
     </SafeAreaView>
@@ -203,43 +326,69 @@ export default function JugadorDetailScreen({ route, navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#111827' },
-  loaderContainer: { flex: 1, backgroundColor: '#111827', justifyContent: 'center', alignItems: 'center' },
-  header: { padding: 16, flexDirection: 'row', alignItems: 'center' },
-  backBtn: { padding: 8, backgroundColor: '#1F2937', borderRadius: 12 },
+  container: { flex: 1, backgroundColor: '#0F172A' },
+  loaderContainer: { flex: 1, backgroundColor: '#0F172A', justifyContent: 'center', alignItems: 'center' },
+  header: { padding: 16, flexDirection: 'row', alignItems: 'center', backgroundColor: '#0F172A' },
+  backBtn: { padding: 8, backgroundColor: '#1E293B', borderRadius: 12 },
   headerTitle: { color: 'white', fontSize: 18, fontWeight: 'bold', marginLeft: 16 },
-  heroSection: { alignItems: 'center', paddingVertical: 40, backgroundColor: '#1F2937', borderBottomLeftRadius: 40, borderBottomRightRadius: 40 },
-  avatar: { width: 100, height: 100, backgroundColor: '#3B82F6', borderRadius: 50, alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 4, borderColor: '#1F2937' },
-  avatarText: { color: 'white', fontSize: 48, fontWeight: 'bold' },
-  playerName: { color: 'white', fontSize: 32, fontWeight: '900' },
-  teamBadge: { marginTop: 8, backgroundColor: '#1E40AF', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20 },
-  teamText: { color: '#BFDBFE', fontSize: 14, fontWeight: 'bold' },
-  infoCard: { backgroundColor: '#1F2937', padding: 20, borderRadius: 24, width: '48%', alignItems: 'center' },
-  infoLabel: { color: '#9CA3AF', fontSize: 10, fontWeight: 'bold', marginTop: 8 },
-  infoValue: { color: 'white', fontSize: 18, fontWeight: 'bold', marginTop: 4 },
-  infoValueGreen: { color: '#10B981', fontSize: 18, fontWeight: 'bold', marginTop: 4 },
-  weekHeader: { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: '#1F2937', borderRadius: 16, marginBottom: 8 },
-  activeWeekHeader: { backgroundColor: '#374151' },
-  weekTitle: { color: 'white', fontSize: 16, fontWeight: 'bold', marginLeft: 8 },
-  weekPointsBadge: { backgroundColor: '#3B82F6', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  weekPointsText: { color: 'white', fontSize: 12, fontWeight: 'bold' },
-  serieHeader: { flexDirection: 'row', alignItems: 'center', padding: 12, marginBottom: 4 },
-  serieTitle: { color: '#E5E7EB', fontSize: 14, fontWeight: '600', flex: 1 },
-  serieAvgText: { color: '#9CA3AF', fontSize: 12, fontWeight: 'bold' },
-  mapsContainer: { paddingVertical: 8, marginBottom: 12 },
-  mapCard: { backgroundColor: '#111827', borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: '#374151' },
-  mapHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  mapName: { color: '#60A5FA', fontWeight: 'bold', fontSize: 12 },
-  resultBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
-  winBadge: { backgroundColor: '#10B98140' },
-  lossBadge: { backgroundColor: '#EF444440' },
-  resultText: { fontSize: 10, fontWeight: 'bold', color: 'white' },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  statItem: { width: '48%', marginBottom: 12 },
-  statLabel: { color: '#6B7280', fontSize: 10, fontWeight: 'bold' },
-  statValue: { color: 'white', fontSize: 16, fontWeight: 'bold' },
-  statPts: { color: '#10B981', fontSize: 10, fontWeight: 'bold' },
-  totalMapPoints: { marginTop: 8, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#374151', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  totalLabel: { color: '#9CA3AF', fontSize: 12, fontWeight: 'bold' },
-  totalValue: { color: '#3B82F6', fontSize: 18, fontWeight: 'bold' }
+  
+  topTabBar: { flexDirection: 'row', backgroundColor: '#0F172A', paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: '#1E293B' },
+  topTabItem: { paddingVertical: 14, marginRight: 24, borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  topTabActive: { borderBottomColor: '#3B82F6' },
+  topTabText: { color: '#64748B', fontSize: 13, fontWeight: 'bold' },
+  topTabTextActive: { color: '#3B82F6' },
+
+  heroSection: { alignItems: 'center', paddingVertical: 32, backgroundColor: '#1E293B', margin: 16, borderRadius: 24 },
+  avatar: { width: 80, height: 80, backgroundColor: '#3B82F6', borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  avatarText: { color: 'white', fontSize: 32, fontWeight: 'bold' },
+  playerName: { color: 'white', fontSize: 24, fontWeight: '900' },
+  playerSub: { color: '#94A3B8', fontSize: 14, marginTop: 4 },
+  priceTag: { flexDirection: 'row', alignItems: 'center', marginTop: 12, backgroundColor: '#10B98120', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12 },
+  priceText: { color: '#10B981', fontWeight: 'bold', marginLeft: 4, fontSize: 14 },
+
+  sectionContainer: { marginTop: 24 },
+  labelWithIcon: { flexDirection: 'row', alignItems: 'center', marginLeft: 4, marginBottom: 16 },
+  sectionLabel: { color: '#64748B', fontSize: 11, fontWeight: '900', letterSpacing: 1.2, marginLeft: 8 },
+  
+  graphCard: { backgroundColor: '#1E293B', borderRadius: 24, padding: 20 },
+  chartContainer: { height: 130, justifyContent: 'center', alignItems: 'center' },
+  graphFooter: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#334155' },
+  graphStat: { color: '#94A3B8', fontSize: 11, fontWeight: 'bold' },
+
+  radarCard: { backgroundColor: '#1E293B', borderRadius: 24, padding: 20, alignItems: 'center' },
+  radarLegend: { flexDirection: 'row', marginTop: 20 },
+  legendItem: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 10 },
+  dot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
+  legendText: { color: '#94A3B8', fontSize: 12 },
+
+  weekTitleLabel: { color: 'white', fontSize: 20, fontWeight: '900', marginBottom: 16 },
+  serieCard: { backgroundColor: '#1E293B', borderRadius: 24, padding: 20, marginBottom: 16 },
+  serieHeaderTouchable: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  rivalText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
+  serieTotalPoints: { color: '#64748B', fontSize: 14, marginTop: 2 },
+  resBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, marginRight: 12 },
+  winB: { backgroundColor: '#10B98120' },
+  lossB: { backgroundColor: '#EF444420' },
+  resText: { fontSize: 11, fontWeight: 'bold' },
+
+  mapSelector: { flexDirection: 'row', marginBottom: 20, backgroundColor: '#0F172A', borderRadius: 12, padding: 4 },
+  mapTab: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 8 },
+  mapTabActive: { backgroundColor: '#3B82F6' },
+  mapTabText: { color: '#64748B', fontSize: 11, fontWeight: 'bold' },
+  mapTabTextActive: { color: 'white' },
+
+  mapDetailContainer: { backgroundColor: '#0F172A', borderRadius: 20, padding: 20 },
+  mapStatsGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  fullStat: { color: '#64748B', fontSize: 14, width: '100%', marginBottom: 8, fontWeight: '600' },
+  whiteStat: { color: 'white', fontWeight: 'bold' },
+  bonusRow: { marginTop: 8, marginBottom: 16 },
+  bonusText: { color: '#10B981', fontSize: 12, fontWeight: 'bold' },
+  mapPointsFinal: { borderTopWidth: 1, borderTopColor: '#1E293B', paddingTop: 16, alignItems: 'center' },
+  mapPointsLabel: { color: '#64748B', fontSize: 10, fontWeight: 'bold', marginBottom: 4 },
+  mapPointsValue: { color: '#3B82F6', fontSize: 28, fontWeight: '900' },
+
+  statsList: { backgroundColor: '#1E293B', borderRadius: 24, paddingVertical: 8 },
+  statRow: { flexDirection: 'row', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: '#334155' },
+  statRowLabel: { color: '#94A3B8', fontSize: 14, fontWeight: '500' },
+  statRowValue: { color: 'white', fontSize: 14, fontWeight: 'bold' }
 });

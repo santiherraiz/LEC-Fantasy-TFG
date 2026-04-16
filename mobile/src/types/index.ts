@@ -36,6 +36,8 @@ export interface JugadorPuntuacionTotal {
 export interface JugadorEstadistica {
   gameId: string;
   matchName: string;
+  team1?: string;
+  team2?: string;
   fecha: string;
   semana: number;
   serieId: string;

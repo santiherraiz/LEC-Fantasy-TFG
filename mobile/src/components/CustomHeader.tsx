@@ -1,29 +1,45 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
-import { Menu } from 'lucide-react-native';
+import { Menu, ChevronLeft } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
 
 interface CustomHeaderProps {
   ligaNombre?: string;
+  showBackButton?: boolean;
+  onBackPress?: () => void;
 }
 
-export default function CustomHeader({ ligaNombre }: CustomHeaderProps) {
+export default function CustomHeader({ ligaNombre, showBackButton, onBackPress }: CustomHeaderProps) {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { selectedLigaNombre } = useAuthStore();
 
   const displayNombre = ligaNombre || selectedLigaNombre;
 
+  const handlePress = () => {
+    if (showBackButton && onBackPress) {
+      onBackPress();
+    } else if (showBackButton) {
+      navigation.goBack();
+    } else {
+      navigation.dispatch(DrawerActions.toggleDrawer());
+    }
+  };
+
   return (
     <View style={[styles.container, { paddingTop: insets.top + 10 }]}>
       <View style={styles.content}>
         <TouchableOpacity 
-          onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
+          onPress={handlePress}
           style={styles.iconBtn}
         >
-          <Menu color="white" size={28} />
+          {showBackButton ? (
+            <ChevronLeft color="white" size={28} />
+          ) : (
+            <Menu color="white" size={28} />
+          )}
         </TouchableOpacity>
         
         <View style={styles.centerContainer}>

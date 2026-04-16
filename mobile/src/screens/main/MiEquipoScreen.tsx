@@ -100,7 +100,7 @@ export default function MiEquipoScreen({ navigation }: any) {
           </View>
           <View style={{ alignItems: 'flex-end' }}>
             <Text style={styles.statLabel}>Puntos</Text>
-            <Text style={styles.statValueBlue}>{equipo?.puntuacionTotal ?? 0} pts</Text>
+            <Text style={styles.statValueBlue}>{Math.round(equipo?.puntuacionTotal ?? 0)} pts</Text>
           </View>
         </View>
 

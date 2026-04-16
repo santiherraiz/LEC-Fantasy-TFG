@@ -12,33 +12,19 @@ function getLocalIp() {
       }
     }
   }
-  return '127.0.0.1';
+  // Si falla o no hay internet, por defecto usa la IP del emulador de Android
+  return '10.0.2.2';
 }
 
 const localIp = getLocalIp();
-const filePath = path.join(__dirname, 'src', 'api', 'api.ts');
+// Ahora apuntamos a un nuevo archivo llamado config.ts
+const configPath = path.join(__dirname, 'src', 'api', 'config.ts');
 
-const apiContent = `import axios from 'axios';
-import { useAuthStore } from '../store/authStore';
+const configContent = `// ⚠️ ARCHIVO AUTOGENERADO POR update-ip.js ⚠️
+// No edites este archivo a mano. Tu IP local se actualizará sola al arrancar el proyecto.
 
-// IP detectada automáticamente: ${localIp}
-const API_URL = 'http://${localIp}:8080/api'; 
-
-const api = axios.create({
-  baseURL: API_URL,
-  timeout: 10000, 
-});
-
-api.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().token;
-  if (token) {
-    config.headers.Authorization = \`Bearer \${token}\`;
-  }
-  return config;
-});
-
-export default api;
+export const API_URL = 'http://${localIp}:8080/api';
 `;
 
-fs.writeFileSync(filePath, apiContent);
-console.log(`\x1b[32m[IP Sync]\x1b[0m Archivo api.ts actualizado con la IP: ${localIp}`);
+fs.writeFileSync(configPath, configContent);
+console.log(`\x1b[32m[IP Sync]\x1b[0m Archivo src/api/config.ts actualizado con la URL: http://${localIp}:8080/api`);

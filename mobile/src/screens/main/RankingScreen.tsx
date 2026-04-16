@@ -66,7 +66,7 @@ export default function RankingScreen() {
                 <Text style={styles.userSub}>ENTRENADOR</Text>
               </View>
               <View style={{ alignItems: 'flex-end' }}>
-                <Text style={styles.pointsValue}>{entry.puntosTotales ?? 0}</Text>
+                <Text style={styles.pointsValue}>{Math.round(entry.puntosTotales ?? 0)}</Text>
                 <Text style={styles.pointsLabel}>PTS</Text>
               </View>
             </View>
