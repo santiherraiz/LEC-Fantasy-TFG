@@ -60,7 +60,7 @@ public class LigaService {
         Equipo equipo = new Equipo();
         equipo.setNombreEquipo("Equipo de " + usuario.getNickname());
         equipo.setPresupuestoDisponible(50000.0);
-        equipo.setPuntuacionTotal(0L);
+        equipo.setPuntuacionTotal(0.0);
         equipo.setUsuario(usuario);
         equipo.setLiga(liga);
         equipoRepository.save(equipo);

@@ -10,5 +10,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class JugadorPuntuacionTotalDTO {
     private Jugador jugador;
-    private Long puntosTotales;
+    private Double puntosTotales;
 }

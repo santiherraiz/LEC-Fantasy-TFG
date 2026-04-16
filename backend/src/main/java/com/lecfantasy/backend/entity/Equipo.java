@@ -19,7 +19,7 @@ public class Equipo {
     private Double presupuestoDisponible;
 
     @Column(name = "puntuacion_total", nullable = false)
-    private Long puntuacionTotal = 0L; // Empiezan con 0 puntos
+    private Double puntuacionTotal = 0.0; // Empiezan con 0 puntos
 
     @OneToOne
     @JoinColumn(name = "usuario_id", referencedColumnName = "id", nullable = false, unique = true)

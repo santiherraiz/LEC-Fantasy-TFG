@@ -115,6 +115,8 @@ public class JugadorService {
             JugadorEstadisticaDTO dto = new JugadorEstadisticaDTO();
             dto.setGameId(e.getPartido().getGameId());
             dto.setMatchName(e.getPartido().getTeam1() + " vs " + e.getPartido().getTeam2());
+            dto.setTeam1(e.getPartido().getTeam1());
+            dto.setTeam2(e.getPartido().getTeam2());
             dto.setFecha(e.getPartido().getFechaUtc());
             dto.setSemana(e.getPartido().getSemana());
             dto.setSerieId(e.getPartido().getSerieId());

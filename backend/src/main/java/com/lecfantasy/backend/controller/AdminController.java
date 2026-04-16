@@ -45,10 +45,4 @@ public class AdminController {
         jugadorService.importarJugadoresDeLeaguepedia();
         return ResponseEntity.ok("Proceso de importación de jugadores lanzado. Revisa la consola.");
     }
-
-    @PostMapping("/debug/seed-semana-1")
-    public ResponseEntity<String> seedSemana1() {
-        String resultado = puntuacionService.crearDatosPruebaSemana1();
-        return ResponseEntity.ok(resultado);
-    }
 }

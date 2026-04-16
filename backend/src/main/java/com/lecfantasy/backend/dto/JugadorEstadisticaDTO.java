@@ -6,6 +6,8 @@ import lombok.Data;
 public class JugadorEstadisticaDTO {
     private String gameId;
     private String matchName; // e.g., "G2 vs Fnatic"
+    private String team1;
+    private String team2;
     private String fecha;
     private Integer semana;
     private String serieId;
@@ -14,5 +16,5 @@ public class JugadorEstadisticaDTO {
     private int deaths;
     private int assists;
     private int cs;
-    private Long puntosGenerados;
+    private Double puntosGenerados;
 }

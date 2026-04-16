@@ -6,5 +6,5 @@ import lombok.Data;
 public class RankingDTO {
     private Long equipoId;
     private String nombreUsuario; // Nickname del usuario
-    private Long puntosTotales;
+    private Double puntosTotales;
 }

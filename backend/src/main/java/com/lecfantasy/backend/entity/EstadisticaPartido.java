@@ -33,5 +33,5 @@ public class EstadisticaPartido {
     private Integer cs;
 
     @Column(name = "puntos_generados", nullable = false)
-    private Long puntosGenerados;
-    }
+    private Double puntosGenerados;
+}

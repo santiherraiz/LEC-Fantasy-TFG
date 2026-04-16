@@ -187,72 +187,6 @@ public class PuntuacionService {
         }
     }
 
-    @Transactional
-    public String crearDatosPruebaSemana1() {
-        // 1. Buscamos o creamos un grupo de jugadores estrella
-        String[][] playersData = {
-                { "Caps", "Rasmus Winther", "Mid", "G2 Esports", "12000.0" },
-                { "Hans Sama", "Steven Liv", "ADC", "G2 Esports", "11000.0" },
-                { "BrokenBlade", "Sergen Çelik", "Top", "G2 Esports", "10000.0" },
-                { "Mikyx", "Mihael Mehle", "Support", "G2 Esports", "9500.0" },
-                { "Yike", "Martin Sundelin", "Jungle", "G2 Esports", "9000.0" },
-                { "Razork", "Iván Martín", "Jungle", "Fnatic", "10500.0" },
-                { "Humanoid", "Marek Brázda", "Mid", "Fnatic", "10500.0" }
-        };
-
-        List<Jugador> jugadores = new ArrayList<>();
-        for (String[] d : playersData) {
-            Jugador j = jugadorRepository.findByNickname(d[0]).orElseGet(() -> {
-                Jugador nuevo = new Jugador();
-                nuevo.setNickname(d[0]);
-                nuevo.setNombreReal(d[1]);
-                nuevo.setRol(d[2]);
-                nuevo.setEquipoLec(d[3]);
-                nuevo.setPrecioBase(Double.parseDouble(d[4]));
-                return jugadorRepository.save(nuevo);
-            });
-            jugadores.add(j);
-        }
-
-        // 2. Creamos una serie Bo3 (2 mapas) para la Semana 1
-        String matchId = "MOCK_G2_FNC_W1";
-        for (int i = 1; i <= 2; i++) {
-            String gameId = matchId + "_G" + i;
-            if (!partidoRepository.existsById(gameId)) {
-                Partido p = new Partido();
-                p.setGameId(gameId);
-                p.setTeam1("G2 Esports");
-                p.setTeam2("Fnatic");
-                p.setWinTeam("G2 Esports");
-                p.setLossTeam("Fnatic");
-                p.setSemana(1);
-                p.setSerieId(matchId);
-                partidoRepository.save(p);
-
-                // Insertamos estadísticas para todos los jugadores del G2 en este partido
-                for (Jugador j : jugadores) {
-                    if (j.getEquipoLec().equals("G2 Esports")) {
-                        EstadisticaPartido ep = new EstadisticaPartido();
-                        ep.setPartido(p);
-                        ep.setJugador(j);
-                        ep.setKills(i == 1 ? 4 + (int) (Math.random() * 5) : 8 + (int) (Math.random() * 5));
-                        ep.setDeaths((int) (Math.random() * 4));
-                        ep.setAssists(10 + (int) (Math.random() * 10));
-                        ep.setCs(250 + (int) (Math.random() * 100));
-
-                        // Calculamos puntos de una vez para el seed
-                        double pts = calcularPuntosPartido(ep.getKills(), ep.getDeaths(), ep.getAssists(), ep.getCs(),
-                                true);
-                        ep.setPuntosGenerados(Math.round(pts));
-                        estadisticaPartidoRepository.save(ep);
-                    }
-                }
-            }
-        }
-
-        return "✅ Datos de prueba creados para 7 jugadores y 1 partido Bo3. ¡Ya deberían aparecer puntos!";
-    }
-
     private static final double PUNTOS_POR_KILL = 3.0;
     private static final double PUNTOS_POR_ASSIST = 1.5;
     private static final double PUNTOS_POR_DEATH = -1.0;
@@ -262,17 +196,11 @@ public class PuntuacionService {
     public double calcularPuntosPartido(int kills, int deaths, int assists, int cs, boolean victoria) {
         double total = (kills * PUNTOS_POR_KILL) + (assists * PUNTOS_POR_ASSIST) + (deaths * PUNTOS_POR_DEATH)
                 + (cs * PUNTOS_POR_CS) + (victoria ? PUNTOS_POR_VICTORIA : 0.0);
-        return Math.max(0.0, total);
+        return total;
     }
 
     @Transactional
     public String calcularPuntosSemana(int semana) {
-        // 1. Buscamos solo los partidos de esa semana que aún NO han sido calculados
-        List<Partido> partidosPendientes = partidoRepository.findBySemanaAndPuntosCalculadosFalse(semana);
-        if (partidosPendientes.isEmpty()) {
-            return "Los puntos de la semana " + semana + " ya han sido repartidos o no hay partidos registrados.";
-        }
-
         // 2. Nos aseguramos de tener todas las estadísticas importadas (para todos los
         // partidos de la semana, para que la media sea correcta)
         List<Partido> todosLosPartidosSemana = partidoRepository.findBySemana(semana);
@@ -305,33 +233,28 @@ public class PuntuacionService {
                         esVictoria = equipoJugador.equalsIgnoreCase(equipoGanador);
                     }
 
+                    // Calculamos puntos brutos reales
                     double ptsBrutos = calcularPuntosPartido(mapStat.getKills(), mapStat.getDeaths(),
                             mapStat.getAssists(), mapStat.getCs(), esVictoria);
+
+                    System.out.println("DEBUG: Jugador " + mapStat.getJugador().getNickname() +
+                            " en partido " + mapStat.getPartido().getGameId() +
+                            " -> K:" + mapStat.getKills() + " D:" + mapStat.getDeaths() +
+                            " A:" + mapStat.getAssists() + " CS:" + mapStat.getCs() +
+                            " Win:" + esVictoria + " => Pts:" + ptsBrutos);
+
                     sumaPuntosBrutos += ptsBrutos;
-                }
 
-                // REDONDEO: La media de la serie se redondea al entero más cercano
-                long mediaRedondeada = Math.round(sumaPuntosBrutos / mapas.size());
-
-                // Repartimos esos puntos entre los mapas de la serie para que el SUM del
-                // ranking sea exacto
-                long puntosRestantes = mediaRedondeada;
-                for (int i = 0; i < mapas.size(); i++) {
-                    EstadisticaPartido mapStat = mapas.get(i);
-                    if (i == mapas.size() - 1) {
-                        // El último mapa se queda con todo lo que sobre para asegurar que la suma sea
-                        // exacta
-                        mapStat.setPuntosGenerados(puntosRestantes);
-                    } else {
-                        long parte = mediaRedondeada / mapas.size();
-                        mapStat.setPuntosGenerados(parte);
-                        puntosRestantes -= parte;
-                    }
+                    // GUARDAMOS LOS PUNTOS REALES EN LA BASE DE DATOS PARA ESE MAPA
+                    mapStat.setPuntosGenerados(ptsBrutos);
                     estadisticaPartidoRepository.save(mapStat);
                 }
 
+                // La media se calcula para sumársela al usuario en el ranking general
+                Double mediaSerie = sumaPuntosBrutos / mapas.size();
+
                 puntosAcumuladosPorJugador.put(jugadorId,
-                        puntosAcumuladosPorJugador.getOrDefault(jugadorId, 0.0) + mediaRedondeada);
+                        puntosAcumuladosPorJugador.getOrDefault(jugadorId, 0.0) + mediaSerie);
             }
         }
 
@@ -347,16 +270,15 @@ public class PuntuacionService {
                 Double puntosGana = puntosAcumuladosPorJugador.get(h.getJugador().getId());
                 if (puntosGana != null && puntosGana > 0) {
                     Equipo e = h.getEquipo();
-                    e.setPuntuacionTotal(e.getPuntuacionTotal() + puntosGana.longValue());
+                    e.setPuntuacionTotal(e.getPuntuacionTotal() + puntosGana);
                     equipoRepository.save(e);
                     equiposActualizados++;
                 }
             }
         }
 
-        // 6. IMPORTANTE: Marcar partidos de esta semana como CALCULADOS para no repetir
-        // el reparto
-        for (Partido p : partidosPendientes) {
+        // 6. IMPORTANTE: Marcar partidos de esta semana como CALCULADOS
+        for (Partido p : todosLosPartidosSemana) {
             p.setPuntosCalculados(true);
             partidoRepository.save(p);
         }
@@ -465,7 +387,7 @@ public class PuntuacionService {
                                     }
 
                                     ep.setPuntosGenerados(
-                                            Math.round(calcularPuntosPartido(kills, deaths, assists, cs, esVictoria)));
+                                            calcularPuntosPartido(kills, deaths, assists, cs, esVictoria));
 
                                     estadisticaPartidoRepository.save(ep);
                                     statsGuardadas++;

@@ -16,9 +16,9 @@ public interface JugadorRepository extends JpaRepository<Jugador, Long> {
     // buscando por su nickname (ej. "Caps") antes de guardarlo duplicado.
     Optional<Jugador> findByNickname(String nickname);
 
-    @Query("SELECT new com.lecfantasy.backend.dto.JugadorPuntuacionTotalDTO(j, COALESCE(SUM(e.puntosGenerados), 0L)) " +
+    @Query("SELECT new com.lecfantasy.backend.dto.JugadorPuntuacionTotalDTO(j, COALESCE(SUM(e.puntosGenerados), 0.0)) " +
            "FROM Jugador j LEFT JOIN EstadisticaPartido e ON e.jugador = j " +
            "GROUP BY j " +
-           "ORDER BY COALESCE(SUM(e.puntosGenerados), 0L) DESC")
+           "ORDER BY COALESCE(SUM(e.puntosGenerados), 0.0) DESC")
     List<JugadorPuntuacionTotalDTO> findAllWithTotalPoints();
 }
