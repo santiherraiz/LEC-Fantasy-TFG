@@ -27,4 +27,7 @@ public class Partido {
 
     @Column(name = "puntos_calculados", nullable = false)
     private boolean puntosCalculados = false;
+
+    @Column(name = "estadisticas_importadas", nullable = false)
+    private boolean estadisticasImportadas = false;
     }

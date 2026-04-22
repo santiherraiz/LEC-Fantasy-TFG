@@ -22,9 +22,9 @@ public class AdminController {
         return ResponseEntity.ok("Snapshot de la semana " + semana + " realizado con éxito.");
     }
 
-    @PostMapping("/puntuacion/calcular/{semana}")
-    public ResponseEntity<String> calcularSemana(@PathVariable int semana) {
-        String resultado = puntuacionService.calcularPuntosSemana(semana);
+    @PostMapping("/calcular-puntos")
+    public ResponseEntity<String> calcularPuntos() {
+        String resultado = puntuacionService.calcularPuntos();
         return ResponseEntity.ok(resultado);
     }
 
@@ -45,5 +45,17 @@ public class AdminController {
         puntuacionService.importarEstadisticasDeLeaguepedia();
         return ResponseEntity
                 .ok("Proceso de importación (lote de 10) lanzado en segundo plano. Revisa los logs del servidor.");
+    }
+
+    @PostMapping("/reset-importaciones")
+    public ResponseEntity<String> resetImportaciones() {
+        puntuacionService.resetImportaciones();
+        return ResponseEntity.ok("Columna estadisticas_importadas reseteada a 0 para todos los partidos.");
+    }
+
+    @PostMapping("/reset-calculos")
+    public ResponseEntity<String> resetCalculos() {
+        puntuacionService.resetCalculos();
+        return ResponseEntity.ok("Columna puntos_calculados reseteada a 0 para todos los partidos.");
     }
 }

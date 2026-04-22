@@ -13,6 +13,8 @@ public interface EstadisticaPartidoRepository extends JpaRepository<EstadisticaP
 
     List<EstadisticaPartido> findByPartidoSemana(Integer semana);
 
+    List<EstadisticaPartido> findByPartidoGameId(String gameId);
+
     boolean existsByPartidoGameIdAndJugadorId(String gameId, Long jugadorId);
 
     boolean existsByPartidoGameId(String gameId);

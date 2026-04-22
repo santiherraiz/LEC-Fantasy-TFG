@@ -54,6 +54,13 @@ public class PuntuacionService {
     @Autowired
     private org.springframework.transaction.support.TransactionTemplate transactionTemplate;
 
+    public int obtenerSemanaActual() {
+        return partidoRepository.findAll().stream()
+                .mapToInt(p -> p.getSemana() != null ? p.getSemana() : 1)
+                .max()
+                .orElse(1);
+    }
+
     @Transactional
     public void hacerSnapshotSemana(int semana) {
         System.out.println("📸 Realizando snapshot para la semana " + semana);
@@ -152,102 +159,151 @@ public class PuntuacionService {
     private static final double PUNTOS_POR_CS = 0.02;
     private static final double PUNTOS_POR_VICTORIA = 5.0;
 
-    public double calcularPuntosPartido(int kills, int deaths, int assists, int cs, boolean victoria) {
-        return (kills * PUNTOS_POR_KILL) + (assists * PUNTOS_POR_ASSIST) + (deaths * PUNTOS_POR_DEATH)
-                + (cs * PUNTOS_POR_CS) + (victoria ? PUNTOS_POR_VICTORIA : 0.0);
+    public int calcularPuntosPartido(int kills, int deaths, int assists, int cs, boolean victoria) {
+        long pKills = Math.round(kills * PUNTOS_POR_KILL);
+        long pAssists = Math.round(assists * PUNTOS_POR_ASSIST);
+        long pDeaths = Math.round(deaths * PUNTOS_POR_DEATH);
+        long pCs = Math.round(cs * PUNTOS_POR_CS);
+        long pVictoria = victoria ? Math.round(PUNTOS_POR_VICTORIA) : 0;
+
+        return (int) (pKills + pAssists + pDeaths + pCs + pVictoria);
     }
 
     @Transactional
-    public String calcularPuntosSemana(int semana) {
-        List<Partido> partidosPendientes = partidoRepository.findBySemana(semana).stream()
-                .filter(p -> !p.isPuntosCalculados())
+    public String calcularPuntos() {
+        // Obtenemos todos los partidos que ya tienen estadísticas pero no han sumado
+        // puntos
+        List<Partido> partidosPendientes = partidoRepository.findByPuntosCalculadosFalse().stream()
+                .filter(p -> p.isEstadisticasImportadas())
                 .collect(Collectors.toList());
 
         if (partidosPendientes.isEmpty()) {
-            return "✅ Todos los partidos de la semana " + semana + " ya han sido procesados.";
+            return "✅ No hay partidos con estadísticas pendientes de calcular.";
         }
 
-        List<EstadisticaPartido> statsNuevas = estadisticaPartidoRepository.findByPartidoSemana(semana).stream()
-                .filter(s -> !s.getPartido().isPuntosCalculados())
-                .collect(Collectors.toList());
+        // Cargamos todas las estadísticas de esos partidos
+        List<EstadisticaPartido> statsNuevas = new ArrayList<>();
+        for (Partido p : partidosPendientes) {
+            statsNuevas.addAll(estadisticaPartidoRepository.findByPartidoGameId(p.getGameId()));
+        }
 
         if (statsNuevas.isEmpty()) {
-            return "⚠️ No hay estadísticas nuevas para procesar en la semana " + semana;
+            return "⚠️ No hay estadísticas cargadas para los partidos pendientes.";
         }
 
+        // Agrupamos por serie y jugador (para promediar si es BO3/BO5)
         Map<String, Map<Long, List<EstadisticaPartido>>> agrupado = statsNuevas.stream()
                 .collect(Collectors.groupingBy(
                         s -> s.getPartido().getSerieId(),
                         Collectors.groupingBy(s -> s.getJugador().getId())));
 
-        Map<Long, Double> puntosAcumuladosPorJugador = new HashMap<>();
+        // Guardamos las sumas de cada serie por semana y jugador para promediarlas al
+        // final
+        // Mapa: semana -> jugadorId -> lista de sumas de cada serie
+        Map<Integer, Map<Long, List<Double>>> seriesPorSemanaYJugador = new HashMap<>();
 
         for (String serieId : agrupado.keySet()) {
             Map<Long, List<EstadisticaPartido>> jugadoresEnSerie = agrupado.get(serieId);
             for (Long jugadorId : jugadoresEnSerie.keySet()) {
                 List<EstadisticaPartido> mapas = jugadoresEnSerie.get(jugadorId);
-                double sumaPuntosBrutos = 0;
+                double sumaSerie = 0;
+                int semanaPartido = mapas.get(0).getPartido().getSemana();
+
                 for (EstadisticaPartido mapStat : mapas) {
                     boolean esVictoria = mapStat.getJugador().getEquipoLec() != null &&
                             mapStat.getJugador().getEquipoLec().equalsIgnoreCase(mapStat.getPartido().getWinTeam());
-                    double ptsBrutos = calcularPuntosPartido(mapStat.getKills(), mapStat.getDeaths(),
+
+                    // Calculamos y redondeamos para este mapa individual
+                    int ptsRedondeados = calcularPuntosPartido(mapStat.getKills(), mapStat.getDeaths(),
                             mapStat.getAssists(), mapStat.getCs(), esVictoria);
-                    sumaPuntosBrutos += ptsBrutos;
-                    mapStat.setPuntosGenerados(ptsBrutos);
+
+                    mapStat.setPuntosGenerados((double) ptsRedondeados);
                     estadisticaPartidoRepository.save(mapStat);
+                    sumaSerie += ptsRedondeados;
                 }
-                double mediaSerie = sumaPuntosBrutos / mapas.size();
-                puntosAcumuladosPorJugador.put(jugadorId,
-                        puntosAcumuladosPorJugador.getOrDefault(jugadorId, 0.0) + mediaSerie);
+
+                seriesPorSemanaYJugador.putIfAbsent(semanaPartido, new HashMap<>());
+                Map<Long, List<Double>> jugadoresSemana = seriesPorSemanaYJugador.get(semanaPartido);
+                jugadoresSemana.putIfAbsent(jugadorId, new ArrayList<>());
+                jugadoresSemana.get(jugadorId).add(sumaSerie);
             }
         }
 
-        List<HistoricoAlineacion> snapshot = historicoAlineacionRepository.findBySemana(semana);
-        if (snapshot.isEmpty())
-            return "Error: No hay snapshot para la semana " + semana;
+        int equiposActualizadosTotal = 0;
 
-        int equiposActualizados = 0;
-        for (HistoricoAlineacion h : snapshot) {
-            if (h.getEstado() == EstadoAlineacion.TITULAR) {
-                Double puntosGana = puntosAcumuladosPorJugador.get(h.getJugador().getId());
-                if (puntosGana != null) { // Quitamos > 0 para permitir puntos negativos
-                    Equipo e = h.getEquipo();
-                    e.setPuntuacionTotal(e.getPuntuacionTotal() + puntosGana);
-                    equipoRepository.save(e);
-                    equiposActualizados++;
+        // Aplicamos los puntos semana a semana usando el snapshot correspondiente
+        for (Integer semana : seriesPorSemanaYJugador.keySet()) {
+            Map<Long, List<Double>> puntosJugadoresSeries = seriesPorSemanaYJugador.get(semana);
+            List<HistoricoAlineacion> snapshot = historicoAlineacionRepository.findBySemana(semana);
+
+            if (snapshot.isEmpty()) {
+                System.err.println("⚠️ No hay snapshot para la semana " + semana + ". Saltando puntos de esta semana.");
+                continue;
+            }
+
+            for (HistoricoAlineacion h : snapshot) {
+                if (h.getEstado() == EstadoAlineacion.TITULAR) {
+                    List<Double> sumasSeries = puntosJugadoresSeries.get(h.getJugador().getId());
+                    if (sumasSeries != null && !sumasSeries.isEmpty()) {
+                        // La puntuación semanal es la MEDIA de las SUMAS de las series
+                        double mediaSemanal = sumasSeries.stream().mapToDouble(d -> d).average().orElse(0.0);
+                        double puntosGana = Math.round(mediaSemanal);
+
+                        Equipo e = h.getEquipo();
+                        e.setPuntuacionTotal(e.getPuntuacionTotal() + puntosGana);
+                        equipoRepository.save(e);
+                        equiposActualizadosTotal++;
+                    }
                 }
             }
         }
+        // Marcamos los partidos como ya calculados
         for (Partido p : partidosPendientes) {
             p.setPuntosCalculados(true);
             partidoRepository.save(p);
         }
-        return "Cálculo finalizado. " + equiposActualizados + " equipos actualizados con nuevos partidos.";
+
+        return "Cálculo finalizado. " + partidosPendientes.size() + " partidos procesados. " + equiposActualizadosTotal
+                + " actualizaciones a equipos.";
+    }
+
+    @Transactional
+    public void resetImportaciones() {
+        partidoRepository.resetAllEstadisticasImportadas();
+        // Opcionalmente borrar las estadísticas guardadas para empezar de cero limpio
+        estadisticaPartidoRepository.deleteAllInBatch();
+    }
+
+    @Transactional
+    public void resetCalculos() {
+        partidoRepository.resetAllPuntosCalculados();
+        // Opcionalmente resetear puntos de equipos si quieres un borrado total
+        equipoRepository.findAll().forEach(e -> {
+            e.setPuntuacionTotal(0.0);
+            equipoRepository.save(e);
+        });
     }
 
     @Async
     public void importarEstadisticasDeLeaguepedia() {
-        List<Partido> partidosPendientes = partidoRepository.findByPuntosCalculadosFalse();
-        if (partidosPendientes.isEmpty()) {
+        List<Partido> partidosSinStats = partidoRepository.findByEstadisticasImportadasFalse();
+        if (partidosSinStats.isEmpty()) {
             System.out.println("✅ No hay partidos pendientes de importar estadísticas.");
             return;
         }
 
         System.out.println(
-                "🚀 [ASYNC] Iniciando importación MASIVA de " + partidosPendientes.size() + " partidos (1 a 1)...");
+                "🚀 [ASYNC] Iniciando importación de estadísticas para " + partidosSinStats.size() + " partidos...");
 
         RestTemplate restTemplate = new RestTemplate();
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-        // 🔥 TU PASE VIP DE CLOUDFLARE 🔥
-        // (Pega aquí tu string de cookies completo como hicimos antes)
         String misCookies = "exp_bucket=v8-30; exp_bucket_2=v5-71; Geo=OK; addtl_consent=1~; euconsent-v2=CPt3fQAPt3fQACNAFAENDLCgAAAAAAAAACiQAAAOCgDAB-AIsAZ8A6QDBAHBAAAA.YAAAAAAAAAAA; tracking-opt-in-status=rejected; eb=21; wikia_beacon_id=UoF5QNPsWU; _b2=33lVvLjkgb.1772207254112; wikia_session_id=YoPddHOEPf; tech-update-disable-banner-global=1; Geo={%22region%22:%22VC%22%2C%22city%22:%22valencia%22%2C%22country_name%22:%22spain%22%2C%22country%22:%22ES%22%2C%22continent%22:%22EU%22}; csrf_token_7edb4307044064c5213d44940aa94f48ab88fe0b5ead052fbb75851a981aa6c4=WUhtlDDhR4uxQnsEXOMPBm7g1FOj9RECs3OMmRh2kHM=; fandom_session=MTc3MjIwODAxMXxGSl9JQUx1YWxNZmtsWU50NjhTbHZGWEN0d3JwbEprblhBUzVSTUNxNmVsYjE1TThxRlFBMkx6VUlOVGNvMnpvTldjSGtkSG1kTHJvVWRkcEhZOFIzZ0t5SjlHMTBYZGxjWVQxRDc4Y045ZEpwVmc1Ri1NYXNHRVk4dlMwVVN6NkdscVA4ckJaRGppc1dtTjJrN1ZSUFZ2R1NUMHcwNEtNQjZjeTM3OEZScUhWWlhYZWI0M21aRzJQYUo3S0hxMW9oWU5BVDlzMHhNcVdaUmpyR3l0OV9kQkFLWG93cEROQTZuQ1RJTVk0ZW5pRkxIRENRTkctSkU2T21OUkl5bVVfb1dmTHBpazFackdEd2YtQTJjc1Z8CDwpld0LGuQXDiEgSulsFHKfgSqQk0eDnLbQDnVty5g=; cf_clearance=RZYlgTyXRq4z9_tvnuR6SSVBnyeCvmeVztHKYgZyKyM-1772210450-1.2.1.1-053OqMFwETU1SPNpCGKpUgTisLoPPm3wY5gmZ_3ASpsilx7Itu5d1n54Jgo.a4.yxcP2oWbk1beah5jwJaYynCpPB0orsPqx5Bl_rtNIAiNwiXWZw3H_WWZTK.5IGbX9FlvFBYjyWPlPa.dGdU3cAW2ns0la04lt.9aIo6hfeDhZ1T_oHNVfVyJsb5I8GPc2wFGLPN.DgK29QpWX5grOa5VSaHqYQgV3KCnRnKMU9bA; __cf_bm=cciPxjAC.b5vokkRLHBYlpD6CDGvxrJuMVQcmDako1s-1772217511-1.0.1.1-eN9AopuYZDmd.BQdurja5xDDRPMO0lNgeY0cV1mMF4u4ctqG2vpQAy3SBUn7Jrdj5KVeT6VCicJey8LzTm4BkqZFwBXXvRJtj3M9YRByQ90; leftPanelOpen=0";
 
         int procesados = 0;
 
-        // Recorremos la lista completa de partidos pendientes
-        for (Partido partido : partidosPendientes) {
+        for (Partido partido : partidosSinStats) {
             try {
                 String gameId = partido.getGameId();
                 String url = "https://lol.fandom.com/api.php?action=cargoquery&format=json" +
@@ -257,8 +313,7 @@ public class PuntuacionService {
                         "&where=SG.GameId='{gameId}'" +
                         "&limit=500";
 
-                System.out.println("🔍 [FANDOM] Petición (JOIN) para partido " + (procesados + 1) + "/"
-                        + partidosPendientes.size() + ": " + gameId);
+                System.out.println("🔍 [FANDOM] Petición (JOIN) para estadísticas de " + gameId);
 
                 HttpHeaders headers = new HttpHeaders();
                 headers.set("User-Agent",
@@ -286,7 +341,7 @@ public class PuntuacionService {
                             }
                             retries--;
                         } else {
-                            System.err.println("⚠️ Ratelimit persistente. Abortando proceso para proteger la IP.");
+                            System.err.println("⚠️ Ratelimit persistente. Abortando.");
                             return;
                         }
                     } else {
@@ -305,7 +360,6 @@ public class PuntuacionService {
                     final MatchDataResponse responseFinal = responseObj;
 
                     Boolean exito = transactionTemplate.execute(status -> {
-                        boolean actualizoStats = false;
                         for (MatchDataResponse.CargoItem item : responseFinal.getCargoquery()) {
                             MatchDataResponse.MatchStats stats = item.getTitle();
                             String rawNickname = stats.getNickname();
@@ -338,22 +392,18 @@ public class PuntuacionService {
                                     ep.setVisionScore(0.0);
                                     ep.setPentaKills(0);
 
-                                    boolean esVictoria = jugador.getEquipoLec() != null &&
-                                            jugador.getEquipoLec().equalsIgnoreCase(partido.getWinTeam());
+                                    // IMPORTANTE: En la importación guardamos los puntos como 0
+                                    // porque el cálculo se hará en el otro endpoint
+                                    ep.setPuntosGenerados(0.0);
 
-                                    ep.setPuntosGenerados(calcularPuntosPartido(ep.getKills(), ep.getDeaths(),
-                                            ep.getAssists(), ep.getCs(), esVictoria));
                                     estadisticaPartidoRepository.saveAndFlush(ep);
-                                    actualizoStats = true;
                                 }
                             }
                         }
-                        if (actualizoStats) {
-                            partido.setPuntosCalculados(true);
-                            partidoRepository.saveAndFlush(partido);
-                            return true;
-                        }
-                        return false;
+                        // Marcamos que las estadísticas ya están en la DB
+                        partido.setEstadisticasImportadas(true);
+                        partidoRepository.saveAndFlush(partido);
+                        return true;
                     });
 
                     if (Boolean.TRUE.equals(exito)) {
@@ -361,15 +411,13 @@ public class PuntuacionService {
                     }
                 }
 
-                // Bajamos el tiempo a 5 segundos
-                System.out.println("⏳ Esperando 5s para el próximo partido...");
-                Thread.sleep(5000);
+                Thread.sleep(1000);
 
             } catch (Exception e) {
                 System.err.println("❌ Error crítico procesando partido " + partido.getGameId() + ": " + e.getMessage());
             }
         }
-        System.out.println("✅ [OK] Proceso masivo terminado. " + procesados + " partidos actualizados.");
+        System.out.println("✅ [OK] Importación de estadísticas terminada. " + procesados + " partidos procesados.");
     }
 
     // Método auxiliar para evitar caídas por cadenas vacías o mal formadas de la

@@ -16,6 +16,14 @@ public class LigaController {
     @Autowired
     private LigaService ligaService;
 
+    @Autowired
+    private com.lecfantasy.backend.service.PuntuacionService puntuacionService;
+
+    @GetMapping("/liga/semana-actual")
+    public ResponseEntity<Integer> obtenerSemanaActual() {
+        return ResponseEntity.ok(puntuacionService.obtenerSemanaActual());
+    }
+
     @PostMapping("/ligas/crear")
     public ResponseEntity<?> crearLiga(@RequestBody Map<String, Object> payload) {
         String nombre = (String) payload.get("nombre");
