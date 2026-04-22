@@ -1,6 +1,7 @@
 package com.lecfantasy.backend.repository;
 
 import com.lecfantasy.backend.entity.EstadisticaPartido;
+import com.lecfantasy.backend.entity.Jornada;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,11 +12,13 @@ public interface EstadisticaPartidoRepository extends JpaRepository<EstadisticaP
 
     List<EstadisticaPartido> findByJugadorId(Long jugadorId);
 
-    List<EstadisticaPartido> findByPartidoSemana(Integer semana);
+    List<EstadisticaPartido> findByPartidoJornada(Jornada jornada);
+
+    List<EstadisticaPartido> findByPartidoJornadaNumeroSemana(Integer semana);
 
     List<EstadisticaPartido> findByPartidoGameId(String gameId);
 
     boolean existsByPartidoGameIdAndJugadorId(String gameId, Long jugadorId);
 
     boolean existsByPartidoGameId(String gameId);
-    }
+}

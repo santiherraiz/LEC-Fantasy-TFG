@@ -2,6 +2,7 @@ package com.lecfantasy.backend.controller;
 
 import com.lecfantasy.backend.service.JugadorService;
 import com.lecfantasy.backend.service.PuntuacionService;
+import com.lecfantasy.backend.service.JornadaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +16,15 @@ public class AdminController {
 
     @Autowired
     private JugadorService jugadorService;
+
+    @Autowired
+    private JornadaService jornadaService;
+
+    @PostMapping("/jornadas/sincronizar")
+    public ResponseEntity<String> sincronizarCalendario() {
+        jornadaService.sincronizarCalendario();
+        return ResponseEntity.ok("Calendario de jornadas sincronizado con Leaguepedia.");
+    }
 
     @PostMapping("/puntuacion/snapshot/{semana}")
     public ResponseEntity<String> hacerSnapshot(@PathVariable int semana) {

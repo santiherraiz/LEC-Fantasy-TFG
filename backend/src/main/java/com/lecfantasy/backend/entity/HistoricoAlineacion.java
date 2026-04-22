@@ -20,10 +20,14 @@ public class HistoricoAlineacion {
     @JoinColumn(name = "jugador_id", nullable = false)
     private Jugador jugador;
 
-    @Column(nullable = false)
-    private Integer semana;
+    @ManyToOne
+    @JoinColumn(name = "jornada_id", nullable = false)
+    private Jornada jornada;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private EstadoAlineacion estado; // TITULAR o BANQUILLO
-}
+
+    @Column(name = "puntos_semanales", nullable = false)
+    private Double puntosSemanales = 0.0;
+    }

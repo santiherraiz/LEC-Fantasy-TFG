@@ -19,8 +19,9 @@ public class Partido {
     @Column(name = "fecha_utc")
     private String fechaUtc;
 
-    @Column(name = "semana")
-    private Integer semana;
+    @ManyToOne
+    @JoinColumn(name = "jornada_id")
+    private Jornada jornada;
 
     @Column(name = "serie_id")
     private String serieId;

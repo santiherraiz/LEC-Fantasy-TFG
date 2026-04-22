@@ -118,7 +118,7 @@ public class JugadorService {
             dto.setTeam1(e.getPartido().getTeam1());
             dto.setTeam2(e.getPartido().getTeam2());
             dto.setFecha(e.getPartido().getFechaUtc());
-            dto.setSemana(e.getPartido().getSemana());
+            dto.setSemana(e.getPartido().getJornada() != null ? e.getPartido().getJornada().getNumeroSemana() : null);
             dto.setSerieId(e.getPartido().getSerieId());
             
             // Determinar si ganó o perdió el mapa
