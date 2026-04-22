@@ -18,7 +18,7 @@ public class MatchDataResponse {
         @JsonProperty("GameId")
         private String gameId;
 
-        @JsonProperty("Name")
+        @JsonProperty("Link")
         private String nickname; // El ID/Nickname del jugador
         @JsonProperty("Kills")
         private String kills;
@@ -28,5 +28,15 @@ public class MatchDataResponse {
         private String assists;
         @JsonProperty("CS")
         private String cs;
+        @JsonProperty("Gold")
+        private String gold;
+        @JsonProperty("DamageToChampions")
+        private String damageToChampions;
+        @JsonProperty("VisionScore")
+        private String visionScore;
+        @JsonProperty("DamageTaken")
+        private String damageTaken;
+        @JsonProperty("Pentakills")
+        private String pentaKills;
     }
 }

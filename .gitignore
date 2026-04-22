@@ -10,14 +10,10 @@ backend/target/
 .idea/
 .vscode/
 *.iml
-.env
-backend/target/
-*.jar
-*.class
-.idea/
-.vscode/
-*.iml
 
+# Gemini Skills
+*.skill
+fandom-api-architect/
 
 .gemini/
 GEMINI.md

@@ -12,4 +12,6 @@ public interface PartidoRepository extends JpaRepository<Partido, String> {
     List<Partido> findBySemana(Integer semana);
 
     List<Partido> findBySemanaAndPuntosCalculadosFalse(Integer semana);
+
+    List<Partido> findByPuntosCalculadosFalse();
 }

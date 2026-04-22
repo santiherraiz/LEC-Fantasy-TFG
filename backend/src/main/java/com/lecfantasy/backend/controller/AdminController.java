@@ -16,12 +16,6 @@ public class AdminController {
     @Autowired
     private JugadorService jugadorService;
 
-    @PostMapping("/procesar-pendientes")
-    public ResponseEntity<String> procesarPartidosPendientes() {
-        String resultado = puntuacionService.procesarPartidosPendientes();
-        return ResponseEntity.ok(resultado);
-    }
-
     @PostMapping("/puntuacion/snapshot/{semana}")
     public ResponseEntity<String> hacerSnapshot(@PathVariable int semana) {
         puntuacionService.hacerSnapshotSemana(semana);
@@ -44,5 +38,12 @@ public class AdminController {
     public ResponseEntity<String> forzarImportacion() {
         jugadorService.importarJugadoresDeLeaguepedia();
         return ResponseEntity.ok("Proceso de importación de jugadores lanzado. Revisa la consola.");
+    }
+
+    @PostMapping("/importar-estadisticas")
+    public ResponseEntity<String> importarEstadisticas() {
+        puntuacionService.importarEstadisticasDeLeaguepedia();
+        return ResponseEntity
+                .ok("Proceso de importación (lote de 10) lanzado en segundo plano. Revisa los logs del servidor.");
     }
 }

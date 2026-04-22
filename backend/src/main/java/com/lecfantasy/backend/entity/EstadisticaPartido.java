@@ -32,6 +32,24 @@ public class EstadisticaPartido {
     @Column(nullable = false)
     private Integer cs;
 
+    @Column(nullable = false)
+    private Integer gold;
+
+    @Column(name = "damage_dealt")
+    private Double damageDealt;
+
+    @Column(name = "vision_score")
+    private Double visionScore;
+
+    @Column(name = "damage_taken")
+    private Double damageTaken;
+
+    @Column(name = "gold_earned")
+    private Double goldEarned;
+
+    @Column(name = "penta_kills")
+    private Integer pentaKills;
+
     @Column(name = "puntos_generados", nullable = false)
     private Double puntosGenerados;
 }

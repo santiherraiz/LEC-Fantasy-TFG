@@ -1,4 +1,5 @@
 import 'react-native-gesture-handler';
+import "./global.css";
 import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
