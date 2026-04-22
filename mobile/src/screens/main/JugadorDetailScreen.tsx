@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Text, View, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Svg, Polyline, Circle, Line, Polygon, G, Text as SvgText } from 'react-native-svg';
+import { Svg, Polyline, Circle, Line, Polygon, G, Text as SvgText, Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import api from '../../api/api';
 import { Jugador, JugadorEstadistica } from '../../types';
 import {
@@ -11,7 +11,10 @@ import {
   ChevronRight,
   Swords,
   TrendingUp,
-  Activity
+  Activity,
+  Skull,
+  Users,
+  Wheat
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -25,16 +28,20 @@ export default function JugadorDetailScreen({ route, navigation }: any) {
   const [selectedMapIndex, setSelectedMapIndex] = useState<Record<string, number>>({});
   const [expandedSeries, setExpandedSeries] = useState<Record<string, boolean>>({});
 
+  const [maxWeek, setMaxWeek] = useState(1);
+
   useEffect(() => {
     const fetchDetail = async () => {
       if (!id) return;
       try {
-        const [jugadorRes, statsRes] = await Promise.all([
+        const [jugadorRes, statsRes, semanaRes] = await Promise.all([
           api.get(`/jugadores/${id}`),
-          api.get(`/jugadores/${id}/estadisticas`)
+          api.get(`/jugadores/${id}/estadisticas`),
+          api.get('/liga/semana-actual')
         ]);
         setJugador(jugadorRes.data);
         setEstadisticas(statsRes.data);
+        setMaxWeek(semanaRes.data || 1);
       } catch (error) {
         console.error(error);
       } finally {
@@ -72,22 +79,31 @@ export default function JugadorDetailScreen({ route, navigation }: any) {
   });
 
   const statsWeeks = Object.keys(groupedStats).map(Number);
-  const maxWeek = statsWeeks.length > 0 ? Math.max(...statsWeeks) : 1;
   const allWeeks = Array.from({ length: maxWeek }, (_, i) => i + 1).sort((a, b) => b - a);
+  const allWeeksAsc = Array.from({ length: maxWeek }, (_, i) => i + 1);
 
-  const weeklyData = statsWeeks.sort((a, b) => a - b).map(w => {
+  const weeklyData = allWeeksAsc.map(w => {
     const weekMatches = groupedStats[w];
-    const seriesPoints = Object.values(weekMatches).map(maps => {
-      return maps.reduce((acc, m) => acc + m.puntosGenerados, 0) / maps.length;
+    if (!weekMatches) return { value: 0, played: false };
+
+    // Calculamos la SUMA de cada serie
+    const seriesSums = Object.values(weekMatches).map(maps => {
+      return maps.reduce((acc, m) => acc + m.puntosGenerados, 0);
     });
-    const totalWeek = seriesPoints.reduce((acc, p) => acc + p, 0);
-    return Math.round(totalWeek);
+    // La puntuación de la semana es la MEDIA de las SUMAS de las series
+    const totalWeek = seriesSums.reduce((acc, p) => acc + p, 0) / (seriesSums.length || 1);
+    return { value: Math.round(totalWeek), played: true };
   });
+
+  const playedWeeksData = weeklyData.filter(d => d.played);
+  const avgPointsPerWeek = playedWeeksData.length > 0 
+    ? (playedWeeksData.reduce((acc, d) => acc + d.value, 0) / playedWeeksData.length).toFixed(0)
+    : "0";
 
   const statsSummary = {
     kda: (estadisticas.reduce((acc, s) => acc + (s.kills + s.assists) / (s.deaths || 1), 0) / (estadisticas.length || 1)).toFixed(2),
     csMin: (estadisticas.reduce((acc, s) => acc + s.cs, 0) / (estadisticas.length * 30 || 1)).toFixed(1),
-    avgPoints: (estadisticas.reduce((acc, s) => acc + s.puntosGenerados, 0) / (estadisticas.length || 1)).toFixed(0),
+    avgPoints: avgPointsPerWeek,
     damage: 18500,
     mitigated: 12200,
     vision: 1.4
@@ -141,31 +157,107 @@ export default function JugadorDetailScreen({ route, navigation }: any) {
               </View>
               <View style={styles.graphCard}>
                 <View style={styles.chartContainer}>
-                  <Svg height="120" width={width - 72}>
-                    <Line x1="0" y1="100" x2={width - 72} y2="100" stroke="#334155" strokeWidth="1" />
-                    {weeklyData.map((d, i) => {
-                      const x = (i / (weeklyData.length - 1 || 1)) * (width - 72);
-                      const y = 100 - (d / Math.max(...weeklyData, 50)) * 80;
-                      return (
-                        <G key={i}>
-                          {i > 0 && (
-                            <Line
-                              x1={((i - 1) / (weeklyData.length - 1)) * (width - 72)}
-                              y1={100 - (weeklyData[i - 1] / Math.max(...weeklyData, 50)) * 80}
-                              x2={x} y2={y} stroke="#3B82F6" strokeWidth="3"
-                            />
-                          )}
-                          <Circle cx={x} cy={y} r="4" fill="#3B82F6" />
-                          <SvgText x={x} y={y - 10} fill="#94A3B8" fontSize="10" textAnchor="middle">{d}</SvgText>
-                          <SvgText x={x} y="115" fill="#64748B" fontSize="8" textAnchor="middle">S{statsWeeks.sort((a, b) => a - b)[i]}</SvgText>
-                        </G>
-                      );
-                    })}
-                  </Svg>
+                  {weeklyData.length > 0 ? (
+                    <Svg height="140" width={width - 72}>
+                      <Defs>
+                        <LinearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+                          <Stop offset="0" stopColor="#3B82F6" stopOpacity="0.3" />
+                          <Stop offset="1" stopColor="#3B82F6" stopOpacity="0" />
+                        </LinearGradient>
+                      </Defs>
+                      
+                      {/* Líneas de fondo horizontal */}
+                      {[0, 25, 50, 75, 100].map((tick) => (
+                        <Line
+                          key={tick}
+                          x1="0"
+                          y1={110 - tick}
+                          x2={width - 72}
+                          y2={110 - tick}
+                          stroke="#334155"
+                          strokeWidth="0.5"
+                          strokeDasharray="5, 5"
+                        />
+                      ))}
+
+                      {(() => {
+                        const chartW = width - 72;
+                        const padX = 30; // Margen para que no se corten los textos
+                        const chartH = 110;
+                        const maxVal = Math.max(...weeklyData.map(d => d.value), 50);
+                        
+                        // Generar puntos de la línea
+                        const points = weeklyData.map((d, i) => {
+                          const x = padX + (i / (weeklyData.length - 1 || 1)) * (chartW - padX * 2);
+                          const y = chartH - (d.value / maxVal) * 80;
+                          return { x, y, val: d.value, played: d.played, week: allWeeksAsc[i] };
+                        });
+
+                        // Construir el path para el área rellena
+                        const pathData = points.reduce((acc, p, i) => 
+                          acc + `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`, "");
+                        const areaData = `${pathData} L ${points[points.length-1].x} ${chartH} L ${points[0].x} ${chartH} Z`;
+
+                        return (
+                          <G>
+                            {/* Área con degradado */}
+                            <Path d={areaData} fill="url(#grad)" />
+                            
+                            {/* Línea principal */}
+                            <Path d={pathData} fill="none" stroke="#3B82F6" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+
+                            {/* Puntos y etiquetas */}
+                            {points.map((p, i) => (
+                              <G key={i}>
+                                <Circle 
+                                  cx={p.x} 
+                                  cy={p.y} 
+                                  r={p.played ? 4 : 3} 
+                                  fill={p.played ? "#0F172A" : "#334155"} 
+                                  stroke={p.played ? "#3B82F6" : "#64748B"} 
+                                  strokeWidth="2" 
+                                />
+                                <SvgText 
+                                  x={p.x} 
+                                  y={p.y - 12} 
+                                  fill={p.played ? "white" : "#64748B"} 
+                                  fontSize={p.played ? "11" : "9"} 
+                                  fontWeight="bold" 
+                                  textAnchor="middle"
+                                >
+                                  {p.played ? p.val : "NP"}
+                                </SvgText>
+                                <SvgText 
+                                  x={p.x} 
+                                  y={chartH + 20} 
+                                  fill="#64748B" 
+                                  fontSize="9" 
+                                  fontWeight="bold" 
+                                  textAnchor="middle"
+                                >
+                                  SEM {p.week}
+                                </SvgText>
+                              </G>
+                            ))}
+                          </G>
+                        );
+                      })()}
+                    </Svg>
+                  ) : (
+                    <Text style={{ color: '#64748B', fontSize: 12 }}>Sin datos suficientes</Text>
+                  )}
                 </View>
                 <View style={styles.graphFooter}>
-                  <Text style={styles.graphStat}>MEDIA: {statsSummary.avgPoints} PTS</Text>
-                  <Text style={styles.graphStat}>TOTAL J1-{maxWeek}: {Math.round(estadisticas.reduce((acc, s) => acc + s.puntosGenerados, 0))} PTS</Text>
+                  <View style={styles.footerStatItem}>
+                    <Text style={styles.footerStatLabel}>MEDIA</Text>
+                    <Text style={styles.footerStatValue}>{statsSummary.avgPoints} PTS</Text>
+                  </View>
+                  <View style={styles.footerStatItem}>
+                    <Text style={styles.footerStatLabel}>TOTAL J1-{maxWeek}</Text>
+                    <Text style={[styles.footerStatValue, { color: '#3B82F6' }]}>
+                      {Math.round(estadisticas.reduce((acc, s) => acc + s.puntosGenerados, 0))} PTS
+                    </Text>
+                  </View>
                 </View>
               </View>
             </View>
@@ -291,22 +383,86 @@ export default function JugadorDetailScreen({ route, navigation }: any) {
                             </View>
 
                             <View style={styles.mapDetailContainer}>
-                              <View style={styles.mapStatsGrid}>
-                                <Text style={styles.fullStat}>Asesinatos: <Text style={styles.whiteStat}>{map.kills}</Text></Text>
-                                <Text style={styles.fullStat}>Muertes: <Text style={styles.whiteStat}>{map.deaths}</Text></Text>
-                                <Text style={styles.fullStat}>Asistencias: <Text style={styles.whiteStat}>{map.assists}</Text></Text>
-                                <Text style={styles.fullStat}>Farmeo (CS): <Text style={styles.whiteStat}>{map.cs}</Text></Text>
+                              <View style={styles.modernStatsGrid}>
+                                {(() => {
+                                  const kPts = Math.round(map.kills * 3);
+                                  const dPts = Math.round(map.deaths * -1);
+                                  const aPts = Math.round(map.assists * 1.5);
+                                  const cPts = Math.round(map.cs * 0.02);
+
+                                  return (
+                                    <>
+                                      <View style={styles.statCard}>
+                                        <View style={styles.statIconContainer}>
+                                          <Swords size={16} color="#3B82F6" />
+                                        </View>
+                                        <Text style={styles.statLabel}>KILLS</Text>
+                                        <Text style={styles.statValue}>{map.kills}</Text>
+                                        <View style={kPts === 0 ? styles.statPointsBadgeGray : styles.statPointsBadgeGreen}>
+                                          <Text style={kPts === 0 ? styles.statPointsTextGray : styles.statPointsTextGreen}>
+                                            {kPts >= 0 ? `+${kPts}` : kPts}
+                                          </Text>
+                                        </View>
+                                      </View>
+
+                                      <View style={styles.statCard}>
+                                        <View style={[styles.statIconContainer, { backgroundColor: '#EF444420' }]}>
+                                          <Skull size={16} color="#EF4444" />
+                                        </View>
+                                        <Text style={styles.statLabel}>DEATHS</Text>
+                                        <Text style={styles.statValue}>{map.deaths}</Text>
+                                        <View style={dPts === 0 ? styles.statPointsBadgeGray : styles.statPointsBadgeRed}>
+                                          <Text style={dPts === 0 ? styles.statPointsTextGray : styles.statPointsTextRed}>
+                                            {dPts === 0 ? "0" : dPts}
+                                          </Text>
+                                        </View>
+                                      </View>
+
+                                      <View style={styles.statCard}>
+                                        <View style={[styles.statIconContainer, { backgroundColor: '#10B98120' }]}>
+                                          <Users size={16} color="#10B981" />
+                                        </View>
+                                        <Text style={styles.statLabel}>ASSISTS</Text>
+                                        <Text style={styles.statValue}>{map.assists}</Text>
+                                        <View style={aPts === 0 ? styles.statPointsBadgeGray : styles.statPointsBadgeGreen}>
+                                          <Text style={aPts === 0 ? styles.statPointsTextGray : styles.statPointsTextGreen}>
+                                            {aPts >= 0 ? `+${aPts}` : aPts}
+                                          </Text>
+                                        </View>
+                                      </View>
+
+                                      <View style={styles.statCard}>
+                                        <View style={[styles.statIconContainer, { backgroundColor: '#F59E0B20' }]}>
+                                          <Wheat size={16} color="#F59E0B" />
+                                        </View>
+                                        <Text style={styles.statLabel}>FARM (CS)</Text>
+                                        <Text style={styles.statValue}>{map.cs}</Text>
+                                        <View style={cPts === 0 ? styles.statPointsBadgeGray : styles.statPointsBadgeGreen}>
+                                          <Text style={cPts === 0 ? styles.statPointsTextGray : styles.statPointsTextGreen}>
+                                            {cPts >= 0 ? `+${cPts}` : cPts}
+                                          </Text>
+                                        </View>
+                                      </View>
+                                    </>
+                                  );
+                                })()}
                               </View>
 
-                              <View style={styles.bonusRow}>
-                                {map.resultado === 'WIN' && (
-                                  <Text style={styles.bonusText}>Victoria: +5 pts</Text>
-                                )}
-                              </View>
+                              {map.resultado === 'WIN' && (
+                                <View style={styles.victoryBonusBanner}>
+                                  <Text style={styles.victoryBonusText}>BONUS VICTORIA</Text>
+                                  <Text style={styles.victoryBonusPoints}>+5 PTS</Text>
+                                </View>
+                              )}
 
                               <View style={styles.mapPointsFinal}>
-                                <Text style={styles.mapPointsLabel}>PUNTOS MAPA</Text>
-                                <Text style={[styles.mapPointsValue, Math.round(map.puntosGenerados) < 0 && { color: '#EF4444' }]}>{Math.round(map.puntosGenerados)} PTS</Text>
+                                <Text style={styles.mapPointsLabel}>PUNTUACIÓN FINAL MAPA</Text>
+                                <View style={styles.pointsCircle}>
+                                  <Text style={[styles.mapPointsValue, Math.round(map.puntosGenerados) < 0 && { color: '#EF4444' }]}>
+                                    {Math.round(map.puntosGenerados)}
+                                  </Text>
+                                  <Text style={styles.ptsUnit}>PTS</Text>
+                                </View>
                               </View>
                             </View>
                           </View>
@@ -377,9 +533,11 @@ const styles = StyleSheet.create({
   sectionLabel: { color: '#64748B', fontSize: 11, fontWeight: '900', letterSpacing: 1.2, marginLeft: 8 },
 
   graphCard: { backgroundColor: '#1E293B', borderRadius: 24, padding: 20 },
-  chartContainer: { height: 130, justifyContent: 'center', alignItems: 'center' },
-  graphFooter: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#334155' },
-  graphStat: { color: '#94A3B8', fontSize: 11, fontWeight: 'bold' },
+  chartContainer: { height: 160, justifyContent: 'center', alignItems: 'center' },
+  graphFooter: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#334155' },
+  footerStatItem: { alignItems: 'center' },
+  footerStatLabel: { color: '#64748B', fontSize: 9, fontWeight: '900', marginBottom: 4 },
+  footerStatValue: { color: 'white', fontSize: 14, fontWeight: 'bold' },
 
   radarCard: { backgroundColor: '#1E293B', borderRadius: 24, padding: 20, alignItems: 'center' },
   radarLegend: { flexDirection: 'row', marginTop: 20 },
@@ -406,15 +564,64 @@ const styles = StyleSheet.create({
   mapTabText: { color: '#64748B', fontSize: 11, fontWeight: 'bold' },
   mapTabTextActive: { color: 'white' },
 
-  mapDetailContainer: { backgroundColor: '#0F172A', borderRadius: 20, padding: 20 },
-  mapStatsGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  fullStat: { color: '#64748B', fontSize: 14, width: '100%', marginBottom: 8, fontWeight: '600' },
-  whiteStat: { color: 'white', fontWeight: 'bold' },
-  bonusRow: { marginTop: 8, marginBottom: 16 },
-  bonusText: { color: '#10B981', fontSize: 12, fontWeight: 'bold' },
-  mapPointsFinal: { borderTopWidth: 1, borderTopColor: '#1E293B', paddingTop: 16, alignItems: 'center' },
-  mapPointsLabel: { color: '#64748B', fontSize: 10, fontWeight: 'bold', marginBottom: 4 },
-  mapPointsValue: { color: '#3B82F6', fontSize: 28, fontWeight: '900' },
+  mapDetailContainer: { backgroundColor: '#0F172A', borderRadius: 24, padding: 16 },
+  modernStatsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  statCard: { 
+    width: '48%', 
+    backgroundColor: '#1E293B', 
+    borderRadius: 16, 
+    padding: 12, 
+    alignItems: 'center', 
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#334155'
+  },
+  statIconContainer: { 
+    width: 32, 
+    height: 32, 
+    borderRadius: 8, 
+    backgroundColor: '#3B82F620', 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    marginBottom: 8
+  },
+  statLabel: { color: '#64748B', fontSize: 10, fontWeight: '900', marginBottom: 4 },
+  statValue: { color: 'white', fontSize: 18, fontWeight: 'bold', marginBottom: 6 },
+  
+  statPointsBadgeGreen: { backgroundColor: '#10B98120', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
+  statPointsTextGreen: { color: '#10B981', fontSize: 11, fontWeight: 'bold' },
+  
+  statPointsBadgeRed: { backgroundColor: '#EF444420', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
+  statPointsTextRed: { color: '#EF4444', fontSize: 11, fontWeight: 'bold' },
+
+  statPointsBadgeGray: { backgroundColor: '#334155', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
+  statPointsTextGray: { color: '#94A3B8', fontSize: 11, fontWeight: 'bold' },
+
+  victoryBonusBanner: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    backgroundColor: '#10B98115', 
+    padding: 12, 
+    borderRadius: 12, 
+    marginBottom: 16,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#10B98140'
+  },
+  victoryBonusText: { color: '#10B981', fontSize: 11, fontWeight: '900' },
+  victoryBonusPoints: { color: '#10B981', fontSize: 12, fontWeight: 'bold' },
+
+  mapPointsFinal: { 
+    alignItems: 'center', 
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#1E293B'
+  },
+  mapPointsLabel: { color: '#64748B', fontSize: 10, fontWeight: '900', marginBottom: 8, letterSpacing: 1 },
+  pointsCircle: { flexDirection: 'row', alignItems: 'baseline' },
+  mapPointsValue: { color: '#3B82F6', fontSize: 36, fontWeight: '900' },
+  ptsUnit: { color: '#3B82F6', fontSize: 14, fontWeight: 'bold', marginLeft: 4 },
 
   statsList: { backgroundColor: '#1E293B', borderRadius: 24, paddingVertical: 8 },
   statRow: { flexDirection: 'row', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: '#334155' },
