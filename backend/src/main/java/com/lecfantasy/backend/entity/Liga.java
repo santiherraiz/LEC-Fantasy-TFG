@@ -2,7 +2,6 @@ package com.lecfantasy.backend.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import java.util.UUID;
 
 @Entity
 @Table(name = "ligas")
@@ -23,10 +22,23 @@ public class Liga {
     @JoinColumn(name = "admin_id", referencedColumnName = "id")
     private Usuario administrador;
 
+    @Column(name = "created_at", updatable = false)
+    private java.time.LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private java.time.LocalDateTime updatedAt;
+
     @PrePersist
-    public void generateCodigo() {
+    public void onPrePersist() {
         if (this.codigoAcceso == null) {
-            this.codigoAcceso = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+            this.codigoAcceso = java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         }
+        createdAt = java.time.LocalDateTime.now();
+        updatedAt = java.time.LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = java.time.LocalDateTime.now();
     }
 }

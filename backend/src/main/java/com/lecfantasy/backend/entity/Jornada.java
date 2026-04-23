@@ -25,10 +25,4 @@ public class Jornada {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private JornadaEstado estado = JornadaEstado.PROGRAMADA;
-
-    @Column(name = "snapshot_realizado", nullable = false)
-    private boolean snapshotRealizado = false;
-
-    @Column(name = "puntos_calculados", nullable = false)
-    private boolean puntosCalculados = false;
 }

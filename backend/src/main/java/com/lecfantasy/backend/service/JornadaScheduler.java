@@ -4,61 +4,85 @@ import com.lecfantasy.backend.entity.Jornada;
 import com.lecfantasy.backend.entity.JornadaEstado;
 import com.lecfantasy.backend.repository.JornadaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
 public class JornadaScheduler {
 
-    @Autowired private JornadaService jornadaService;
-    @Autowired private PuntuacionService puntuacionService;
-    @Autowired private JornadaRepository jornadaRepository;
+    @Autowired
+    private JornadaService jornadaService;
+    @Autowired
+    private PuntuacionService puntuacionService;
+    @Autowired
+    private JugadorService jugadorService;
+    @Autowired
+    private JornadaRepository jornadaRepository;
+    @Autowired
+    private ClockService clockService;
 
-    @Scheduled(fixedDelay = 300000) 
+    /**
+     * ¡Magia! En cuanto el servidor arranca, se sincroniza todo solo.
+     * ESTÁ COMPROBADO: ApplicationReadyEvent garantiza que la DB esté lista.
+     */
+    @EventListener(ApplicationReadyEvent.class)
+    public void alArrancar() {
+        System.out.println("🚀 [SISTEMA] Backend listo. Iniciando auto-sincronización inicial...");
+        jornadaService.sincronizarCalendario();
+        puntuacionService.importarPartidosDeLeaguepedia();
+        jugadorService.importarJugadoresDeLeaguepedia();
+        System.out.println("✅ [SISTEMA] Auto-sincronización completada.");
+    }
+
+    // Bajamos a 1 minuto (60,000 ms) para máxima respuesta
+    @Scheduled(fixedDelay = 60000)
     public void monitorizarJornadas() {
-        LocalDateTime ahora = LocalDateTime.now();
+        java.time.LocalDateTime ahora = clockService.ahora();
         System.out.println("⏰ [SCHEDULER] " + ahora);
 
-        // 1. Snapshot automático (Solo una a la vez por orden)
+        // 1. Snapshot automático
         jornadaService.obtenerJornadaSiguiente().ifPresent(jornada -> {
             if (ahora.isAfter(jornada.getFechaInicio().minusMinutes(15))) {
                 System.out.println("📸 [SCHEDULER] Snapshot automático: Semana " + jornada.getNumeroSemana());
                 puntuacionService.hacerSnapshotSemana(jornada.getNumeroSemana());
                 jornada.setEstado(JornadaEstado.BLOQUEADA);
-                jornada.setSnapshotRealizado(true);
                 jornadaRepository.save(jornada);
             }
         });
 
-        // 2. Gestión de estados (BLOQUEADA -> PROCESANDO cuando termina cronológicamente)
+        // 2. Transición a PROCESANDO
         List<Jornada> bloqueadas = jornadaRepository.findAllByEstado(JornadaEstado.BLOQUEADA);
         for (Jornada j : bloqueadas) {
             if (ahora.isAfter(j.getFechaFin())) {
                 j.setEstado(JornadaEstado.PROCESANDO);
                 jornadaRepository.save(j);
-                System.out.println("⚙️ [SCHEDULER] Semana " + j.getNumeroSemana() + " pasa a estado PROCESANDO.");
+                System.out.println("⚙️ [SCHEDULER] Semana " + j.getNumeroSemana() + " pasa a PROCESANDO.");
             }
         }
 
-        // 3. Procesamiento de resultados (Solo jornadas BLOQUEADAS o PROCESANDO)
-        // Intentamos importar de todas las pendientes
-        puntuacionService.importarPartidosDeLeaguepedia();
+        // 3. Procesamiento Live
+        // Nota: Solo importa stats si hay partidos pendientes para ahorrar consumo
         puntuacionService.importarEstadisticasDeLeaguepedia();
         puntuacionService.calcularPuntos();
 
-        // 4. Intentar cerrar jornadas en estado PROCESANDO
+        // 4. Cierre de jornadas
         List<Jornada> procesando = jornadaRepository.findAllByEstado(JornadaEstado.PROCESANDO);
         for (Jornada j : procesando) {
             long pendientes = puntuacionService.contarPartidosPendientes(j);
             if (pendientes == 0) {
                 j.setEstado(JornadaEstado.FINALIZADA);
-                j.setPuntosCalculados(true);
                 jornadaRepository.save(j);
                 System.out.println("✅ [SCHEDULER] Semana " + j.getNumeroSemana() + " FINALIZADA.");
             } else {
-                System.out.println("⏳ [SCHEDULER] Semana " + j.getNumeroSemana() + " en espera de " + pendientes + " partidos.");
+                // Solo logueamos si han pasado más de 2 horas del fin para no saturar la
+                // consola cada minuto
+                if (ahora.isAfter(j.getFechaFin().plusHours(2))) {
+                    System.out.println(
+                            "⏳ [SCHEDULER] Semana " + j.getNumeroSemana() + " esperando " + pendientes + " partidos.");
+                }
             }
         }
     }
@@ -66,5 +90,6 @@ public class JornadaScheduler {
     @Scheduled(cron = "0 0 4 * * *")
     public void sincronizacionDiaria() {
         jornadaService.sincronizarCalendario();
+        puntuacionService.importarPartidosDeLeaguepedia();
     }
 }

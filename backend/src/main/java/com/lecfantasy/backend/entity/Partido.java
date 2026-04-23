@@ -16,8 +16,24 @@ public class Partido {
     private String winTeam;
     private String lossTeam;
 
+    @ManyToOne
+    @JoinColumn(name = "team1_id")
+    private EquipoLec team1Entity;
+
+    @ManyToOne
+    @JoinColumn(name = "team2_id")
+    private EquipoLec team2Entity;
+
+    @ManyToOne
+    @JoinColumn(name = "win_team_id")
+    private EquipoLec winTeamEntity;
+
+    @ManyToOne
+    @JoinColumn(name = "loss_team_id")
+    private EquipoLec lossTeamEntity;
+
     @Column(name = "fecha_utc")
-    private String fechaUtc;
+    private java.time.LocalDateTime fechaUtc;
 
     @ManyToOne
     @JoinColumn(name = "jornada_id")

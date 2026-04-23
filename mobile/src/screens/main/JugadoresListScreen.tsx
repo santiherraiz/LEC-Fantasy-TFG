@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Image } from 'react-native';
 import api from '../../api/api';
 import { JugadorPuntuacionTotal } from '../../types';
 import { ChevronRight, Medal } from 'lucide-react-native';
@@ -47,7 +46,16 @@ export default function JugadoresListScreen({ navigation }: any) {
       
       <View style={styles.infoContainer}>
         <Text style={styles.nickname}>{item.jugador.nickname}</Text>
-        <Text style={styles.teamRol}>{item.jugador.equipoLec} • {item.jugador.rol}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+          {item.jugador.equipoLec?.logoUrl && (
+            <Image 
+              source={{ uri: item.jugador.equipoLec.logoUrl }} 
+              style={{ width: 14, height: 14, marginRight: 4 }} 
+              resizeMode="contain"
+            />
+          )}
+          <Text style={styles.teamRol}>{item.jugador.equipoLec?.nombre} • {item.jugador.rol}</Text>
+        </View>
       </View>
 
       <View style={styles.pointsContainer}>

@@ -47,7 +47,7 @@ public class MercadoController {
 
         Map<String, List<Jugador>> agrupadosPorEquipo = todos.stream()
                 .filter(j -> j.getEquipoLec() != null) // Filtro de seguridad
-                .collect(Collectors.groupingBy(Jugador::getEquipoLec));
+                .collect(Collectors.groupingBy(j -> j.getEquipoLec().getNombre()));
 
         return ResponseEntity.ok(agrupadosPorEquipo);
     }

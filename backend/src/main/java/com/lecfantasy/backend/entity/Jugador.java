@@ -24,6 +24,7 @@ public class Jugador {
     @Column(name = "precio_base", nullable = false)
     private Double precioBase;
 
-    @Column(name = "equipo_lec")
-    private String equipoLec;
+    @ManyToOne
+    @JoinColumn(name = "equipo_lec_id")
+    private EquipoLec equipoLec;
 }

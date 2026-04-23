@@ -1,9 +1,16 @@
+export interface EquipoLec {
+  id: number;
+  nombre: string;
+  abreviatura: string;
+  logoUrl: string;
+}
+
 export interface Jugador {
   id: number;
   nombreReal: string;
   nickname: string;
   rol: string;
-  equipoLec: string;
+  equipoLec: EquipoLec;
   precioBase: number;
 }
 

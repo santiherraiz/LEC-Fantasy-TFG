@@ -35,7 +35,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/usuarios/login", "/api/usuarios/registro").permitAll()
                         .requestMatchers("/api/liga/semana-actual").permitAll()
-                        .requestMatchers("/api/admin/**").permitAll() // Permitir acceso a admin para importar datos
+                        .requestMatchers("/api/admin/**").permitAll() 
+                        .requestMatchers("/api/demo/**").permitAll()
                         .anyRequest().authenticated());
 
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

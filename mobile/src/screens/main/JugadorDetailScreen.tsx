@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet, Dimensions } from 'react-native';
+import { Text, View, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet, Dimensions, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Svg, Polyline, Circle, Line, Polygon, G, Text as SvgText, Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import api from '../../api/api';
@@ -78,9 +78,9 @@ export default function JugadorDetailScreen({ route, navigation }: any) {
     groupedStats[w][s].push(stat);
   });
 
-  const statsWeeks = Object.keys(groupedStats).map(Number);
-  const allWeeks = Array.from({ length: maxWeek }, (_, i) => i + 1).sort((a, b) => b - a);
-  const allWeeksAsc = Array.from({ length: maxWeek }, (_, i) => i + 1);
+  const statsWeeks = Object.keys(groupedStats).map(Number).sort((a, b) => a - b);
+  const allWeeks = statsWeeks.slice().sort((a, b) => b - a);
+  const allWeeksAsc = statsWeeks;
 
   const weeklyData = allWeeksAsc.map(w => {
     const weekMatches = groupedStats[w];
@@ -140,10 +140,18 @@ export default function JugadorDetailScreen({ route, navigation }: any) {
           <View style={{ padding: 16 }}>
             <View style={styles.heroSection}>
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{jugador.nickname?.substring(0, 1)}</Text>
+                {jugador.equipoLec?.logoUrl ? (
+                  <Image 
+                    source={{ uri: jugador.equipoLec.logoUrl }} 
+                    style={{ width: 60, height: 60 }} 
+                    resizeMode="contain"
+                  />
+                ) : (
+                  <Text style={styles.avatarText}>{jugador.nickname?.substring(0, 1)}</Text>
+                )}
               </View>
               <Text style={styles.playerName}>{jugador.nickname}</Text>
-              <Text style={styles.playerSub}>{jugador.equipoLec} • {jugador.rol}</Text>
+              <Text style={styles.playerSub}>{jugador.equipoLec?.nombre} • {jugador.rol}</Text>
               <View style={styles.priceTag}>
                 <DollarSign size={14} color="#10B981" />
                 <Text style={styles.priceText}>{jugador.precioBase?.toLocaleString()} €</Text>
@@ -255,7 +263,7 @@ export default function JugadorDetailScreen({ route, navigation }: any) {
                   <View style={styles.footerStatItem}>
                     <Text style={styles.footerStatLabel}>TOTAL J1-{maxWeek}</Text>
                     <Text style={[styles.footerStatValue, { color: '#3B82F6' }]}>
-                      {Math.round(estadisticas.reduce((acc, s) => acc + s.puntosGenerados, 0))} PTS
+                      {Math.round(weeklyData.reduce((acc, d) => acc + d.value, 0))} PTS
                     </Text>
                   </View>
                 </View>
@@ -321,7 +329,7 @@ export default function JugadorDetailScreen({ route, navigation }: any) {
                   <View key={week} style={{ marginBottom: 24 }}>
                     <Text style={styles.weekTitleLabel}>SEMANA {week}</Text>
                     <View style={styles.noPlayCard}>
-                      <Text style={styles.noPlayText}>{jugador.equipoLec?.toUpperCase()} no jugó esta semana</Text>
+                      <Text style={styles.noPlayText}>{jugador.equipoLec?.nombre?.toUpperCase()} no jugó esta semana</Text>
                     </View>
                   </View>
                 );
@@ -348,7 +356,7 @@ export default function JugadorDetailScreen({ route, navigation }: any) {
                     // Resultado Dinámico (Cambia si está expandido)
                     const displayResult = isExpanded ? (map.resultado || 'LOSS') : globalResult;
 
-                    const rival = (map.team1?.toLowerCase() === jugador.equipoLec?.toLowerCase()) 
+                    const rival = (map.team1?.toLowerCase() === jugador.equipoLec?.nombre?.toLowerCase()) 
                       ? (map.team2 || 'Rival') 
                       : (map.team1 || 'Rival');
                     return (

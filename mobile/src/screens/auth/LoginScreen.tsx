@@ -22,12 +22,8 @@ export default function LoginScreen({ navigation }: any) {
       const { token, usuario } = response.data;
       setAuth(usuario, token);
     } catch (error: any) {
-      console.error(error);
-      if (!error.response) {
-        showToast('Error de conexión', 'error');
-      } else {
-        showToast('Email o contraseña incorrectos', 'error');
-      }
+      // Usamos el mensaje limpio que ya viene del interceptor de API
+      showToast(error.message, 'error');
     } finally {
       setLoading(false);
     }

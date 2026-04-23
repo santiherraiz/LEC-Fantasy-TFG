@@ -5,6 +5,7 @@ import com.lecfantasy.backend.entity.*;
 import com.lecfantasy.backend.repository.*;
 import com.lecfantasy.backend.dto.PartidoLeaguepediaDTO;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -29,11 +30,77 @@ public class PuntuacionService {
     @Autowired private JugadorRepository jugadorRepository;
     @Autowired private HistoricoAlineacionRepository historicoAlineacionRepository;
     @Autowired private JornadaRepository jornadaRepository;
+    @Autowired private EquipoLecRepository equipoLecRepository;
     @Autowired private org.springframework.transaction.support.TransactionTemplate transactionTemplate;
 
     private final String MIS_COOKIES = "exp_bucket=v8-30; exp_bucket_2=v5-71; Geo=OK; addtl_consent=1~; euconsent-v2=CPt3fQAPt3fQACNAFAENDLCgAAAAAAAAACiQAAAOCgDAB-AIsAZ8A6QDBAHBAAAA.YAAAAAAAAAAA; tracking-opt-in-status=rejected; eb=21; wikia_beacon_id=UoF5QNPsWU; _b2=33lVvLjkgb.1772207254112; wikia_session_id=YoPddHOEPf; tech-update-disable-banner-global=1; Geo={%22region%22:%22VC%22%2C%22city%22:%22valencia%22%2C%22country_name%22:%22spain%22%2C%22country%22:%22ES%22%2C%22continent%22:%22EU%22}; csrf_token_7edb4307044064c5213d44940aa94f48ab88fe0b5ead052fbb75851a981aa6c4=WUhtlDDhR4uxQnsEXOMPBm7g1FOj9RECs3OMmRh2kHM=; fandom_session=MTc3MjIwODAxMXxGSl9JQUx1YWxNZmtsWU50NjhTbHZGWEN0d3JwbEprblhBUzVSTUNxNmVsYjE1TThxRlFBMkx6VUlOVGNvMnpvTldjSGtkSG1kTHJvVWRkcEhZOFIzZ0t5SjlHMTBYZGxjWVQxRDc4Y045ZEpwVmc1Ri1NYXNHRVk4dlMwVVN6NkdscVA4ckJaRGppc1dtTjJrN1ZSUFZ2R1NUMHcwNEtNQjZjeTM3OEZScUhWWlhYZWI0M21aRzJQYUo3S0hxMW9oWU5BVDlzMHhNcVdaUmpyR3l0OV9kQkFLWG93cEROQTZuQ1RJTVk0ZW5pRkxIRENRTkctSkU2T21OUkl5bVVfb1dmTHBpazFackdEd2YtQTJjc1Z8CDwpld0LGuQXDiEgSulsFHKfgSqQk0eDnLbQDnVty5g=; cf_clearance=RZYlgTyXRq4z9_tvnuR6SSVBnyeCvmeVztHKYgZyKyM-1772210450-1.2.1.1-053OqMFwETU1SPNpCGKpUgTisLoPPm3wY5gmZ_3ASpsilx7Itu5d1n54Jgo.a4.yxcP2oWbk1beah5jwJaYynCpPB0orsPqx5Bl_rtNIAiNwiXWZw3H_WWZTK.5IGbX9FlvFBYjyWPlPa.dGdU3cAW2ns0la04lt.9aIo6hfeDhZ1T_oHNVfVyJsb5I8GPc2wFGLPN.DgK29QpWX5grOa5VSaHqYQgV3KCnRnKMU9bA; __cf_bm=cciPxjAC.b5vokkRLHBYlpD6CDGvxrJuMVQcmDako1s-1772217511-1.0.1.1-eN9AopuYZDmd.BQdurja5xDDRPMO0lNgeY0cV1mMF4u4ctqG2vpQAy3SBUn7Jrdj5KVeT6VCicJey8LzTm4BkqZFwBXXvRJtj3M9YRByQ90; leftPanelOpen=0";
 
+    public EquipoLec getOrCreateEquipo(String nombre) {
+        if (nombre == null || nombre.isEmpty()) return null;
+        
+        Optional<EquipoLec> existente = equipoLecRepository.findByNombre(nombre);
+        if (existente.isPresent()) return existente.get();
+
+        System.out.println("🛰️ [EQUIPO] Nuevo equipo detectado: " + nombre + ". Consultando Leaguepedia...");
+        
+        String url = UriComponentsBuilder.fromUriString("https://lol.fandom.com/api.php")
+                .queryParam("action", "cargoquery")
+                .queryParam("format", "json")
+                .queryParam("tables", "Teams")
+                .queryParam("fields", "Short,Image")
+                .queryParam("where", "Name = '" + nombre + "'")
+                .build()
+                .toUriString();
+
+        EquipoLec e = new EquipoLec();
+        e.setNombre(nombre);
+        
+        try {
+            RestTemplate rt = new RestTemplate();
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("User-Agent", "Mozilla/5.0");
+            headers.set(HttpHeaders.COOKIE, MIS_COOKIES);
+            
+            ResponseEntity<Map<String, Object>> response = rt.exchange(
+                url, 
+                HttpMethod.GET, 
+                new HttpEntity<>(headers), 
+                new ParameterizedTypeReference<Map<String, Object>>() {}
+            );
+
+            Map<String, Object> body = response.getBody();
+            if (body != null && body.containsKey("cargoquery")) {
+                List<?> cargoquery = (List<?>) body.get("cargoquery");
+                if (cargoquery != null && !cargoquery.isEmpty()) {
+                    Map<?, ?> firstItem = (Map<?, ?>) cargoquery.get(0);
+                    Map<?, ?> title = (Map<?, ?>) firstItem.get("title");
+                    
+                    String shortName = (String) title.get("Short");
+                    String fileName = (String) title.get("Image");
+                    
+                    e.setAbreviatura(shortName);
+                    if (fileName != null && !fileName.isEmpty()) {
+                        e.setLogoUrl("https://lol.fandom.com/wiki/Special:FilePath/" + fileName);
+                    }
+                } else {
+                    e.setAbreviatura(nombre.substring(0, Math.min(nombre.length(), 3)).toUpperCase());
+                }
+            }
+        } catch (Exception ex) {
+            e.setAbreviatura(nombre.substring(0, Math.min(nombre.length(), 3)).toUpperCase());
+        }
+
+        return equipoLecRepository.save(e);
+    }
+
     public int obtenerSemanaActual() {
+        // Primero, intentamos obtener la semana más alta que ya tenga estadísticas calculadas
+        Integer maxSemanaConStats = estadisticaPartidoRepository.findMaxSemanaConStats();
+        if (maxSemanaConStats != null && maxSemanaConStats > 0) {
+            return maxSemanaConStats;
+        }
+
+        // Si no hay estadísticas, devolvemos la primera jornada que no esté finalizada
         return jornadaRepository.findAll().stream()
                 .filter(j -> j.getEstado() != JornadaEstado.FINALIZADA)
                 .mapToInt(Jornada::getNumeroSemana)
@@ -45,7 +112,6 @@ public class PuntuacionService {
         Jornada jornada = jornadaRepository.findByNumeroSemana(numeroSemana)
                 .orElseThrow(() -> new RuntimeException("Jornada no encontrada: " + numeroSemana));
         
-        System.out.println("📸 [SNAPSHOT] Realizando snapshot para jornada " + numeroSemana);
         List<HistoricoAlineacion> previo = historicoAlineacionRepository.findByJornada(jornada);
         if (!previo.isEmpty()) historicoAlineacionRepository.deleteAll(previo);
 
@@ -59,7 +125,6 @@ public class PuntuacionService {
             h.setPuntosSemanales(0.0);
             historicoAlineacionRepository.save(h);
         }
-        System.out.println("✅ [SNAPSHOT] Completado para semana " + numeroSemana);
     }
 
     public long contarPartidosPendientes(Jornada jornada) {
@@ -73,16 +138,13 @@ public class PuntuacionService {
                 .filter(p -> p.isEstadisticasImportadas() && p.getJornada() != null)
                 .collect(Collectors.toList());
 
-        if (partidosNuevos.isEmpty()) {
-            equipoRepository.findAll().forEach(this::actualizarPuntosTotalesEquipo);
-            return "✅ Sin series nuevas.";
-        }
+        if (partidosNuevos.isEmpty()) return "✅ Sin series nuevas.";
 
         for (Partido p : partidosNuevos) {
             List<EstadisticaPartido> stats = estadisticaPartidoRepository.findByPartidoGameId(p.getGameId());
             for (EstadisticaPartido s : stats) {
                 boolean victoria = s.getJugador().getEquipoLec() != null &&
-                        s.getJugador().getEquipoLec().equalsIgnoreCase(p.getWinTeam());
+                        s.getJugador().getEquipoLec().getNombre().equalsIgnoreCase(p.getWinTeam());
                 int pts = calcularPuntosPartido(s.getKills(), s.getDeaths(), s.getAssists(), s.getCs(), victoria);
                 s.setPuntosGenerados((double) pts);
                 estadisticaPartidoRepository.save(s);
@@ -91,33 +153,27 @@ public class PuntuacionService {
             partidoRepository.save(p);
         }
 
-        equipoRepository.findAll().forEach(this::actualizarPuntosTotalesEquipo);
-        return "Cálculo finalizado para " + partidosNuevos.size() + " partidos.";
+        actualizarRankingGlobal();
+        return "Cálculo live finalizado para " + partidosNuevos.size() + " partidos.";
     }
 
-    private void actualizarPuntosTotalesEquipo(Equipo equipo) {
-        List<HistoricoAlineacion> todosLosSnapshots = historicoAlineacionRepository.findAll().stream()
-                .filter(h -> h.getEquipo().getId().equals(equipo.getId()))
-                .collect(Collectors.toList());
+    private void actualizarRankingGlobal() {
+        List<HistoricoAlineacion> todosLosHistoricos = historicoAlineacionRepository.findAll();
+        Map<Equipo, Double> nuevosTotales = new HashMap<>();
 
-        double totalAcumulado = 0;
-        Map<Jornada, List<HistoricoAlineacion>> porJornada = todosLosSnapshots.stream()
-                .collect(Collectors.groupingBy(HistoricoAlineacion::getJornada));
-
-        for (Jornada j : porJornada.keySet()) {
-            double puntosJornada = 0;
-            for (HistoricoAlineacion ha : porJornada.get(j)) {
-                if (ha.getEstado() == EstadoAlineacion.TITULAR) {
-                    double ptsJugador = calcularMediaJugadorEnJornada(ha.getJugador().getId(), j.getId());
-                    ha.setPuntosSemanales(ptsJugador);
-                    historicoAlineacionRepository.save(ha);
-                    puntosJornada += ptsJugador;
-                }
+        for (HistoricoAlineacion ha : todosLosHistoricos) {
+            if (ha.getEstado() == EstadoAlineacion.TITULAR) {
+                double pts = calcularMediaJugadorEnJornada(ha.getJugador().getId(), ha.getJornada().getId());
+                ha.setPuntosSemanales(pts);
+                historicoAlineacionRepository.save(ha);
+                nuevosTotales.put(ha.getEquipo(), nuevosTotales.getOrDefault(ha.getEquipo(), 0.0) + pts);
             }
-            totalAcumulado += puntosJornada;
         }
-        equipo.setPuntuacionTotal(totalAcumulado);
-        equipoRepository.save(equipo);
+
+        nuevosTotales.forEach((equipo, total) -> {
+            equipo.setPuntuacionTotal(total);
+            equipoRepository.save(equipo);
+        });
     }
 
     private double calcularMediaJugadorEnJornada(Long jugadorId, Long jornadaId) {
@@ -135,6 +191,19 @@ public class PuntuacionService {
 
     public int calcularPuntosPartido(int k, int d, int a, int cs, boolean v) {
         return (int) Math.round((k * 3.0) + (a * 1.5) + (d * -1.0) + (cs * 0.02) + (v ? 5.0 : 0));
+    }
+
+    @Transactional
+    public void resetImportaciones() {
+        partidoRepository.resetAllEstadisticasImportadas();
+        estadisticaPartidoRepository.deleteAllInBatch();
+    }
+
+    @Transactional
+    public void resetCalculos() {
+        partidoRepository.resetAllPuntosCalculados();
+        equipoRepository.findAll().forEach(e -> { e.setPuntuacionTotal(0.0); equipoRepository.save(e); });
+        historicoAlineacionRepository.findAll().forEach(h -> { h.setPuntosSemanales(0.0); historicoAlineacionRepository.save(h); });
     }
 
     public void importarPartidosDeLeaguepedia() {
@@ -156,13 +225,22 @@ public class PuntuacionService {
                     Optional<Partido> po = partidoRepository.findById(d.getGameId());
                     Partido p = po.orElse(new Partido());
                     p.setGameId(d.getGameId()); p.setTeam1(d.getTeam1()); p.setTeam2(d.getTeam2());
-                    p.setWinTeam(d.getWinTeam()); p.setLossTeam(d.getLossTeam()); p.setFechaUtc(d.getDateTimeUtc());
+                    p.setWinTeam(d.getWinTeam()); p.setLossTeam(d.getLossTeam()); 
+                    
+                    p.setTeam1Entity(getOrCreateEquipo(d.getTeam1()));
+                    p.setTeam2Entity(getOrCreateEquipo(d.getTeam2()));
+                    p.setWinTeamEntity(getOrCreateEquipo(d.getWinTeam()));
+                    p.setLossTeamEntity(getOrCreateEquipo(d.getLossTeam()));
+
+                    if (d.getDateTimeUtc() != null) {
+                        p.setFechaUtc(LocalDateTime.parse(d.getDateTimeUtc().replace(" ", "T")));
+                    }
                     p.setSerieId(d.getGameId().contains("_") ? d.getGameId().substring(0, d.getGameId().lastIndexOf("_")) : d.getGameId());
                     jornadaRepository.findByNumeroSemana(extraerSemana(d.getGameId())).ifPresent(p::setJornada);
                     partidoRepository.save(p);
                 }
             }
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {}
     }
 
     private int extraerSemana(String gid) {
@@ -182,11 +260,9 @@ public class PuntuacionService {
         List<Partido> pendientes = partidoRepository.findByEstadisticasImportadasFalse();
         if (pendientes.isEmpty()) return;
         
-        System.out.println("🔍 [STATS] Procesando " + pendientes.size() + " partidos pendientes...");
         RestTemplate rt = new RestTemplate();
         ObjectMapper m = new ObjectMapper(); m.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         
-        int procesados = 0;
         for (Partido p : pendientes) {
             try {
                 String url = "https://lol.fandom.com/api.php?action=cargoquery&format=json&tables=ScoreboardGames=SG,ScoreboardPlayers=SP&fields=SP.GameId,SP.Link,SP.Kills,SP.Deaths,SP.Assists,SP.CS,SP.Gold&join_on=SG.GameId=SP.GameId&where=SG.GameId='" + p.getGameId() + "'&limit=500";
@@ -207,19 +283,8 @@ public class PuntuacionService {
                                     ep.setDeaths(parsearEnteroSeguro(s.getDeaths()));
                                     ep.setAssists(parsearEnteroSeguro(s.getAssists())); 
                                     ep.setCs(parsearEnteroSeguro(s.getCs()));
-                                    
-                                    // ASIGNACIÓN CRÍTICA: Corregimos los campos de oro que daban error not-null
-                                    int oro = parsearEnteroSeguro(s.getGold());
-                                    ep.setGold(oro);
-                                    ep.setGoldEarned((double) oro);
-                                    
-                                    // Campos adicionales para evitar otros posibles errores de nulos
-                                    ep.setDamageDealt(0.0);
-                                    ep.setDamageTaken(0.0);
-                                    ep.setVisionScore(0.0);
-                                    ep.setPentaKills(0);
+                                    ep.setGold(parsearEnteroSeguro(s.getGold()));
                                     ep.setPuntosGenerados(0.0); 
-                                    
                                     estadisticaPartidoRepository.save(ep);
                                 }
                             });
@@ -228,13 +293,8 @@ public class PuntuacionService {
                         partidoRepository.save(p);
                         return true;
                     });
-                    procesados++;
-                    System.out.println("   🔸 [" + procesados + "/" + pendientes.size() + "] Importadas stats de: " + p.getGameId());
                 }
-                Thread.sleep(200); 
-            } catch (Exception e) {
-                System.err.println("❌ Error en partido " + p.getGameId() + ": " + e.getMessage());
-            }
+            } catch (Exception e) {}
         }
     }
 
