@@ -21,7 +21,16 @@ export default function CustomDrawerContent(props: DrawerContentComponentProps) 
 
   const isActive = (routeName: string) => {
     const state = props.state;
-    return state.routes[state.index].name === routeName;
+    const currentRoute = state.routes[state.index];
+    
+    // Si estamos en el navigator de Tabs, buscamos la ruta activa dentro de él
+    if (currentRoute.name === 'Tabs' && currentRoute.state) {
+      const tabState = currentRoute.state;
+      const activeTabName = tabState.routes[tabState.index || 0].name;
+      return activeTabName === routeName;
+    }
+    
+    return currentRoute.name === routeName;
   };
 
   return (
@@ -59,14 +68,14 @@ export default function CustomDrawerContent(props: DrawerContentComponentProps) 
           label="Mi Equipo" 
           icon={<Shield size={22} />} 
           active={isActive('MiEquipo')} 
-          onPress={() => props.navigation.navigate('MiEquipo')} 
+          onPress={() => props.navigation.navigate('Tabs', { screen: 'MiEquipo' })} 
         />
         
         <DrawerItem 
           label="Mercado" 
           icon={<ShoppingBag size={22} />} 
           active={isActive('Mercado')} 
-          onPress={() => props.navigation.navigate('Mercado')} 
+          onPress={() => props.navigation.navigate('Tabs', { screen: 'Mercado' })} 
         />
 
         <DrawerItem 
@@ -80,7 +89,7 @@ export default function CustomDrawerContent(props: DrawerContentComponentProps) 
           label="Ranking" 
           icon={<Trophy size={22} />} 
           active={isActive('Ranking')} 
-          onPress={() => props.navigation.navigate('Ranking')} 
+          onPress={() => props.navigation.navigate('Tabs', { screen: 'Ranking' })} 
         />
 
         <Text style={styles.sectionTitle}>Ajustes</Text>

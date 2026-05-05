@@ -6,7 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/logos/ISOTIPO-bg.png",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
     "splash": {
       "image": "./assets/logos/IMAGOTIPO-bg.png",
       "resizeMode": "contain",
@@ -21,16 +20,8 @@
         "foregroundImage": "./assets/logos/ISOTIPO-bg.png",
         "backgroundColor": "#0B0E14"
       },
-      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.santiherraizz.mobile"
-    },
-    "androidNavigationBar": {
-      "visible": false,
-      "behavior": "sticky-immersive"
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
     }
   }
 }
