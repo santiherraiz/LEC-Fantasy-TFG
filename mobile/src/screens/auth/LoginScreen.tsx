@@ -30,13 +30,15 @@ export default function LoginScreen({ navigation }: any) {
 
   return (
     <View className="flex-1 bg-midnight items-center justify-center p-8">
-      <View className="mb-12 items-center">
-        <Image 
-          source={require('../../../assets/logos/IMAGOTIPO-bg.png')} 
-          className="w-72 h-32"
-          resizeMode="contain"
-        />
-        <Text className="text-gray-500 font-black uppercase tracking-[4px] -mt-4 text-[10px]">Tu liga, tus reglas</Text>
+      <View className="mb-10 items-center w-full">
+        <View className="w-full h-48 items-center justify-center">
+          <Image 
+            source={require('../../../assets/logos/IMAGOTIPO-bg.png')} 
+            className="w-full h-full"
+            resizeMode="contain"
+          />
+        </View>
+        <Text className="text-gray-500 font-black uppercase tracking-[6px] mt-2 text-[12px]">Tu liga, tus reglas</Text>
       </View>
       
       <View className="w-full">

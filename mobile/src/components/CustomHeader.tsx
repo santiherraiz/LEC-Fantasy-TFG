@@ -30,33 +30,34 @@ export default function CustomHeader({ ligaNombre, showBackButton, onBackPress }
 
   return (
     <View 
-      className="bg-midnight border-b border-surface-light/30 pb-3"
-      style={{ paddingTop: insets.top + 10 }}
+      className="bg-midnight border-b border-surface-light/30"
+      style={{ paddingTop: insets.top, height: insets.top + 60 }}
     >
-      <View className="flex-row items-center justify-between px-4">
-        <TouchableOpacity 
-          onPress={handlePress}
-          className="p-1"
-        >
-          {showBackButton ? (
-            <ChevronLeft color="white" size={28} />
-          ) : (
-            <Menu color="white" size={28} />
-          )}
-        </TouchableOpacity>
+      <View className="flex-1 flex-row items-center justify-between px-4">
+        <View className="w-12">
+          <TouchableOpacity 
+            onPress={handlePress}
+            className="p-1"
+          >
+            {showBackButton ? (
+              <ChevronLeft color="white" size={28} />
+            ) : (
+              <Menu color="white" size={28} />
+            )}
+          </TouchableOpacity>
+        </View>
         
-        <View className="items-center">
-          <Image 
-            source={require('../../assets/logos/LOGOTIPO-bg.png')} 
-            className="w-32 h-8"
-            resizeMode="contain"
-          />
-          {displayNombre && (
-            <Text className="text-accent-cyan text-[10px] font-bold uppercase tracking-widest -mt-1">{displayNombre}</Text>
-          )}
+        <View className="flex-1 items-center justify-center h-full">
+          <View style={{ width: 180, height: 45, alignItems: 'center', justifyContent: 'center' }}>
+            <Image 
+              source={require('../../assets/logos/LOGOTIPO-bg.png')} 
+              style={{ width: 280, height: 100 }}
+              resizeMode="contain"
+            />
+          </View>
         </View>
 
-        <View className="w-9" />
+        <View className="w-12" />
       </View>
     </View>
   );

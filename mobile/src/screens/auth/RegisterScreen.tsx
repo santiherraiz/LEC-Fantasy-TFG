@@ -31,13 +31,15 @@ export default function RegisterScreen({ navigation }: any) {
 
   return (
     <View className="flex-1 bg-midnight items-center justify-center p-8">
-      <View className="mb-10 items-center">
-        <Image 
-          source={require('../../../assets/logos/IMAGOTIPO-bg.png')} 
-          className="w-56 h-24"
-          resizeMode="contain"
-        />
-        <Text className="text-gray-500 font-black uppercase tracking-[4px] -mt-4 text-[8px]">Únete a la competición</Text>
+      <View className="mb-10 items-center w-full">
+        <View className="w-full h-40 items-center justify-center">
+          <Image 
+            source={require('../../../assets/logos/IMAGOTIPO-bg.png')} 
+            className="w-full h-full"
+            resizeMode="contain"
+          />
+        </View>
+        <Text className="text-gray-500 font-black uppercase tracking-[6px] mt-2 text-[10px]">Únete a la competición</Text>
       </View>
       
       <View className="w-full">
