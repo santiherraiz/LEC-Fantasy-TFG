@@ -55,3 +55,17 @@ export interface JugadorEstadistica {
   cs: number;
   puntosGenerados: number;
 }
+
+export interface Subasta {
+  id: number;
+  jugador: Jugador;
+  fechaFin: string;
+  miPuja: number | null;
+}
+
+export interface CatalogoJugador {
+  jugador: Jugador;
+  propietarioNickname: string | null;
+  puntosMedia: number;
+}
+

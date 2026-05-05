@@ -23,4 +23,7 @@ public interface PlantillaRepository extends JpaRepository<Plantilla, Long> {
     List<Plantilla> findByEquipoIdAndEstado(Long equipoId, EstadoAlineacion estado);
 
     List<Plantilla> findByJugadorNicknameAndEstado(String nickname, EstadoAlineacion estado);
+
+    // Buscar todos los jugadores que ya pertenecen a algún equipo de una liga específica
+    List<Plantilla> findByEquipoLigaId(Long ligaId);
 }

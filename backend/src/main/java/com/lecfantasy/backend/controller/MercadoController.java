@@ -1,6 +1,8 @@
 package com.lecfantasy.backend.controller;
 
-import com.lecfantasy.backend.dto.FichajeRequest;
+import com.lecfantasy.backend.dto.PujaRequest;
+import com.lecfantasy.backend.dto.SubastaDTO;
+import com.lecfantasy.backend.dto.CatalogoJugadorDTO;
 import com.lecfantasy.backend.entity.Jugador;
 import com.lecfantasy.backend.service.JugadorService;
 import com.lecfantasy.backend.service.MercadoService;
@@ -19,14 +21,31 @@ public class MercadoController {
     @Autowired
     private MercadoService mercadoService;
 
-    // Inyectamos el servicio de jugadores
     @Autowired
     private JugadorService jugadorService;
 
-    @PostMapping("/fichar")
-    public ResponseEntity<String> fichar(@RequestBody FichajeRequest request) {
-        String mensaje = mercadoService.ficharJugador(request.getUsuarioId(), request.getJugadorId());
-        return ResponseEntity.ok(mensaje);
+    @GetMapping("/subastas")
+    public ResponseEntity<List<SubastaDTO>> obtenerSubastas(
+            @RequestParam Long ligaId, 
+            @RequestParam Long usuarioId) {
+        return ResponseEntity.ok(mercadoService.obtenerSubastasActivas(ligaId, usuarioId));
+    }
+
+    @PostMapping("/pujar")
+    public ResponseEntity<String> pujar(@RequestBody PujaRequest request) {
+        return ResponseEntity.ok(mercadoService.pujar(request));
+    }
+
+    @DeleteMapping("/pujar")
+    public ResponseEntity<String> eliminarPuja(
+            @RequestParam Long subastaId, 
+            @RequestParam Long usuarioId) {
+        return ResponseEntity.ok(mercadoService.eliminarPuja(subastaId, usuarioId));
+    }
+
+    @GetMapping("/catalogo")
+    public ResponseEntity<List<CatalogoJugadorDTO>> obtenerCatalogo(@RequestParam Long ligaId) {
+        return ResponseEntity.ok(mercadoService.obtenerCatalogo(ligaId));
     }
 
     @GetMapping("/jugadores")
