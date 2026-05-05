@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, StyleSheet, RefreshControl } from 'react-native';
+import { Text, View, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../api/api';
@@ -60,126 +60,102 @@ export default function LeagueSelectionScreen() {
 
   if (loading && !refreshing) {
     return (
-      <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="#3B82F6" />
+      <View className="flex-1 bg-midnight justify-center items-center">
+        <ActivityIndicator size="large" color="#00D1FF" />
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.title}>Mis Ligas</Text>
-          <Text style={styles.subtitle}>Selecciona una liga para jugar.</Text>
+    <SafeAreaView className="flex-1 bg-midnight">
+      <View className="flex-row items-center px-5 py-6 border-b border-surface-light/20">
+        <View className="flex-1">
+          <Text className="text-white text-3xl font-black tracking-tight uppercase italic">Mis Ligas</Text>
+          <Text className="text-gray-500 text-xs font-bold mt-1">Elige tu competición</Text>
         </View>
-        <TouchableOpacity onPress={logout} style={styles.logoutBtn}>
-          <LogOut color="#EF4444" size={24} />
+        <TouchableOpacity onPress={logout} className="p-3 bg-crimson/10 rounded-xl border border-crimson/20">
+          <LogOut color="#FF003F" size={24} />
         </TouchableOpacity>
       </View>
 
       <ScrollView 
-        style={{ paddingHorizontal: 20 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => {setRefreshing(true); fetchLigas();}} tintColor="#3b82f6" />}
+        className="px-5"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => {setRefreshing(true); fetchLigas();}} tintColor="#00D1FF" />}
       >
-        <View style={styles.ligasList}>
+        <View className="mt-6 mb-8">
           {ligas.map((liga) => (
             <TouchableOpacity 
               key={liga.id} 
-              style={styles.ligaCard}
+              className="bg-surface p-5 rounded-2xl flex-row items-center mb-4 border border-surface-light/30 shadow-xl"
               onPress={() => setSelectedLiga(liga.id, liga.nombre)}
             >
-              <View style={styles.ligaIcon}>
-                <Trophy color="#3B82F6" size={24} />
+              <View className="w-12 h-12 bg-midnight rounded-xl items-center justify-center mr-4 border border-surface-light/50">
+                <Trophy color="#00D1FF" size={24} />
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.ligaName}>{liga.nombre}</Text>
-                <Text style={styles.ligaCode}>CÓDIGO: {liga.codigoAcceso}</Text>
+              <View className="flex-1">
+                <Text className="text-white text-lg font-bold">{liga.nombre}</Text>
+                <Text className="text-gray-500 text-[10px] font-bold tracking-widest mt-1">CÓDIGO: {liga.codigoAcceso}</Text>
               </View>
-              <ChevronRight color="#4B5563" />
+              <ChevronRight color="#4A5568" size={20} />
             </TouchableOpacity>
           ))}
 
           {ligas.length === 0 && (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>Aún no estás en ninguna liga.</Text>
+            <View className="items-center py-10 border border-dashed border-surface-light/30 rounded-3xl">
+              <Text className="text-gray-600 italic">Aún no estás en ninguna liga.</Text>
             </View>
           )}
         </View>
 
-        <View style={styles.actions}>
+        <View className="mb-10">
           <TouchableOpacity 
-            style={[styles.actionBtn, { backgroundColor: '#1F2937' }]}
+            className="flex-row items-center justify-center bg-surface-light/30 p-5 rounded-2xl border border-surface-light/30"
             onPress={() => { setShowJoin(!showJoin); setShowCreate(false); }}
           >
-            <Link color="white" size={20} style={{ marginRight: 10 }} />
-            <Text style={styles.actionBtnText}>Unirse con Código</Text>
+            <Link color="white" size={20} className="mr-3" />
+            <Text className="text-white font-bold text-base uppercase tracking-tighter">Unirse con Código</Text>
           </TouchableOpacity>
 
           {showJoin && (
-            <View style={styles.form}>
+            <View className="bg-surface p-5 rounded-2xl mt-3 border border-accent-cyan/20">
               <TextInput 
-                style={styles.input}
-                placeholder="Pega el código aquí..."
-                placeholderTextColor="#6B7280"
+                className="bg-midnight text-white p-4 rounded-xl mb-4 border border-surface-light/50 font-medium"
+                placeholder="Código de acceso..."
+                placeholderTextColor="#4A5568"
                 value={codigo}
                 onChangeText={setCodigo}
                 autoCapitalize="characters"
               />
-              <TouchableOpacity style={styles.submitBtn} onPress={handleJoin}>
-                <Text style={styles.submitBtnText}>Confirmar</Text>
+              <TouchableOpacity className="bg-accent-cyan p-4 rounded-xl items-center" onPress={handleJoin}>
+                <Text className="text-midnight font-black uppercase">Confirmar</Text>
               </TouchableOpacity>
             </View>
           )}
 
           <TouchableOpacity 
-            style={[styles.actionBtn, { backgroundColor: '#2563EB', marginTop: 12 }]}
+            className="flex-row items-center justify-center bg-accent-cyan p-5 rounded-2xl mt-4 shadow-lg shadow-accent-cyan/20"
             onPress={() => { setShowCreate(!showCreate); setShowJoin(false); }}
           >
-            <Plus color="white" size={20} style={{ marginRight: 10 }} />
-            <Text style={styles.actionBtnText}>Crear Nueva Liga</Text>
+            <Plus color="#0B0E14" size={20} className="mr-3" />
+            <Text className="text-midnight font-black text-base uppercase tracking-tighter">Crear Nueva Liga</Text>
           </TouchableOpacity>
 
           {showCreate && (
-            <View style={styles.form}>
+            <View className="bg-surface p-5 rounded-2xl mt-3 border border-accent-cyan/20">
               <TextInput 
-                style={styles.input}
-                placeholder="Nombre de tu liga..."
-                placeholderTextColor="#6B7280"
+                className="bg-midnight text-white p-4 rounded-xl mb-4 border border-surface-light/50 font-medium"
+                placeholder="Nombre de la liga..."
+                placeholderTextColor="#4A5568"
                 value={nombreLiga}
                 onChangeText={setNombreLiga}
               />
-              <TouchableOpacity style={styles.submitBtn} onPress={handleCreate}>
-                <Text style={styles.submitBtnText}>Crear Liga</Text>
+              <TouchableOpacity className="bg-accent-cyan p-4 rounded-xl items-center" onPress={handleCreate}>
+                <Text className="text-midnight font-black uppercase">Crear Liga</Text>
               </TouchableOpacity>
             </View>
           )}
         </View>
-        <View style={{ height: 50 }} />
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#111827' },
-  loaderContainer: { flex: 1, backgroundColor: '#111827', justifyContent: 'center', alignItems: 'center' },
-  header: { padding: 20, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#1F2937', marginBottom: 10 },
-  logoutBtn: { padding: 10 },
-  title: { color: 'white', fontSize: 28, fontWeight: 'bold' },
-  subtitle: { color: '#9CA3AF', fontSize: 14, marginTop: 4 },
-  ligasList: { marginTop: 10, marginBottom: 32 },
-  ligaCard: { backgroundColor: '#1F2937', padding: 20, borderRadius: 20, flexDirection: 'row', alignItems: 'center', marginBottom: 16, borderWidth: 1, borderColor: '#374151' },
-  ligaIcon: { backgroundColor: '#111827', borderRadius: 12, marginRight: 16, width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
-  ligaName: { color: 'white', fontSize: 18, fontWeight: 'bold' },
-  ligaCode: { color: '#6B7280', fontSize: 12, marginTop: 4, letterSpacing: 1 },
-  emptyContainer: { alignItems: 'center', padding: 40 },
-  emptyText: { color: '#6B7280', fontStyle: 'italic' },
-  actions: { marginTop: 8 },
-  actionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 16, borderRadius: 16 },
-  actionBtnText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
-  form: { backgroundColor: '#1F2937', padding: 16, borderRadius: 16, marginTop: 8 },
-  input: { backgroundColor: '#111827', color: 'white', padding: 14, borderRadius: 12, marginBottom: 12, borderWidth: 1, borderColor: '#374151' },
-  submitBtn: { backgroundColor: '#2563EB', padding: 14, borderRadius: 12, alignItems: 'center' },
-  submitBtnText: { color: 'white', fontWeight: 'bold' }
-});

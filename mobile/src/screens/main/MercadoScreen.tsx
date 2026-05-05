@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View, ScrollView, TouchableOpacity, RefreshControl, Alert, ActivityIndicator, StyleSheet } from 'react-native';
+import { Text, View, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../context/ToastContext';
@@ -17,7 +17,7 @@ export default function MercadoScreen({ navigation }: any) {
   const [myPlayerIds, setMyPlayerIds] = useState<number[]>([]);
   const [equipoId, setEquipoId] = useState<number | null>(null);
 
-  const fetchData = async () => {
+  const fetchData = async () => { 
     if (!user?.id || !selectedLigaId) return;
     try {
       const [mercadoRes, miEquipoRes] = await Promise.all([
@@ -79,50 +79,72 @@ export default function MercadoScreen({ navigation }: any) {
 
   if (loading && !refreshing) {
     return (
-      <View style={styles.loaderContainer}><ActivityIndicator size="large" color="#3b82f6" /></View>
+      <View className="flex-1 bg-midnight justify-center items-center">
+        <ActivityIndicator size="large" color="#00D1FF" />
+      </View>
     );
   }
 
   const equiposEntries = Object.entries(equiposLec || {});
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView className="flex-1 bg-midnight">
       <ScrollView 
-        style={{ padding: 16 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => {setRefreshing(true); fetchData();}} tintColor="#3b82f6" />}
+        className="px-4"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => {setRefreshing(true); fetchData();}} tintColor="#00D1FF" />}
       >
-        <Text style={styles.title}>Mercado</Text>
+        <Text className="text-white text-3xl font-bold tracking-tight mb-8 mt-4">Mercado</Text>
         
         {equiposEntries.map(([teamName, players]) => (
-          <View key={teamName} style={styles.teamCard}>
-            <TouchableOpacity onPress={() => toggleTeam(teamName)} style={styles.teamHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <View style={styles.teamIcon}><Text style={styles.teamIconText}>{teamName.substring(0, 1)}</Text></View>
-                <Text style={styles.teamNameText}>{teamName}</Text>
+          <View key={teamName} className="mb-4 bg-surface rounded-2xl border border-surface-light/30 overflow-hidden">
+            <TouchableOpacity 
+              onPress={() => toggleTeam(teamName)} 
+              className="p-5 flex-row justify-between items-center"
+            >
+              <View className="flex-row items-center">
+                <View className="w-10 h-10 bg-midnight rounded-xl items-center justify-center mr-3 border border-surface-light/50">
+                  {players[0]?.equipoLec?.logoUrl ? (
+                    <Image source={{ uri: players[0].equipoLec.logoUrl }} className="w-7 h-7" resizeMode="contain" />
+                  ) : (
+                    <Text className="text-white font-bold">{teamName.substring(0, 1)}</Text>
+                  )}
+                </View>
+                <Text className="text-white font-bold text-lg">{teamName}</Text>
               </View>
-              {expandedTeam === teamName ? <ChevronDown color="white" /> : <ChevronRight color="white" />}
+              {expandedTeam === teamName ? <ChevronDown color="#00D1FF" /> : <ChevronRight color="#4B5563" />}
             </TouchableOpacity>
 
             {expandedTeam === teamName && (
-              <View style={styles.playersList}>
-                {(players || []).map(jugador => {
+              <View className="px-4 pb-4">
+                {(players || []).map((jugador, idx) => {
                   const isOwned = myPlayerIds.includes(jugador.id);
                   return (
-                    <View key={jugador.id} style={styles.playerRow}>
-                      <TouchableOpacity style={{ flex: 1 }} onPress={() => navigation.navigate('JugadorDetail', { id: jugador.id })}>
-                        <Text style={styles.playerName}>{jugador.nickname}</Text>
-                        <Text style={styles.playerPos}>{jugador.rol}</Text>
+                    <View key={jugador.id} className={`flex-row items-center py-4 ${idx !== 0 ? 'border-t border-surface-light/20' : ''}`}>
+                      <TouchableOpacity 
+                        className="flex-1" 
+                        onPress={() => navigation.navigate('JugadorDetail', { id: jugador.id })}
+                      >
+                        <Text className="text-white font-bold text-base">{jugador.nickname}</Text>
+                        <Text className="text-accent-cyan text-[10px] font-bold uppercase tracking-widest">{jugador.rol}</Text>
                       </TouchableOpacity>
-                      <View style={{ alignItems: 'flex-end', marginRight: 16 }}>
-                        <Text style={styles.playerPrice}>{jugador.precioBase?.toLocaleString()} €</Text>
+                      
+                      <View className="items-end mr-4">
+                        <Text className="text-neon-green font-bold text-base">{jugador.precioBase?.toLocaleString()} €</Text>
                       </View>
+
                       {isOwned ? (
-                        <TouchableOpacity onPress={() => handleVender(jugador.id)} style={styles.sellBtn}>
-                          <Trash2 size={18} color="#F87171" />
+                        <TouchableOpacity 
+                          onPress={() => handleVender(jugador.id)} 
+                          className="bg-crimson/10 p-2 rounded-xl border border-crimson/30"
+                        >
+                          <Trash2 size={18} color="#FF003F" />
                         </TouchableOpacity>
                       ) : (
-                        <TouchableOpacity onPress={() => handleFichar(jugador.id)} style={styles.buyBtn}>
-                          <ShoppingCart size={18} color="white" />
+                        <TouchableOpacity 
+                          onPress={() => handleFichar(jugador.id)} 
+                          className="bg-accent-cyan p-2 rounded-xl shadow-lg shadow-accent-cyan/20"
+                        >
+                          <ShoppingCart size={18} color="#0B0E14" />
                         </TouchableOpacity>
                       )}
                     </View>
@@ -132,26 +154,8 @@ export default function MercadoScreen({ navigation }: any) {
             )}
           </View>
         ))}
-        <View style={{ height: 80 }} />
+        <View className="h-20" />
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#111827' },
-  loaderContainer: { flex: 1, backgroundColor: '#111827', justifyContent: 'center', alignItems: 'center' },
-  title: { color: 'white', fontSize: 28, fontWeight: 'bold', marginBottom: 24 },
-  teamCard: { marginBottom: 16, backgroundColor: '#1F2937', borderRadius: 16, overflow: 'hidden' },
-  teamHeader: { padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  teamIcon: { width: 40, height: 40, backgroundColor: '#374151', borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  teamIconText: { color: 'white', fontWeight: 'bold' },
-  teamNameText: { color: 'white', fontWeight: 'bold', fontSize: 18 },
-  playersList: { paddingHorizontal: 16, paddingBottom: 16 },
-  playerRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, borderTopWidth: 1, borderTopColor: '#374151' },
-  playerName: { color: 'white', fontWeight: 'bold' },
-  playerPos: { color: '#3B82F6', fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase' },
-  playerPrice: { color: '#10B981', fontWeight: 'bold' },
-  sellBtn: { backgroundColor: '#7F1D1D40', padding: 8, borderRadius: 8, borderWidth: 1, borderColor: '#EF444450' },
-  buyBtn: { backgroundColor: '#2563EB', padding: 8, borderRadius: 8 }
-});

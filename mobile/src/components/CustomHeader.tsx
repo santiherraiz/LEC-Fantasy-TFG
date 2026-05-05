@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
 import { Menu, ChevronLeft } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -29,11 +29,14 @@ export default function CustomHeader({ ligaNombre, showBackButton, onBackPress }
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 10 }]}>
-      <View style={styles.content}>
+    <View 
+      className="bg-midnight border-b border-surface-light/30 pb-3"
+      style={{ paddingTop: insets.top + 10 }}
+    >
+      <View className="flex-row items-center justify-between px-4">
         <TouchableOpacity 
           onPress={handlePress}
-          style={styles.iconBtn}
+          className="p-1"
         >
           {showBackButton ? (
             <ChevronLeft color="white" size={28} />
@@ -42,51 +45,19 @@ export default function CustomHeader({ ligaNombre, showBackButton, onBackPress }
           )}
         </TouchableOpacity>
         
-        <View style={styles.centerContainer}>
-          <Text style={styles.gameTitle}>LEC FANTASY</Text>
+        <View className="items-center">
+          <Image 
+            source={require('../../assets/logos/LOGOTIPO-bg.png')} 
+            className="w-32 h-8"
+            resizeMode="contain"
+          />
           {displayNombre && (
-            <Text style={styles.leagueName}>{displayNombre}</Text>
+            <Text className="text-accent-cyan text-[10px] font-bold uppercase tracking-widest -mt-1">{displayNombre}</Text>
           )}
         </View>
 
-        <View style={styles.rightPlaceholder} />
+        <View className="w-9" />
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#111827',
-    borderBottomWidth: 1,
-    borderBottomColor: '#1F2937',
-    paddingBottom: 10,
-  },
-  content: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-  },
-  iconBtn: {
-    padding: 4,
-  },
-  centerContainer: {
-    alignItems: 'center',
-  },
-  gameTitle: {
-    color: 'white',
-    fontSize: 20,
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-  leagueName: {
-    color: '#3B82F6',
-    fontSize: 12,
-    fontWeight: 'bold',
-    marginTop: -2,
-  },
-  rightPlaceholder: {
-    width: 36, // To match the Menu icon button size for centering
-  }
-});

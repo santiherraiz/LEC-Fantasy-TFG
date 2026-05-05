@@ -14,12 +14,12 @@ const CustomTheme = {
   dark: true,
   colors: {
     ...(DarkTheme?.colors || {}),
-    primary: '#3B82F6',
-    background: '#111827',
-    card: '#111827',
+    primary: '#00D1FF',
+    background: '#0B0E14',
+    card: '#0B0E14',
     text: 'white',
-    border: '#1F2937',
-    notification: '#3B82F6',
+    border: '#2D3748',
+    notification: '#00D1FF',
   },
   fonts: {
     regular: { fontFamily: 'System', fontWeight: '400' as const },

@@ -28,17 +28,19 @@ function MainTabs() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#111827',
-          borderTopColor: '#1f2937',
+          backgroundColor: '#0B0E14',
+          borderTopColor: '#2D3748',
           height: 65 + insets.bottom,
           paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
           paddingTop: 0,
         },
-        tabBarActiveTintColor: '#3b82f6',
-        tabBarInactiveTintColor: '#9ca3af',
+        tabBarActiveTintColor: '#00D1FF',
+        tabBarInactiveTintColor: '#4B5563',
         tabBarLabelStyle: {
           fontSize: 11,
-          fontWeight: '500',
+          fontWeight: '700',
+          textTransform: 'uppercase',
+          letterSpacing: 0.5,
         },
         tabBarItemStyle: {
           paddingVertical: 5,
@@ -49,7 +51,7 @@ function MainTabs() {
         name="MiEquipo"
         component={MiEquipoScreen}
         options={{
-          tabBarLabel: 'Mi Equipo',
+          tabBarLabel: 'Equipo',
           tabBarIcon: ({ color, size }) => <Layout color={color} size={size} />,
         }}
       />
@@ -80,7 +82,7 @@ function MainDrawer() {
       screenOptions={{
         headerShown: false,
         drawerStyle: {
-          backgroundColor: '#111827',
+          backgroundColor: '#0B0E14',
           width: 280,
         },
       }}

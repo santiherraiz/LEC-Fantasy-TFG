@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Text, View, ScrollView, TouchableOpacity, RefreshControl, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { Text, View, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Alert } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../context/ToastContext';
@@ -54,26 +54,33 @@ export default function MiEquipoScreen({ navigation }: any) {
 
   const JugadorCard = ({ jugador }: { jugador: JugadorEnPlantillaDTO }) => (
     <TouchableOpacity 
-      style={[styles.card, jugador.estado === 'TITULAR' ? styles.cardTitular : styles.cardSuplente]}
+      className={`bg-surface p-4 rounded-2xl mb-3 flex-row items-center border ${jugador.estado === 'TITULAR' ? 'border-accent-cyan/50 shadow-lg shadow-accent-cyan/20' : 'border-surface-light/30'}`}
       onPress={() => navigation.navigate('JugadorDetail', { id: jugador.idJugador })}
     >
-      <View style={styles.posBadge}><User color="#9CA3AF" size={24} /></View>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.playerName}>{jugador.nickname}</Text>
-        <Text style={styles.roleLabel}>{jugador.rol}</Text>
+      <View className="w-11 h-11 bg-midnight rounded-full items-center justify-center mr-3 border border-surface-light/50">
+        <User color={jugador.estado === 'TITULAR' ? '#00D1FF' : '#4B5563'} size={24} />
       </View>
-      <View style={styles.statusBadge}>
-        <Text style={styles.statusText}>{jugador.estado}</Text>
+      <View className="flex-1">
+        <Text className="text-white font-bold text-lg">{jugador.nickname}</Text>
+        <Text className="text-accent-cyan text-[10px] font-bold uppercase tracking-widest">{jugador.rol}</Text>
       </View>
-      <TouchableOpacity onPress={() => handleAlinear(jugador.idJugador)} style={styles.swapBtn}>
-        <ArrowRightLeft size={20} color="white" />
+      <View className="bg-surface-light/50 px-2 py-1 rounded-md mr-3">
+        <Text className="text-gray-400 text-[8px] font-bold uppercase">{jugador.estado}</Text>
+      </View>
+      <TouchableOpacity 
+        onPress={() => handleAlinear(jugador.idJugador)} 
+        className={`p-2 rounded-full ${jugador.estado === 'TITULAR' ? 'bg-accent-cyan' : 'bg-surface-light'}`}
+      >
+        <ArrowRightLeft size={18} color={jugador.estado === 'TITULAR' ? '#0B0E14' : 'white'} />
       </TouchableOpacity>
     </TouchableOpacity>
   );
 
   if (loading && !refreshing) {
     return (
-      <View style={styles.loaderContainer}><ActivityIndicator size="large" color="#3B82F6" /></View>
+      <View className="flex-1 bg-midnight justify-center items-center">
+        <ActivityIndicator size="large" color="#00D1FF" />
+      </View>
     );
   }
 
@@ -81,61 +88,46 @@ export default function MiEquipoScreen({ navigation }: any) {
   const suplentes = equipo?.jugadores?.filter(j => j.estado === 'BANQUILLO') || [];
 
   return (
-    <View style={styles.container}>
+    <View className="flex-1 bg-midnight">
       <CustomHeader />
 
       <ScrollView 
-        style={{ padding: 16 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => {setRefreshing(true); fetchEquipo();}} tintColor="#3b82f6" />}
+        className="px-4"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => {setRefreshing(true); fetchEquipo();}} tintColor="#00D1FF" />}
       >
-        <View style={styles.userInfo}>
-           <Text style={styles.userName}>{user?.nickname}</Text>
-           <Text style={styles.equipoName}>{equipo?.nombreEquipo}</Text>
+        <View className="my-6">
+           <Text className="text-white font-bold text-3xl tracking-tight">{user?.nickname}</Text>
+           <Text className="text-accent-cyan font-medium text-sm">{equipo?.nombreEquipo}</Text>
         </View>
 
-        <View style={styles.statsContainer}>
+        <View className="flex-row justify-between mb-8 bg-surface p-6 rounded-3xl border border-surface-light/30 shadow-2xl">
           <View>
-            <Text style={styles.statLabel}>Presupuesto</Text>
-            <Text style={styles.statValueGreen}>{equipo?.presupuestoDisponible?.toLocaleString()} €</Text>
+            <Text className="text-gray-500 text-[10px] font-bold uppercase tracking-tighter mb-1">Presupuesto</Text>
+            <Text className="text-neon-green text-2xl font-bold">{equipo?.presupuestoDisponible?.toLocaleString()} €</Text>
           </View>
-          <View style={{ alignItems: 'flex-end' }}>
-            <Text style={styles.statLabel}>Puntos</Text>
-            <Text style={styles.statValueBlue}>{Math.round(equipo?.puntuacionTotal ?? 0)} pts</Text>
+          <View className="items-end">
+            <Text className="text-gray-500 text-[10px] font-bold uppercase tracking-tighter mb-1">Puntuación</Text>
+            <Text className="text-accent-cyan text-2xl font-bold">{Math.round(equipo?.puntuacionTotal ?? 0)} pts</Text>
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Titulares ({titulares.length}/5)</Text>
+        <View className="flex-row items-baseline mb-4">
+          <Text className="text-white text-xl font-bold">Titulares</Text>
+          <Text className="text-gray-500 text-sm font-bold ml-2">({titulares.length}/5)</Text>
+        </View>
+        
         {titulares.map(j => <JugadorCard key={j.idJugador} jugador={j} />)}
-        {titulares.length === 0 && <Text style={styles.emptyText}>Debes elegir a tus 5 titulares</Text>}
+        {titulares.length === 0 && <Text className="text-gray-600 italic text-center my-4">No tienes titulares seleccionados</Text>}
 
-        <Text style={[styles.sectionTitle, { marginTop: 16 }]}>Banquillo ({suplentes.length})</Text>
+        <View className="flex-row items-baseline mt-4 mb-4">
+          <Text className="text-white text-xl font-bold">Banquillo</Text>
+          <Text className="text-gray-500 text-sm font-bold ml-2">({suplentes.length})</Text>
+        </View>
+        
         {suplentes.map(j => <JugadorCard key={j.idJugador} jugador={j} />)}
         
-        <View style={{ height: 40 }} />
+        <View className="h-10" />
       </ScrollView>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#111827' },
-  loaderContainer: { flex: 1, backgroundColor: '#111827', justifyContent: 'center', alignItems: 'center' },
-  userInfo: { marginBottom: 16, marginTop: 8 },
-  userName: { color: 'white', fontWeight: 'bold', fontSize: 24 },
-  equipoName: { color: '#3B82F6', fontSize: 14, fontWeight: 'bold' },
-  statsContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, backgroundColor: '#1F2937', padding: 24, borderRadius: 24 },
-  statLabel: { color: '#9CA3AF', fontSize: 12 },
-  statValueGreen: { color: '#10B981', fontSize: 24, fontWeight: 'bold' },
-  statValueBlue: { color: '#3B82F6', fontSize: 24, fontWeight: 'bold' },
-  sectionTitle: { color: 'white', fontSize: 18, fontWeight: 'bold', marginBottom: 12 },
-  card: { backgroundColor: '#1F2937', padding: 16, borderRadius: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center' },
-  cardTitular: { borderColor: '#3B82F640', borderWidth: 1 },
-  cardSuplente: { borderColor: 'transparent' },
-  posBadge: { width: 44, height: 44, backgroundColor: '#111827', borderRadius: 999, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  playerName: { color: 'white', fontWeight: 'bold', fontSize: 16 },
-  roleLabel: { color: '#3B82F6', fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase' },
-  statusBadge: { backgroundColor: '#374151', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, marginRight: 10 },
-  statusText: { color: '#9CA3AF', fontSize: 9, fontWeight: 'bold' },
-  swapBtn: { backgroundColor: '#2563EB', padding: 8, borderRadius: 999 },
-  emptyText: { color: '#6B7280', fontStyle: 'italic', textAlign: 'center', marginVertical: 10 }
-});

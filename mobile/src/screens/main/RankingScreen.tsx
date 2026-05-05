@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View, ScrollView, RefreshControl, ActivityIndicator, StyleSheet } from 'react-native';
+import { Text, View, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import api from '../../api/api';
 import { RankingEntry } from '../../types';
@@ -32,67 +32,55 @@ export default function RankingScreen() {
   }, [selectedLigaId]);
 
   const getRankIcon = (index: number) => {
-    if (index === 0) return <Trophy color="#eab308" size={24} />;
+    if (index === 0) return <Trophy color="#FFD700" size={24} />;
     if (index === 1) return <Medal color="#94a3b8" size={24} />;
-    if (index === 2) return <Medal color="#92400e" size={24} />;
-    return <Text style={styles.rankNumber}>{index + 1}</Text>;
+    if (index === 2) return <Medal color="#CD7F32" size={24} />;
+    return <Text className="text-gray-500 font-bold text-lg">{index + 1}</Text>;
   };
 
   if (loading && !refreshing) {
     return (
-      <View style={styles.loaderContainer}><ActivityIndicator size="large" color="#3b82f6" /></View>
+      <View className="flex-1 bg-midnight justify-center items-center">
+        <ActivityIndicator size="large" color="#00D1FF" />
+      </View>
     );
   }
 
   const safeRanking = ranking || [];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView className="flex-1 bg-midnight">
       <ScrollView 
-        style={{ padding: 16 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => {setRefreshing(true); fetchRanking();}} tintColor="#3b82f6" />}
+        className="px-4"
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => {setRefreshing(true); fetchRanking();}} tintColor="#00D1FF" />}
       >
-        <Text style={styles.title}>Ranking de la Liga</Text>
+        <Text className="text-white text-3xl font-bold tracking-tight mb-8 mt-4">Ranking de la Liga</Text>
         
         <View>
           {safeRanking.map((entry, index) => (
             <View 
               key={entry.equipoId ? entry.equipoId.toString() : `rank-${index}`} 
-              style={[styles.rankCard, index < 3 && styles.topRankCard]}
+              className={`bg-surface p-5 rounded-2xl flex-row items-center mb-3 border border-surface-light/20 ${index === 0 ? 'border-l-4 border-l-gold' : ''}`}
             >
-              <View style={styles.iconContainer}>{getRankIcon(index)}</View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.userName}>{entry.nombreUsuario || 'Usuario'}</Text>
-                <Text style={styles.userSub}>ENTRENADOR</Text>
+              <View className="w-10 items-center mr-4">{getRankIcon(index)}</View>
+              <View className="flex-1">
+                <Text className="text-white font-bold text-lg">{entry.nombreUsuario || 'Usuario'}</Text>
+                <Text className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mt-0.5">Entrenador</Text>
               </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={styles.pointsValue}>{Math.round(entry.puntosTotales ?? 0)}</Text>
-                <Text style={styles.pointsLabel}>PTS</Text>
+              <View className="items-end">
+                <Text className="text-accent-cyan font-black text-xl">{Math.round(entry.puntosTotales ?? 0)}</Text>
+                <Text className="text-gray-500 text-[10px] font-bold">PTS</Text>
               </View>
             </View>
           ))}
           {safeRanking.length === 0 && !loading && (
-            <View style={styles.emptyContainer}><Text style={styles.emptyText}>No hay datos en esta liga.</Text></View>
+            <View className="items-center pt-20">
+              <Text className="text-gray-600 italic">No hay datos en esta liga.</Text>
+            </View>
           )}
         </View>
-        <View style={{ height: 80 }} />
+        <View className="h-20" />
       </ScrollView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#111827' },
-  loaderContainer: { flex: 1, backgroundColor: '#111827', justifyContent: 'center', alignItems: 'center' },
-  title: { color: 'white', fontSize: 28, fontWeight: 'bold', marginBottom: 24 },
-  rankCard: { backgroundColor: '#1F2937', padding: 20, borderRadius: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  topRankCard: { borderLeftWidth: 4, borderLeftColor: '#3B82F6' },
-  iconContainer: { marginRight: 16, width: 32, alignItems: 'center' },
-  rankNumber: { color: '#6B7280', fontWeight: 'bold', fontSize: 16 },
-  userName: { color: 'white', fontWeight: 'bold', fontSize: 18 },
-  userSub: { color: '#6B7280', fontSize: 10, letterSpacing: 1 },
-  pointsValue: { color: '#3B82F6', fontWeight: '900', fontSize: 20 },
-  pointsLabel: { color: '#6B7280', fontSize: 10 },
-  emptyContainer: { alignItems: 'center', paddingTop: 80 },
-  emptyText: { color: '#6B7280', fontStyle: 'italic' }
-});
