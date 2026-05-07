@@ -30,22 +30,34 @@ public class DemoController {
     private HistoricoAlineacionRepository historicoAlineacionRepository;
     @Autowired
     private PuntuacionService puntuacionService;
+    @Autowired
+    private EquipoRepository equipoRepository;
 
     @PostMapping("/activar")
     public ResponseEntity<String> activarDemo() {
-        // Fecha de inicio: Viernes tarde antes de los partidos
-        LocalDateTime inicio = LocalDateTime.of(2026, 6, 1, 16, 0);
-        clockService.activarModoDemo(inicio);
+        // 1. Guardar Snapshot de presupuestos actuales
+        java.util.Map<Long, Double> snapshot = new java.util.HashMap<>();
+        equipoRepository.findAll().forEach(e -> snapshot.put(e.getId(), e.getPresupuestoDisponible()));
 
-        // Crear Jornada de Demo
+        // 2. Activar modo demo con el snapshot
+        LocalDateTime inicio = LocalDateTime.of(2026, 6, 1, 16, 0);
+        clockService.activarModoDemo(inicio, snapshot);
+
+        // 3. Crear Jornada de Demo
         Jornada j = new Jornada();
         j.setNumeroSemana(99);
-        j.setFechaInicio(inicio.plusHours(2)); // Empieza a las 18:00
-        j.setFechaFin(inicio.plusDays(2).plusHours(4)); // Termina el domingo noche
+        j.setFechaInicio(inicio.plusHours(2));
+        j.setFechaFin(inicio.plusDays(2).plusHours(4));
         j.setEstado(JornadaEstado.PROGRAMADA);
         jornadaRepository.save(j);
 
-        return ResponseEntity.ok("🎮 Modo Demo ACTIVADO. Fecha virtual: " + inicio + ". Jornada 99 creada.");
+        // 4. Inyectar Dinero de prueba (100M)
+        equipoRepository.findAll().forEach(equipo -> {
+            equipo.setPresupuestoDisponible(100_000_000.0);
+            equipoRepository.save(equipo);
+        });
+
+        return ResponseEntity.ok("🌌 UNIVERSO PARALELO ACTIVADO. Presupuesto: 100M. Snapshot guardado.");
     }
 
     @PostMapping("/avanzar-bloqueo")
@@ -195,7 +207,16 @@ public class DemoController {
 
     @PostMapping("/desactivar")
     public ResponseEntity<String> desactivarDemo() {
-        clockService.desactivarModoDemo();
+        // 1. Recuperar el snapshot de presupuestos
+        java.util.Map<Long, Double> backup = clockService.desactivarModoDemo();
+
+        // 2. Restaurar presupuestos originales
+        backup.forEach((id, presupuesto) -> {
+            equipoRepository.findById(id).ifPresent(e -> {
+                e.setPresupuestoDisponible(presupuesto);
+                equipoRepository.save(e);
+            });
+        });
 
         // Limpieza de datos de prueba
         Optional<Jornada> j99 = jornadaRepository.findByNumeroSemana(99);
@@ -233,6 +254,6 @@ public class DemoController {
         }
 
         return ResponseEntity.ok(
-                "🛑 Modo Demo desactivado. Datos de la Semana 99 eliminados y mercado reseteado a hora real.");
+                "🏠 DE VUELTA A LA REALIDAD. Presupuesto restaurado y mercado sincronizado.");
     }
 }

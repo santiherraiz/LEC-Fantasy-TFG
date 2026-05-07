@@ -20,6 +20,7 @@ export interface JugadorEnPlantillaDTO {
   nickname: string;
   rol: string;
   estado: "TITULAR" | "BANQUILLO";
+  imagenUrl: string | null;
 }
 
 export interface EquipoDetalleDTO {

@@ -1,4 +1,3 @@
-USE lecfantasy;
 -- VITALITY
 UPDATE jugadores SET imagen_url = 'https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/0/07/VIT_Naak_Nako_2026_Split_1.png/revision/latest/scale-to-width-down/220' WHERE nickname = 'Naak nako';
 UPDATE jugadores SET imagen_url = 'https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/b/ba/VIT_Lyncas_2026_Split_1.png/revision/latest/scale-to-width-down/220' WHERE nickname = 'Lyncas';
@@ -68,17 +67,3 @@ UPDATE jugadores SET imagen_url = 'https://static.wikia.nocookie.net/lolesports_
 UPDATE jugadores SET imagen_url = 'https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/6/64/TH_Serin_2026_Split_2.png/revision/latest/scale-to-width-down/220' WHERE nickname = 'Serin';
 UPDATE jugadores SET imagen_url = 'https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/c/c7/TH_Ice_2026_Split_2.png/revision/latest/scale-to-width-down/220' WHERE nickname = 'Ice';
 UPDATE jugadores SET imagen_url = 'https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/4/4b/TH_Way_2026_Split_1.png/revision/latest/scale-to-width-down/220' WHERE nickname = 'Way';
-
-UPDATE jugadores SET imagen_url = 'https://static.wikia.nocookie.net/lolesports_gamepedia_en/images/3/38/SHFT_Trymbi_2026_Split_1.png/revision/latest/scale-to-width-down/220' WHERE nickname = 'Trymbi';
-
--- TEAM LOGOS (lolesports 2026)
-UPDATE equipos_lec SET logo_url = 'https://am-a.akamaihd.net/image?resize=200:&f=http%3A%2F%2Fstatic.lolesports.com%2Fteams%2F1672933861879_Heretics-Full-Color.png' WHERE nombre = 'Team Heretics';
-UPDATE equipos_lec SET logo_url = 'https://am-a.akamaihd.net/image?resize=200:&f=http%3A%2F%2Fstatic.lolesports.com%2Fteams%2F1765897071435_600px-Shifters_allmode.png' WHERE nombre = 'Shifters';
-UPDATE equipos_lec SET logo_url = 'https://am-a.akamaihd.net/image?resize=200:&f=http%3A%2F%2Fstatic.lolesports.com%2Fteams%2F1752746833620_NAVI_FullColor.png' WHERE nombre = 'Natus Vincere';
-UPDATE equipos_lec SET logo_url = 'https://am-a.akamaihd.net/image?resize=200:&f=http%3A%2F%2Fstatic.lolesports.com%2Fteams%2FG2-FullonDark.png' WHERE nombre = 'G2 Esports';
-UPDATE equipos_lec SET logo_url = 'https://am-a.akamaihd.net/image?resize=200:&f=http%3A%2F%2Fstatic.lolesports.com%2Fteams%2F1675865863968_Vitality_FullColor.png' WHERE nombre = 'Team Vitality';
-UPDATE equipos_lec SET logo_url = 'https://am-a.akamaihd.net/image?resize=200:&f=http%3A%2F%2Fstatic.lolesports.com%2Fteams%2F1631819669150_fnc-2021-worlds.png' WHERE nombre = 'Fnatic';
-UPDATE equipos_lec SET logo_url = 'https://am-a.akamaihd.net/image?resize=200:&f=http%3A%2F%2Fstatic.lolesports.com%2Fteams%2F1734012609283_MKOI_FullColor_Blue.png' WHERE nombre = 'Movistar KOI';
-UPDATE equipos_lec SET logo_url = 'https://am-a.akamaihd.net/image?resize=200:&f=http%3A%2F%2Fstatic.lolesports.com%2Fteams%2F1765897105091_GIANTX-logotype-white.png' WHERE nombre = 'GIANTX';
-UPDATE equipos_lec SET logo_url = 'https://am-a.akamaihd.net/image?resize=200:&f=http%3A%2F%2Fstatic.lolesports.com%2Fteams%2F1704714951336_KC.png' WHERE nombre = 'Karmine Corp';
-UPDATE equipos_lec SET logo_url = 'https://am-a.akamaihd.net/image?resize=200:&f=http%3A%2F%2Fstatic.lolesports.com%2Fteams%2F1643979272144_SK_Monochrome.png' WHERE nombre = 'SK Gaming';

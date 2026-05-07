@@ -198,15 +198,23 @@ public class MercadoService {
 
         // 3. Intentar elegir uno de cada rol
         for (String rol : roles) {
+            String dbRol = rol.equals("ADC") ? "BOT" : rol;
             List<Jugador> jugadoresDelRol = disponibles.stream()
-                    .filter(j -> j.getRol().equalsIgnoreCase(rol))
+                    .filter(j -> j.getRol().equalsIgnoreCase(dbRol))
                     .collect(Collectors.toList());
             
             if (!jugadoresDelRol.isEmpty()) {
                 Collections.shuffle(jugadoresDelRol);
                 Jugador elegido = jugadoresDelRol.get(0);
+                
+                // Normalizamos el rol a BOT antes de guardar si es un tirador
+                if (elegido.getRol().equalsIgnoreCase("Bot")) {
+                    elegido.setRol("BOT");
+                    jugadorRepository.save(elegido);
+                }
+                
                 seleccionados.add(elegido);
-                disponibles.remove(elegido); // Lo quitamos de disponibles para que no se repita
+                disponibles.remove(elegido);
             }
         }
 
@@ -472,20 +480,27 @@ public class MercadoService {
             }
 
             // 3. LA MAGIA: Comprobamos si ya hay alguien jugando en ese rol
-            String rolDelNuevo = registro.getJugador().getRol();
+            String rolDelNuevo = registro.getJugador().getRol().toUpperCase();
+            if (rolDelNuevo.equals("ADC")) rolDelNuevo = "BOT";
+
+            final String rolFinal = rolDelNuevo;
 
             boolean posicionOcupada = titularesActuales.stream()
-                    .anyMatch(titular -> titular.getJugador().getRol().equals(rolDelNuevo));
+                    .anyMatch(titular -> {
+                        String rolTitular = titular.getJugador().getRol().toUpperCase();
+                        if (rolTitular.equals("ADC")) rolTitular = "BOT";
+                        return rolTitular.equals(rolFinal);
+                    });
 
             if (posicionOcupada) {
                 throw new RuntimeException(
-                        "Operación denegada: Ya tienes a un jugador titular en la posición de " + rolDelNuevo + ".");
+                        "Operación denegada: Ya tienes a un jugador titular en la posición de " + rolFinal + ".");
             }
 
             // 4. Si pasa todas las aduanas, lo hacemos titular
             registro.setEstado(EstadoAlineacion.TITULAR);
             plantillaRepository.save(registro);
-            return "¡" + registro.getJugador().getNickname() + " ahora es titular en la posición de " + rolDelNuevo
+            return "¡" + registro.getJugador().getNickname() + " ahora es titular en la posición de " + rolFinal
                     + "!";
 
         } else {

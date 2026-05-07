@@ -56,6 +56,7 @@ export default function RankingScreen() {
       <CustomHeader />
       <ScrollView 
         className="px-4"
+        contentContainerStyle={{ paddingBottom: 100 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => {setRefreshing(true); fetchRanking();}} tintColor="#00D1FF" />}
         showsVerticalScrollIndicator={false}
       >
@@ -86,7 +87,6 @@ export default function RankingScreen() {
             </View>
           )}
         </View>
-        <View className="h-20" />
       </ScrollView>
     </View>
   );

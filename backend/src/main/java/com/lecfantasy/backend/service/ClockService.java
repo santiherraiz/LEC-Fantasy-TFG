@@ -25,17 +25,21 @@ public class ClockService {
                 .orElse(false);
     }
 
-    public void activarModoDemo(LocalDateTime fechaInicial) {
+    public void activarModoDemo(LocalDateTime fechaInicial, java.util.Map<Long, Double> presupuestos) {
         ConfiguracionDemo config = configRepo.findById(1L).orElse(new ConfiguracionDemo());
         config.setModoDemoActivo(true);
         config.setFechaSimulada(fechaInicial);
+        config.setBackupPresupuestos(new java.util.HashMap<>(presupuestos));
         configRepo.save(config);
     }
 
-    public void desactivarModoDemo() {
+    public java.util.Map<Long, Double> desactivarModoDemo() {
         ConfiguracionDemo config = configRepo.findById(1L).orElse(new ConfiguracionDemo());
+        java.util.Map<Long, Double> backup = new java.util.HashMap<>(config.getBackupPresupuestos());
         config.setModoDemoActivo(false);
+        config.getBackupPresupuestos().clear();
         configRepo.save(config);
+        return backup;
     }
 
     public void establecerFechaSimulada(LocalDateTime nuevaFecha) {

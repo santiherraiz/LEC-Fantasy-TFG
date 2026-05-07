@@ -1,3 +1,5 @@
+import React from 'react';
+import { View, Platform } from 'react-native';
 import { Tabs } from 'expo-router';
 import { ShoppingBag, Trophy, Layout, Gavel } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,21 +13,21 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarStyle: {
           backgroundColor: '#0B0E14',
-          borderTopColor: '#2D3748',
-          height: 65 + insets.bottom,
-          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
-          paddingTop: 0,
+          borderTopWidth: 0,
+          height: 70 + insets.bottom,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 12,
+          paddingTop: 12,
+          elevation: 0,
         },
         tabBarActiveTintColor: '#00D1FF',
         tabBarInactiveTintColor: '#4B5563',
+        tabBarShowLabel: true,
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '700',
+          fontSize: 10,
+          fontWeight: '900',
           textTransform: 'uppercase',
-          letterSpacing: 0.5,
-        },
-        tabBarItemStyle: {
-          paddingVertical: 5,
+          letterSpacing: 1,
+          marginTop: 4,
         },
       }}
     >
@@ -33,28 +35,44 @@ export default function TabsLayout() {
         name="equipo"
         options={{
           tabBarLabel: 'Equipo',
-          tabBarIcon: ({ color, size }) => <Layout color={color} size={size} />,
+          tabBarIcon: ({ color, focused }) => (
+            <View className={`p-2 rounded-2xl ${focused ? 'bg-accent-cyan/10' : ''}`}>
+              <Layout color={color} size={22} strokeWidth={focused ? 2.5 : 2} />
+            </View>
+          ),
         }}
       />
       <Tabs.Screen
         name="subastas"
         options={{
           tabBarLabel: 'Subastas',
-          tabBarIcon: ({ color, size }) => <Gavel color={color} size={size} />,
+          tabBarIcon: ({ color, focused }) => (
+            <View className={`p-2 rounded-2xl ${focused ? 'bg-accent-cyan/10' : ''}`}>
+              <Gavel color={color} size={22} strokeWidth={focused ? 2.5 : 2} />
+            </View>
+          ),
         }}
       />
       <Tabs.Screen
         name="catalogo"
         options={{
-          tabBarLabel: 'Catálogo',
-          tabBarIcon: ({ color, size }) => <ShoppingBag color={color} size={size} />,
+          tabBarLabel: 'Mercado',
+          tabBarIcon: ({ color, focused }) => (
+            <View className={`p-2 rounded-2xl ${focused ? 'bg-accent-cyan/10' : ''}`}>
+              <ShoppingBag color={color} size={22} strokeWidth={focused ? 2.5 : 2} />
+            </View>
+          ),
         }}
       />
       <Tabs.Screen
         name="ranking"
         options={{
           tabBarLabel: 'Ranking',
-          tabBarIcon: ({ color, size }) => <Trophy color={color} size={size} />,
+          tabBarIcon: ({ color, focused }) => (
+            <View className={`p-2 rounded-2xl ${focused ? 'bg-accent-cyan/10' : ''}`}>
+              <Trophy color={color} size={22} strokeWidth={focused ? 2.5 : 2} />
+            </View>
+          ),
         }}
       />
     </Tabs>

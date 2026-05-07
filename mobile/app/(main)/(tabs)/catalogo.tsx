@@ -98,15 +98,7 @@ export default function CatalogoScreen() {
 
           {/* Avatar y Posición */}
           <View className="relative">
-            <View className="w-24 h-24 bg-midnight/50 rounded-3xl items-center justify-center border border-surface-light/20 overflow-hidden">
-              {/* Logo de equipo de fondo - Sutil pero visible */}
-              {item.jugador.equipoLec?.logoUrl && (
-                <Image 
-                  source={{ uri: item.jugador.equipoLec.logoUrl }} 
-                  className="w-16 h-16 absolute opacity-20" 
-                  resizeMode="contain" 
-                />
-              )}
+            <View className="w-24 h-24 bg-midnight/50 rounded-3xl items-center justify-center border border-surface-light/20 overflow-hidden shadow-inner">
               
               {item.jugador.imagenUrl ? (
                 <Image 
@@ -119,18 +111,32 @@ export default function CatalogoScreen() {
                 <UserIcon size={32} color="#00D1FF" />
               )}
             </View>
-            
-            {/* Etiqueta de posición: Movida abajo a la derecha para no tapar al jugador */}
-            <View className="absolute bottom-0 right-0 bg-accent-cyan px-2 py-0.5 rounded-tl-lg shadow-xl border-l border-t border-midnight/20">
-              <Text className="text-midnight font-black text-[10px] uppercase italic">
-                {item.jugador.rol.toUpperCase() === 'SUPPORT' ? 'SUPP' : item.jugador.rol}
-              </Text>
-            </View>
+
+            {/* ESCUDO FLOTANTE: Logo limpio sin fondo circular */}
+            {item.jugador.equipoLec?.logoUrl && (
+              <View className="absolute top-1 left-1">
+                <Image 
+                  source={{ uri: item.jugador.equipoLec.logoUrl }} 
+                  className="w-7 h-7" 
+                  resizeMode="contain" 
+                />
+              </View>
+            )}
           </View>
 
           {/* Info principal */}
           <View className="ml-6 flex-1 justify-center">
-            <Text className="text-white font-black text-xl mb-0.5 tracking-tight">{item.jugador.nickname}</Text>
+            <View className="flex-row items-center mb-0.5">
+              <Text className="text-white font-black text-xl tracking-tight mr-3">{item.jugador.nickname}</Text>
+              
+              {/* CHIP DE POSICIÓN: Ahora junto al nombre, más elegante */}
+              <View className="bg-accent-cyan/10 border border-accent-cyan/40 px-2 py-0.5 rounded-md">
+                <Text className="text-accent-cyan font-black text-[9px] uppercase italic">
+                  {item.jugador.rol.toUpperCase() === 'SUPPORT' ? 'SUPP' : item.jugador.rol}
+                </Text>
+              </View>
+            </View>
+            
             <Text className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-3">
               {item.jugador.equipoLec?.nombre || 'Sin equipo'}
             </Text>
@@ -152,13 +158,16 @@ export default function CatalogoScreen() {
             </View>
           </View>
 
-          {/* Puntos */}
+          {/* Puntos: Diseño puramente tipográfico y elegante */}
           <View className="items-end justify-center">
-            <View className="flex-row items-center mb-1">
-              <TrendingUp size={16} color="#00D1FF" />
-              <Text className="text-white font-black text-2xl ml-2">{Math.round(item.puntosTotales)}</Text>
+            <View className="bg-accent-cyan/5 px-3 py-2 rounded-2xl border border-accent-cyan/10 items-center">
+              <Text className="text-accent-cyan font-black text-2xl tracking-tighter">
+                {Math.round(item.puntosTotales)}
+              </Text>
+              <Text className="text-accent-cyan/60 text-[8px] font-black uppercase tracking-[2px] -mt-1">
+                PTS
+              </Text>
             </View>
-            <Text className="text-gray-500 text-[10px] font-bold uppercase tracking-wider">Puntos Totales</Text>
           </View>
         </View>
 

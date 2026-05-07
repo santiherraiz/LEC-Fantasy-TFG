@@ -145,15 +145,7 @@ export default function SubastasScreen() {
     <View className="bg-surface rounded-3xl mb-4 border border-surface-light/30 overflow-hidden">
       <Link href={`/jugador/${subasta.jugador.id}`} asChild>
         <TouchableOpacity className="p-5 flex-row items-center">
-          <View className="w-24 h-24 bg-midnight/50 rounded-3xl items-center justify-center border border-surface-light/30 overflow-hidden relative">
-            {/* Logo de equipo de fondo */}
-            {subasta.jugador.equipoLec?.logoUrl && (
-              <Image 
-                source={{ uri: subasta.jugador.equipoLec.logoUrl }} 
-                className="w-16 h-16 absolute opacity-20" 
-                resizeMode="contain" 
-              />
-            )}
+          <View className="w-24 h-24 bg-midnight/50 rounded-3xl items-center justify-center border border-surface-light/30 overflow-hidden relative shadow-inner">
             
             {subasta.jugador.imagenUrl ? (
               <Image 
@@ -165,15 +157,28 @@ export default function SubastasScreen() {
             ) : (
               <UserIcon size={32} color="#00D1FF" />
             )}
-            
-            <View className="absolute bottom-0 right-0 bg-accent-cyan px-2 py-0.5 rounded-tl-lg shadow-xl border-l border-t border-midnight/20">
-              <Text className="text-midnight font-black text-[10px] uppercase italic">
-                {subasta.jugador.rol.toUpperCase() === 'SUPPORT' ? 'SUPP' : subasta.jugador.rol}
-              </Text>
-            </View>
+
+            {/* ESCUDO FLOTANTE: Logo limpio sin fondo circular */}
+            {subasta.jugador.equipoLec?.logoUrl && (
+              <View className="absolute top-1 left-1">
+                <Image 
+                  source={{ uri: subasta.jugador.equipoLec.logoUrl }} 
+                  className="w-7 h-7" 
+                  resizeMode="contain" 
+                />
+              </View>
+            )}
           </View>
           <View className="ml-5 flex-1">
-            <Text className="text-white font-black text-xl tracking-tight">{subasta.jugador.nickname}</Text>
+            <View className="flex-row items-center">
+              <Text className="text-white font-black text-xl tracking-tight mr-3">{subasta.jugador.nickname}</Text>
+              {/* CHIP DE POSICIÓN */}
+              <View className="bg-accent-cyan/10 border border-accent-cyan/40 px-2 py-0.5 rounded-md">
+                <Text className="text-accent-cyan font-black text-[9px] uppercase italic">
+                  {subasta.jugador.rol.toUpperCase() === 'SUPPORT' ? 'SUPP' : subasta.jugador.rol}
+                </Text>
+              </View>
+            </View>
             <Text className="text-gray-500 text-[10px] font-bold uppercase tracking-widest mt-1">
               {subasta.jugador.equipoLec?.nombre}
             </Text>
@@ -230,6 +235,7 @@ export default function SubastasScreen() {
 
       <ScrollView 
         className="flex-1 px-4"
+        contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => {setRefreshing(true); fetchData();}} tintColor="#00D1FF" />}
       >
@@ -251,7 +257,6 @@ export default function SubastasScreen() {
             </View>
           )}
         </View>
-        <View className="h-20" />
       </ScrollView>
 
       {/* Puja Modal */}

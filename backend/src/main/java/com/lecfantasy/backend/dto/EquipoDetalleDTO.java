@@ -19,5 +19,6 @@ public class EquipoDetalleDTO {
         private String nickname;
         private String rol;
         private String estado; // "TITULAR" o "BANQUILLO"
+        private String imagenUrl;
     }
 }

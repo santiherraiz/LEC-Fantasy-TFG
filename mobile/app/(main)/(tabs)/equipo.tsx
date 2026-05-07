@@ -6,18 +6,27 @@ import { useAuthStore } from '../../../src/store/authStore';
 import { useToast } from '../../../src/context/ToastContext';
 import api from '../../../src/api/api';
 import { EquipoDetalleDTO, JugadorEnPlantillaDTO } from '../../../src/types';
-import { User, ArrowRightLeft, Shield, TrendingUp, Wallet, Map as MapIcon, Trash2 } from 'lucide-react-native';
+import { User, ArrowRightLeft, Shield, TrendingUp, Wallet, Map as MapIcon, Trash2, CircleDollarSign } from 'lucide-react-native';
 import CustomHeader from '../../../src/components/CustomHeader';
 
 import MapaImage from '../../../assets/images/mapa.png';
 
 const ROLE_COORDINATES: Record<string, { top: DimensionValue, left: DimensionValue }> = {
-  'TOP': { top: '12%', left: '12%' },
-  'JUNGLE': { top: '35%', left: '30%' },
-  'MID': { top: '46%', left: '46%' },
-  'ADC': { top: '82%', left: '78%' },
-  'SUPPORT': { top: '72%', left: '84%' },
+  'TOP': { top: '18%', left: '12%' },
+  'JUNGLE': { top: '48%', left: '25%' },
+  'MID': { top: '56%', left: '45%' },
+  'BOT': { top: '82%', left: '65%' },
+  'ADC': { top: '88%', left: '75%' },
+  'SUPPORT': { top: '88%', left: '82%' },
 };
+
+const ROLES_ORDEN = [
+  { key: 'TOP', label: 'TOP' },
+  { key: 'JUNGLE', label: 'JUNGLE' },
+  { key: 'MID', label: 'MID' },
+  { key: 'BOT', label: 'BOT' },
+  { key: 'SUPPORT', label: 'SUPP' }
+];
 
 export default function MiEquipoScreen() {
   const router = useRouter();
@@ -70,13 +79,19 @@ export default function MiEquipoScreen() {
   const handleVender = async (jugadorId: number, nickname: string) => {
     if (!equipo?.equipoId) return;
 
+    const j = equipo?.jugadores.find(p => p.idJugador === jugadorId);
+    if (j?.estado === 'TITULAR') {
+      Alert.alert("Acción no permitida", "Debes mover al jugador al banquillo antes de venderlo.");
+      return;
+    }
+
     Alert.alert(
       "Vender Jugador",
-      `¿Estás seguro de que quieres vender a ${nickname}? Se te devolverá el 100% de su valor.`,
+      `¿Estás seguro de que quieres vender a ${nickname}? Recuperarás el 100% de su valor actual.`,
       [
         { text: "Cancelar", style: "cancel" },
-        { 
-          text: "Vender", 
+        {
+          text: "Vender",
           style: "destructive",
           onPress: async () => {
             try {
@@ -106,8 +121,12 @@ export default function MiEquipoScreen() {
           style={StyleSheet.flatten([styles.marker, { top: coords.top, left: coords.left }])}
         >
           <View className="items-center">
-            <View className="w-10 h-10 rounded-full bg-midnight border-2 border-accent-cyan items-center justify-center shadow-lg shadow-accent-cyan/50">
-              <User color="#00D1FF" size={20} />
+            <View className="w-12 h-12 rounded-full bg-midnight border-2 border-accent-cyan items-center justify-center shadow-lg shadow-accent-cyan/50 overflow-hidden">
+              {jugador.imagenUrl ? (
+                <Image source={{ uri: jugador.imagenUrl }} className="w-12 h-12" style={{ marginTop: 6 }} resizeMode="contain" />
+              ) : (
+                <User color="#00D1FF" size={20} />
+              )}
             </View>
             <View className="bg-midnight/80 px-2 py-0.5 rounded-md mt-1 border border-accent-cyan/30">
               <Text className="text-white text-[9px] font-bold uppercase">{jugador.nickname}</Text>
@@ -118,35 +137,70 @@ export default function MiEquipoScreen() {
     );
   };
 
-  const JugadorCard = ({ jugador }: { jugador: JugadorEnPlantillaDTO }) => (
+  const EmptySlotCard = ({ label }: { label: string }) => (
+    <View className="flex-1 bg-midnight/30 p-3 rounded-[24px] border border-dashed border-surface-light/20 flex-row items-center">
+      <View className="w-14 h-14 rounded-2xl bg-midnight/50 items-center justify-center mr-4 border border-surface-light/10">
+        <User size={24} color="#374151" />
+      </View>
+      <View>
+        <Text className="text-gray-600 font-black text-lg italic uppercase tracking-tighter">VACÍO</Text>
+        <Text className="text-gray-700 text-[10px] font-bold uppercase tracking-widest">Sin jugador asignado</Text>
+      </View>
+    </View>
+  );
+
+  const JugadorCard = ({ jugador, hideBadge = false, noMargin = false }: { jugador: JugadorEnPlantillaDTO, hideBadge?: boolean, noMargin?: boolean }) => (
     <Link href={`/jugador/${jugador.idJugador}`} asChild>
       <TouchableOpacity
-        className={`bg-surface p-4 rounded-2xl mb-3 flex-row items-center border ${jugador.estado === 'TITULAR' ? 'border-accent-cyan/40 shadow-sm shadow-accent-cyan/10' : 'border-surface-light/20'}`}
+        className={`bg-surface p-3 rounded-[24px] flex-row items-center border ${noMargin ? '' : 'mb-3'} ${jugador.estado === 'TITULAR' ? 'border-accent-cyan/40 shadow-sm shadow-accent-cyan/10' : 'border-surface-light/20'}`}
       >
-        <View className={`w-12 h-12 rounded-full items-center justify-center mr-4 border ${jugador.estado === 'TITULAR' ? 'bg-accent-cyan/10 border-accent-cyan/30' : 'bg-midnight border-surface-light/30'}`}>
-          <Text className={`font-black text-xs ${jugador.estado === 'TITULAR' ? 'text-accent-cyan' : 'text-gray-500'}`}>
-            {jugador.rol.toUpperCase() === 'SUPPORT' ? 'SUPP' : jugador.rol.toUpperCase()}
-          </Text>
+        <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-4 border overflow-hidden relative ${jugador.estado === 'TITULAR' ? 'bg-accent-cyan/10 border-accent-cyan/30' : 'bg-midnight border-surface-light/30'}`}>
+          {jugador.imagenUrl ? (
+            <Image
+              source={{ uri: jugador.imagenUrl }}
+              className="w-14 h-14"
+              style={{ marginTop: 10 }}
+              resizeMode="contain"
+            />
+          ) : (
+            <Text className={`font-black text-xs ${jugador.estado === 'TITULAR' ? 'text-accent-cyan' : 'text-gray-500'}`}>
+              {jugador.rol.toUpperCase() === 'SUPPORT' ? 'SUPP' : jugador.rol.toUpperCase()}
+            </Text>
+          )}
         </View>
         <View className="flex-1">
-          <Text className="text-white font-bold text-lg">{jugador.nickname}</Text>
+          <View className="flex-row items-center mb-0.5">
+            <Text className="text-white font-bold text-lg">{jugador.nickname}</Text>
+            <View className="ml-2 px-1.5 py-0.5 rounded-full bg-accent-cyan/10 border border-accent-cyan/20">
+              <Text className="text-accent-cyan text-[7px] font-black italic">
+                {jugador.rol.toUpperCase() === 'SUPPORT' ? 'SUPP' : jugador.rol.toUpperCase()}
+              </Text>
+            </View>
+          </View>
           <View className="flex-row items-center">
             <View className={`w-1.5 h-1.5 rounded-full mr-1.5 ${jugador.estado === 'TITULAR' ? 'bg-accent-cyan' : 'bg-gray-600'}`} />
             <Text className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">{jugador.estado}</Text>
           </View>
         </View>
-        <View className="flex-row">
-          <TouchableOpacity
-            onPress={() => handleVender(jugador.idJugador, jugador.nickname)}
-            className="w-10 h-10 rounded-xl items-center justify-center bg-crimson/10 border border-crimson/20 mr-2"
-          >
-            <Trash2 size={18} color="#FF003F" />
-          </TouchableOpacity>
+        <View className="flex-row items-center">
+          {jugador.estado === 'BANQUILLO' && (
+            <TouchableOpacity
+              onPress={() => handleVender(jugador.idJugador, jugador.nickname)}
+              className="w-10 h-10 rounded-full items-center justify-center bg-rose-500/10 border border-rose-500/30 mr-3 shadow-sm shadow-rose-500/10"
+            >
+              <Trash2 size={18} color="#FB7185" />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             onPress={() => handleAlinear(jugador.idJugador)}
-            className={`w-10 h-10 rounded-xl items-center justify-center ${jugador.estado === 'TITULAR' ? 'bg-accent-cyan' : 'bg-surface-light/50'}`}
+            className={`h-12 px-5 rounded-2xl items-center justify-center flex-row ${jugador.estado === 'TITULAR' ? 'bg-accent-cyan shadow-md shadow-accent-cyan/40' : 'bg-surface-light/50 border border-surface-light'}`}
           >
             <ArrowRightLeft size={18} color={jugador.estado === 'TITULAR' ? '#0B0E14' : 'white'} />
+            <Text
+              className={`ml-2 font-black text-[10px] tracking-widest ${jugador.estado === 'TITULAR' ? 'text-midnight' : 'text-white'}`}
+            >
+              {jugador.estado === 'TITULAR' ? 'QUITAR' : 'PONER'}
+            </Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -234,19 +288,33 @@ export default function MiEquipoScreen() {
 
 
             {/* Player Lists Section */}
-            <View className="bg-surface/50 rounded-t-[40px] px-6 pt-8 pb-10 border-t border-surface-light/20">
+            <View className="bg-surface/50 rounded-t-[40px] px-6 pt-8 pb-32 border-t border-surface-light/20">
               <View className="flex-row items-center mb-6">
                 <Shield color="#00D1FF" size={22} />
                 <Text className="text-white text-2xl font-black ml-3">TITULARES</Text>
               </View>
 
-              {titulares.length > 0 ? (
-                titulares.map(j => <JugadorCard key={j.idJugador} jugador={j} />)
-              ) : (
-                <View className="bg-midnight/30 p-8 rounded-2xl border border-dashed border-surface-light/30 items-center">
-                  <Text className="text-gray-500 italic text-center">No tienes titulares seleccionados</Text>
-                </View>
-              )}
+              <View className="space-y-4">
+                {ROLES_ORDEN.map(rol => {
+                  const jugador = titulares.find(j => j.rol.toUpperCase() === rol.key);
+                  return (
+                    <View key={rol.key} className="flex-row items-center">
+                      <View className="w-10 items-center justify-center mr-2">
+                        <Text className="text-accent-cyan font-black text-[10px] uppercase italic -rotate-90" style={{ width: 60, textAlign: 'center' }}>
+                          {rol.label}
+                        </Text>
+                      </View>
+                      <View className="flex-1">
+                        {jugador ? (
+                          <JugadorCard jugador={jugador} hideBadge={true} noMargin={true} />
+                        ) : (
+                          <EmptySlotCard label={rol.label} />
+                        )}
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
 
               <View className="flex-row items-center mt-10 mb-6">
                 <User color="#9CA3AF" size={22} />

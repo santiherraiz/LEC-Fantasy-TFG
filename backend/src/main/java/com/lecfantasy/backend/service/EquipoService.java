@@ -41,6 +41,7 @@ public class EquipoService {
             dto.setNickname(p.getJugador().getNickname());
             dto.setRol(p.getJugador().getRol());
             dto.setEstado(p.getEstado().name());
+            dto.setImagenUrl(p.getJugador().getImagenUrl());
             return dto;
         }).collect(Collectors.toList());
 
