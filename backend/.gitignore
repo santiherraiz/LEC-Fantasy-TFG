@@ -42,3 +42,6 @@ backend/target/
 
 # Gemini
 .gemini/
+
+
+app.log
