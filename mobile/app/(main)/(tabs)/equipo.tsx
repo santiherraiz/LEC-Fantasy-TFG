@@ -103,7 +103,7 @@ export default function MiEquipoScreen() {
     return (
       <Link href={`/jugador/${jugador.idJugador}`} asChild>
         <TouchableOpacity
-          style={[styles.marker, { top: coords.top, left: coords.left }]}
+          style={StyleSheet.flatten([styles.marker, { top: coords.top, left: coords.left }])}
         >
           <View className="items-center">
             <View className="w-10 h-10 rounded-full bg-midnight border-2 border-accent-cyan items-center justify-center shadow-lg shadow-accent-cyan/50">

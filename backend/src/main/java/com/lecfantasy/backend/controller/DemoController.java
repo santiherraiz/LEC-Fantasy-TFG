@@ -65,6 +65,40 @@ public class DemoController {
         return ResponseEntity.ok("⏰ Tiempo avanzado a: " + tiempo + ". La jornada ya ha terminado cronológicamente.");
     }
 
+    @Autowired
+    private SubastaRepository subastaRepository;
+
+    @Autowired
+    private com.lecfantasy.backend.service.MercadoService mercadoService;
+
+    @PostMapping("/avanzar-mercado")
+    public ResponseEntity<String> avanzarMercado() {
+        if (!clockService.isModoDemoActivo()) {
+            return ResponseEntity.status(403).body("❌ El avance manual del mercado solo está permitido en Modo Demo.");
+        }
+        // 1. Adelantamos 24 horas el reloj simulado
+        LocalDateTime tiempoAnterior = clockService.ahora();
+        LocalDateTime nuevoTiempo = tiempoAnterior.plusDays(1);
+        clockService.establecerFechaSimulada(nuevoTiempo);
+        
+        // 2. BUSCAMOS las subastas que estaban activas y las "caducamos" 
+        // poniéndoles una fecha de fin justo antes del nuevo tiempo.
+        // Esto asegura que 'resolverSubastasExpiradas' las vea como caducadas.
+        List<Subasta> activas = subastaRepository.findByFinalizadaFalse();
+        for (Subasta s : activas) {
+            if (s.getFechaFin().isBefore(nuevoTiempo)) {
+                s.setFechaFin(nuevoTiempo.minusMinutes(1));
+                subastaRepository.save(s);
+            }
+        }
+        
+        // 3. Forzamos el procesamiento: Esto resolverá las que acabamos de caducar
+        // y generará las nuevas para el día siguiente.
+        mercadoService.forzarRefrescoMercado();
+        
+        return ResponseEntity.ok("⏰ Mercado avanzado de " + tiempoAnterior + " a " + nuevoTiempo + ". Subastas procesadas y nuevas generadas.");
+    }
+
     @PostMapping("/forzar-snapshot")
     public ResponseEntity<String> forzarSnapshot() {
         Jornada j = jornadaRepository.findByNumeroSemana(99).orElseThrow();
@@ -184,7 +218,21 @@ public class DemoController {
             jornadaRepository.delete(j);
         });
 
+        // NUEVO: Al desactivar el modo demo, forzamos un refresco del mercado
+        // para que las subastas que estaban en "2026" se cancelen y se generen
+        // unas nuevas basadas en la hora REAL actual.
+        try {
+            List<Subasta> subastasDemo = subastaRepository.findByFinalizadaFalse();
+            for (Subasta s : subastasDemo) {
+                s.setFinalizada(true);
+                subastaRepository.save(s);
+            }
+            mercadoService.forzarRefrescoMercado();
+        } catch (Exception e) {
+            // Loguear error pero permitir que el endpoint termine
+        }
+
         return ResponseEntity.ok(
-                "🛑 Modo Demo desactivado. Datos de la Semana 99 eliminados (incluyendo históricos). Volviendo a la hora real.");
+                "🛑 Modo Demo desactivado. Datos de la Semana 99 eliminados y mercado reseteado a hora real.");
     }
 }

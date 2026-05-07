@@ -20,6 +20,15 @@ public class AdminController {
     @Autowired
     private JornadaService jornadaService;
 
+    @Autowired
+    private com.lecfantasy.backend.service.MercadoService mercadoService;
+
+    @PostMapping("/mercado/refrescar")
+    public ResponseEntity<String> refrescarMercado() {
+        mercadoService.forzarRefrescoMercado();
+        return ResponseEntity.ok("Mercado refrescado manualmente: subastas resueltas y nuevos jugadores generados.");
+    }
+
     @PostMapping("/jornadas/sincronizar")
     public ResponseEntity<String> sincronizarCalendario() {
         jornadaService.sincronizarCalendario();

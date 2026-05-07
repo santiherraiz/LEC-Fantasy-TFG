@@ -19,6 +19,12 @@ public class ClockService {
                 .orElseGet(LocalDateTime::now);
     }
 
+    public boolean isModoDemoActivo() {
+        return configRepo.findById(1L)
+                .map(ConfiguracionDemo::isModoDemoActivo)
+                .orElse(false);
+    }
+
     public void activarModoDemo(LocalDateTime fechaInicial) {
         ConfiguracionDemo config = configRepo.findById(1L).orElse(new ConfiguracionDemo());
         config.setModoDemoActivo(true);

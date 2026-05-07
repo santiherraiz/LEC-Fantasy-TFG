@@ -40,13 +40,12 @@ export default function SubastasScreen() {
   const [presupuesto, setPresupuesto] = useState<number | null>(null);
   const [pujaModalVisible, setPujaModalVisible] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [serverTimeOffset, setServerTimeOffset] = useState(0);
 
-  // Timer to update time remaining every minute
+  // Timer to update UI every minute
+  const [tick, setTick] = useState(0);
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000);
+    const timer = setInterval(() => setTick(t => t + 1), 60000);
     return () => clearInterval(timer);
   }, []);
 
@@ -54,14 +53,19 @@ export default function SubastasScreen() {
     if (!user?.id || !selectedLigaId) return;
     setLoading(true);
     try {
-      const [subastasRes, equipoRes] = await Promise.all([
+      const [subastasRes, equipoRes, timeRes] = await Promise.all([
         api.get('/mercado/subastas', {
           params: { ligaId: selectedLigaId, usuarioId: user.id }
         }),
         api.get(`/equipos/mi-equipo/${user.id}`, {
           params: { ligaId: selectedLigaId }
-        })
+        }),
+        api.get('/public/time')
       ]);
+
+      const serverDate = new Date(timeRes.data.serverTime);
+      setServerTimeOffset(serverDate.getTime() - Date.now());
+
       setSubastas(subastasRes.data);
       setPresupuesto(equipoRes.data.presupuestoDisponible);
     } catch (error) {
@@ -125,7 +129,8 @@ export default function SubastasScreen() {
   };
 
   const getTimeRemaining = (endTime: string) => {
-    const total = Date.parse(endTime) - currentTime.getTime();
+    const simulatedNow = Date.now() + serverTimeOffset;
+    const total = Date.parse(endTime) - simulatedNow;
     if (total <= 0) return "Finalizado";
     
     const hours = Math.floor((total / (1000 * 60 * 60)) % 24);

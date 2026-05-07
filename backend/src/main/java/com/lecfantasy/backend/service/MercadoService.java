@@ -14,8 +14,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Service
 public class MercadoService {
+
+    private static final Logger log = LoggerFactory.getLogger(MercadoService.class);
 
     @Autowired
     private EquipoRepository equipoRepository;
@@ -33,7 +38,15 @@ public class MercadoService {
     @Autowired
     private UsuarioRepository usuarioRepository;
     @Autowired
+    private LigaRepository ligaRepository;
+    @Autowired
     private EstadisticaPartidoRepository estadisticaPartidoRepository;
+    @Autowired
+    private ClockService clockService;
+
+    @Autowired
+    @org.springframework.context.annotation.Lazy
+    private MercadoService self;
 
     public List<SubastaDTO> obtenerSubastasActivas(Long ligaId, Long usuarioId) {
         List<Subasta> subastas = subastaRepository.findByLigaIdAndFinalizadaFalse(ligaId);
@@ -89,7 +102,7 @@ public class MercadoService {
         Subasta subasta = subastaRepository.findById(request.getSubastaId())
                 .orElseThrow(() -> new RuntimeException("Subasta no encontrada"));
 
-        if (subasta.isFinalizada() || subasta.getFechaFin().isBefore(LocalDateTime.now())) {
+        if (subasta.isFinalizada() || subasta.getFechaFin().isBefore(clockService.ahora())) {
             throw new RuntimeException("La subasta ya ha finalizado");
         }
 
@@ -120,14 +133,14 @@ public class MercadoService {
         if (pujaExistente.isPresent()) {
             Puja puja = pujaExistente.get();
             puja.setCantidad(request.getCantidad());
-            puja.setFechaPuja(LocalDateTime.now());
+            puja.setFechaPuja(clockService.ahora());
             pujaRepository.save(puja);
         } else {
             Puja nuevaPuja = new Puja();
             nuevaPuja.setSubasta(subasta);
             nuevaPuja.setUsuario(usuarioRepository.findById(request.getUsuarioId()).get());
             nuevaPuja.setCantidad(request.getCantidad());
-            nuevaPuja.setFechaPuja(LocalDateTime.now());
+            nuevaPuja.setFechaPuja(clockService.ahora());
             pujaRepository.save(nuevaPuja);
         }
 
@@ -139,7 +152,7 @@ public class MercadoService {
         Subasta subasta = subastaRepository.findById(subastaId)
                 .orElseThrow(() -> new RuntimeException("Subasta no encontrada"));
 
-        if (subasta.isFinalizada() || subasta.getFechaFin().isBefore(LocalDateTime.now())) {
+        if (subasta.isFinalizada() || subasta.getFechaFin().isBefore(clockService.ahora())) {
             throw new RuntimeException("La subasta ya ha finalizado, no puedes retirar la puja");
         }
 
@@ -181,7 +194,7 @@ public class MercadoService {
 
         List<Jugador> seleccionados = new ArrayList<>();
         String[] roles = {"TOP", "JUNGLE", "MID", "ADC", "SUPPORT"};
-        LocalDateTime ahora = LocalDateTime.now();
+        LocalDateTime ahora = clockService.ahora();
 
         // 3. Intentar elegir uno de cada rol
         for (String rol : roles) {
@@ -227,51 +240,110 @@ public class MercadoService {
         }
     }
 
-    @Transactional
     public void resolverSubastasExpiradas() {
-        List<Subasta> expiradas = subastaRepository.findByFinalizadaFalseAndFechaFinBefore(LocalDateTime.now());
+        log.info("Buscando subastas expiradas para resolver a las {}...", clockService.ahora());
+        List<Subasta> expiradas = subastaRepository.findByFinalizadaFalseAndFechaFinBefore(clockService.ahora());
+        log.info("Encontradas {} subastas para cerrar.", expiradas.size());
 
         for (Subasta s : expiradas) {
-            List<Puja> pujas = pujaRepository.findBySubastaIdOrderByCantidadDescFechaPujaAsc(s.getId());
+            try {
+                // Usamos 'self' para que la anotación @Transactional(propagation = Propagation.REQUIRES_NEW) funcione
+                self.resolverSubastaIndividual(s.getId());
+            } catch (Exception e) {
+                log.error("Error crítico resolviendo subasta {}: {}", s.getId(), e.getMessage());
+            }
+        }
+    }
 
-            if (!pujas.isEmpty()) {
-                Puja ganadora = pujas.get(0);
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    public void resolverSubastaIndividual(Long subastaId) {
+        Subasta s = subastaRepository.findById(subastaId).orElseThrow();
+        log.info("Resolviendo subasta ID: {} - Jugador: {} - Fecha Fin: {}", s.getId(), s.getJugador().getNickname(), s.getFechaFin());
+        
+        List<Puja> pujas = pujaRepository.findBySubastaIdOrderByCantidadDescFechaPujaAsc(s.getId());
 
-                // El ganador ya pagó al pujar, así que solo le damos el jugador
-                Equipo equipoGanador = equipoRepository.findByUsuarioIdAndLigaId(ganadora.getUsuario().getId(), s.getLiga().getId()).get();
+        if (!pujas.isEmpty()) {
+            Puja ganadora = pujas.get(0);
+            log.info("GANADOR: {} con puja de {}", ganadora.getUsuario().getNickname(), ganadora.getCantidad());
 
+            Equipo equipoGanador = equipoRepository.findByUsuarioIdAndLigaId(ganadora.getUsuario().getId(), s.getLiga().getId())
+                .orElseThrow(() -> new RuntimeException("Equipo ganador no encontrado para usuario " + ganadora.getUsuario().getId()));
+
+            // Evitar duplicados si por algún motivo ya lo tiene
+            if (!plantillaRepository.existsByEquipoIdAndJugadorId(equipoGanador.getId(), s.getJugador().getId())) {
                 Plantilla p = new Plantilla();
                 p.setEquipo(equipoGanador);
                 p.setJugador(s.getJugador());
                 p.setEstado(EstadoAlineacion.BANQUILLO);
                 plantillaRepository.save(p);
+                log.info("Jugador {} añadido a la plantilla de {}", s.getJugador().getNickname(), equipoGanador.getNombreEquipo());
+            }
 
-                // Notificar al ganador
+            // Notificar al ganador
+            try {
                 notificationService.enviarNotificacion(
                     ganadora.getUsuario().getPushToken(),
                     "¡Fichaje completado!",
                     "¡Enhorabuena! Has fichado a " + s.getJugador().getNickname() + " por " + ganadora.getCantidad() + " €."
                 );
-
-                // Devolver dinero a los perdedores y notificarles
-                for (int i = 1; i < pujas.size(); i++) {
-                    Puja perdedora = pujas.get(i);
-                    Equipo equipoPerdedor = equipoRepository.findByUsuarioIdAndLigaId(perdedora.getUsuario().getId(), s.getLiga().getId()).get();
-                    equipoPerdedor.setPresupuestoDisponible(
-                            equipoPerdedor.getPresupuestoDisponible() + perdedora.getCantidad());
-                    equipoRepository.save(equipoPerdedor);
-
-                    // Notificar pérdida
-                    notificationService.enviarNotificacion(
-                        perdedora.getUsuario().getPushToken(),
-                        "Subasta finalizada",
-                        "Has perdido la subasta por " + s.getJugador().getNickname() + ". Se han devuelto " + perdedora.getCantidad() + " € a tu presupuesto."
-                    );
-                }
+            } catch (Exception e) {
+                log.warn("Error enviando notificación al ganador: {}", e.getMessage());
             }
 
-            s.setFinalizada(true);
-            subastaRepository.save(s);
+            // Devolver dinero a los perdedores y notificarles
+            for (int i = 1; i < pujas.size(); i++) {
+                Puja perdedora = pujas.get(i);
+                Optional<Equipo> equipoPerdedorOpt = equipoRepository.findByUsuarioIdAndLigaId(perdedora.getUsuario().getId(), s.getLiga().getId());
+                
+                if (equipoPerdedorOpt.isPresent()) {
+                    Equipo equipoPerdedor = equipoPerdedorOpt.get();
+                    equipoPerdedor.setPresupuestoDisponible(equipoPerdedor.getPresupuestoDisponible() + perdedora.getCantidad());
+                    equipoRepository.save(equipoPerdedor);
+                    log.info("Devueltos {} € a {}", perdedora.getCantidad(), equipoPerdedor.getNombreEquipo());
+
+                    try {
+                        notificationService.enviarNotificacion(
+                            perdedora.getUsuario().getPushToken(),
+                            "Subasta finalizada",
+                            "Has perdido la subasta por " + s.getJugador().getNickname() + ". Se han devuelto " + perdedora.getCantidad() + " € a tu presupuesto."
+                        );
+                    } catch (Exception e) {
+                        log.warn("Error enviando notificación al perdedor: {}", e.getMessage());
+                    }
+                }
+            }
+        } else {
+            log.info("Sin pujas para la subasta del jugador: {}", s.getJugador().getNickname());
+        }
+
+        s.setFinalizada(true);
+        subastaRepository.save(s);
+    }
+
+    public void forzarRefrescoMercado() {
+        log.info("FORZANDO refresco manual del mercado...");
+        // 1. Resolvemos las que ya deberían haber terminado
+        resolverSubastasExpiradas();
+
+        // 2. Para cada liga, si no hay activas, generamos nuevas YA
+        List<Liga> ligas = ligaRepository.findAll();
+        LocalDateTime ahora = clockService.ahora();
+        for (Liga liga : ligas) {
+            boolean tieneActivas = subastaRepository.existsByLigaIdAndFinalizadaFalse(liga.getId());
+            if (!tieneActivas) {
+                log.info("Liga {} sin subastas activas. Generando nuevas...", liga.getNombre());
+                
+                // Calculamos el próximo fin basado en la hora de creación de la liga
+                java.time.LocalTime horaReset = liga.getCreatedAt().toLocalTime();
+                LocalDateTime proximoFin = ahora.toLocalDate().atTime(horaReset);
+                if (!proximoFin.isAfter(ahora)) {
+                    proximoFin = proximoFin.plusDays(1);
+                }
+                
+                generarSubastasConFechaFin(liga, proximoFin);
+            } else {
+                log.info("Liga {} todavía tiene subastas activas. No se generan nuevas.", liga.getNombre());
+            }
         }
     }
 
