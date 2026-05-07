@@ -12,6 +12,7 @@ export interface Jugador {
   rol: string;
   equipoLec: EquipoLec;
   precioBase: number;
+  imagenUrl: string | null;
 }
 
 export interface JugadorEnPlantillaDTO {
@@ -67,5 +68,37 @@ export interface CatalogoJugador {
   jugador: Jugador;
   propietarioNickname: string | null;
   puntosMedia: number;
+  puntosTotales: number;
+}
+
+export interface EquipoRivalDTO {
+  id: number;
+  nombreUsuario: string;
+  presupuesto: number;
+  puntosTotales: number;
+  jugadores: JugadorRival[];
+}
+
+export interface JugadorRival {
+  id: number;
+  nickname: string;
+  foto: string | null;
+  rol: string;
+  equipoLec: string;
+  precioBase: number;
+  estado: "TITULAR" | "BANQUILLO";
+}
+
+export interface JugadorDetalleDTO {
+  id: number;
+  nombreReal: string;
+  nickname: string;
+  rol: string;
+  precioBase: number;
+  imagenUrl: string | null;
+  equipoLecNombre: string | null;
+  equipoLecLogo: string | null;
+  propietarioNickname: string | null;
+  propietarioEquipoId: number | null;
 }
 

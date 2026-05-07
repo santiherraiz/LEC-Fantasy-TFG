@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { Text, View, TextInput, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
-import api from '../../api/api';
-import { useAuthStore } from '../../store/authStore';
-import { useToast } from '../../context/ToastContext';
+import { useRouter } from 'expo-router';
+import api from '../../src/api/api';
+import { useAuthStore } from '../../src/store/authStore';
+import { useToast } from '../../src/context/ToastContext';
 
-export default function LoginScreen({ navigation }: any) {
+export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { setAuth } = useAuthStore();
   const { showToast } = useToast();
+  const router = useRouter();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -21,6 +23,7 @@ export default function LoginScreen({ navigation }: any) {
       const response = await api.post('/usuarios/login', { email, password });
       const { token, usuario } = response.data;
       setAuth(usuario, token);
+      // Autorefresh should handle redirection via RootLayout
     } catch (error: any) {
       showToast(error.message, 'error');
     } finally {
@@ -33,7 +36,7 @@ export default function LoginScreen({ navigation }: any) {
       <View className="mb-10 items-center w-full">
         <View className="w-full h-48 items-center justify-center">
           <Image 
-            source={require('../../../assets/logos/IMAGOTIPO-bg.png')} 
+            source={require('../../assets/logos/IMAGOTIPO-bg.png')} 
             className="w-full h-full"
             resizeMode="contain"
           />
@@ -69,7 +72,7 @@ export default function LoginScreen({ navigation }: any) {
         </TouchableOpacity>
         
         <TouchableOpacity 
-          onPress={() => navigation.navigate('Register')}
+          onPress={() => router.push('/register')}
           className="mt-8 items-center"
         >
           <Text className="text-accent-cyan font-bold">¿No tienes cuenta? Regístrate</Text>

@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
-@Table(name = "equipos_usuarios")
+@Table(name = "equipos_usuarios", uniqueConstraints = {
+        @UniqueConstraint(columnNames = { "usuario_id", "liga_id" })
+})
 @Data
 public class Equipo {
 
@@ -21,8 +23,8 @@ public class Equipo {
     @Column(name = "puntuacion_total", nullable = false)
     private Double puntuacionTotal = 0.0; // Empiezan con 0 puntos
 
-    @OneToOne
-    @JoinColumn(name = "usuario_id", referencedColumnName = "id", nullable = false, unique = true)
+    @ManyToOne
+    @JoinColumn(name = "usuario_id", referencedColumnName = "id", nullable = false)
     private Usuario usuario;
 
     @ManyToOne

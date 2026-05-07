@@ -47,4 +47,11 @@ public class UsuarioService {
         return usuarioRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + id));
     }
+
+    @Transactional
+    public void actualizarPushToken(Long usuarioId, String token) {
+        Usuario usuario = obtenerPerfil(usuarioId);
+        usuario.setPushToken(token);
+        usuarioRepository.save(usuario);
+    }
 }

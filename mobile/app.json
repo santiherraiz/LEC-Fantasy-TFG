@@ -3,8 +3,9 @@
     "name": "mobile",
     "slug": "mobile",
     "version": "1.0.0",
+    "scheme": "fantasylec",
     "orientation": "portrait",
-    "icon": "./assets/logos/ISOTIPO-bg.png",
+    "icon": "./assets/logos/icon.png",
     "userInterfaceStyle": "dark",
     "splash": {
       "image": "./assets/logos/IMAGOTIPO-bg.png",
@@ -17,11 +18,21 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logos/ISOTIPO-bg.png",
+        "foregroundImage": "./assets/logos/icon.png",
         "backgroundColor": "#0B0E14"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.santiherraizz.mobile"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-notifications"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "5a0f7c65-87cc-4bdf-bed8-5e2e45a6dfbe"
+      }
     }
   }
 }

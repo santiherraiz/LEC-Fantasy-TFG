@@ -2,7 +2,6 @@ package com.lecfantasy.backend.controller;
 
 import com.lecfantasy.backend.dto.JugadorEstadisticaDTO;
 import com.lecfantasy.backend.dto.JugadorPuntuacionTotalDTO;
-import com.lecfantasy.backend.entity.Jugador;
 import com.lecfantasy.backend.service.JugadorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -23,9 +22,14 @@ public class JugadorController {
         return ResponseEntity.ok(jugadorService.obtenerRankingJugadores());
     }
 
-    // Obtener los datos básicos de un jugador
+    // Obtener los datos básicos de un jugador (opcionalmente con dueño si se pasa ligaId)
     @GetMapping("/{id}")
-    public ResponseEntity<Jugador> obtenerDetalleJugador(@PathVariable Long id) {
+    public ResponseEntity<?> obtenerDetalleJugador(
+            @PathVariable Long id,
+            @RequestParam(required = false) Long ligaId) {
+        if (ligaId != null) {
+            return ResponseEntity.ok(jugadorService.obtenerDetalleJugadorConPropietario(id, ligaId));
+        }
         return ResponseEntity.ok(jugadorService.obtenerDetalleJugador(id));
     }
 

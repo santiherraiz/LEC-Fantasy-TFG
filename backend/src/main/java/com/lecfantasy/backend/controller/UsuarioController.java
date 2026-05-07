@@ -42,4 +42,10 @@ public class UsuarioController {
         Usuario usuario = usuarioService.obtenerPerfil(id);
         return ResponseEntity.ok(usuario);
     }
+
+    @PostMapping("/update-push-token")
+    public ResponseEntity<String> actualizarPushToken(@RequestParam Long usuarioId, @RequestParam String token) {
+        usuarioService.actualizarPushToken(usuarioId, token);
+        return ResponseEntity.ok("Token actualizado correctamente");
+    }
 }

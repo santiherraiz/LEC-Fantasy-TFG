@@ -22,8 +22,8 @@ public class EquipoController {
 
     // Usamos {usuarioId} en la URL para saber de quién es el equipo
     @GetMapping("/mi-equipo/{usuarioId}")
-    public ResponseEntity<?> obtenerMiEquipo(@PathVariable Long usuarioId) {
-        return ResponseEntity.ok(equipoService.obtenerDetalleEquipo(usuarioId));
+    public ResponseEntity<?> obtenerMiEquipo(@PathVariable Long usuarioId, @RequestParam Long ligaId) {
+        return ResponseEntity.ok(equipoService.obtenerDetalleEquipo(usuarioId, ligaId));
     }
 
     @PutMapping("/alinear")
@@ -32,9 +32,14 @@ public class EquipoController {
         return ResponseEntity.ok(mensaje);
     }
 
-    // Devuelve el ranking de todos los equipos ordenados por puntos (descendente)
     @GetMapping("/ranking")
-    public ResponseEntity<List<RankingDTO>> obtenerRanking() {
-        return ResponseEntity.ok(equipoService.obtenerRanking());
+    public ResponseEntity<List<RankingDTO>> obtenerRanking(@RequestParam Long ligaId) {
+        return ResponseEntity.ok(equipoService.obtenerRanking(ligaId));
+    }
+
+    // Nuevo endpoint para ver el equipo de un rival
+    @GetMapping("/rival/{equipoId}")
+    public ResponseEntity<?> obtenerEquipoRival(@PathVariable Long equipoId) {
+        return ResponseEntity.ok(equipoService.obtenerEquipoRival(equipoId));
     }
 }

@@ -2,12 +2,15 @@ package com.lecfantasy.backend.service;
 
 import com.lecfantasy.backend.dto.JugadorPuntuacionTotalDTO;
 import com.lecfantasy.backend.dto.JugadorEstadisticaDTO;
+import com.lecfantasy.backend.dto.JugadorDetalleDTO;
 import com.lecfantasy.backend.dto.LeaguepediaResponse;
 import com.lecfantasy.backend.entity.EstadisticaPartido;
 import com.lecfantasy.backend.entity.Jugador;
 import com.lecfantasy.backend.entity.EquipoLec;
+import com.lecfantasy.backend.entity.Plantilla;
 import com.lecfantasy.backend.repository.EstadisticaPartidoRepository;
 import com.lecfantasy.backend.repository.JugadorRepository;
+import com.lecfantasy.backend.repository.PlantillaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -26,6 +29,9 @@ public class JugadorService {
 
     @Autowired
     private JugadorRepository jugadorRepository;
+
+    @Autowired
+    private PlantillaRepository plantillaRepository;
 
     @Autowired
     private EstadisticaPartidoRepository estadisticaPartidoRepository;
@@ -135,6 +141,36 @@ public class JugadorService {
             dto.setPuntosGenerados(e.getPuntosGenerados());
             return dto;
         }).collect(Collectors.toList());
+    }
+
+    public JugadorDetalleDTO obtenerDetalleJugadorConPropietario(Long id, Long ligaId) {
+        Jugador j = jugadorRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Jugador no encontrado"));
+
+        JugadorDetalleDTO dto = new JugadorDetalleDTO();
+        dto.setId(j.getId());
+        dto.setNickname(j.getNickname());
+        dto.setNombreReal(j.getNombreReal());
+        dto.setRol(j.getRol());
+        dto.setPrecioBase(j.getPrecioBase());
+        dto.setImagenUrl(j.getImagenUrl());
+        
+        if (j.getEquipoLec() != null) {
+            dto.setEquipoLecNombre(j.getEquipoLec().getNombre());
+            dto.setEquipoLecLogo(j.getEquipoLec().getLogoUrl());
+        }
+
+        // Buscar propietario en la liga
+        List<Plantilla> propiedad = plantillaRepository.findByJugadorId(j.getId());
+        for (Plantilla p : propiedad) {
+            if (p.getEquipo().getLiga().getId().equals(ligaId)) {
+                dto.setPropietarioNickname(p.getEquipo().getUsuario().getNickname());
+                dto.setPropietarioEquipoId(p.getEquipo().getId());
+                break;
+            }
+        }
+
+        return dto;
     }
 
     public Jugador obtenerDetalleJugador(Long id) {

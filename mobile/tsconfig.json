@@ -5,6 +5,7 @@
   },
   "include": [
     "src",
+    "app",
     "nativewind-env.d.ts"
   ]
 }

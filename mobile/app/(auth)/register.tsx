@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { Text, View, TextInput, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
-import api from '../../api/api';
-import { useToast } from '../../context/ToastContext';
+import { useRouter } from 'expo-router';
+import api from '../../src/api/api';
+import { useToast } from '../../src/context/ToastContext';
 
-export default function RegisterScreen({ navigation }: any) {
+export default function RegisterScreen() {
   const [nombre, setNombre] = useState('');
   const [nickname, setNickname] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
+  const router = useRouter();
 
   const handleRegister = async () => {
     if (!nombre || !nickname || !email || !password) {
@@ -20,7 +22,7 @@ export default function RegisterScreen({ navigation }: any) {
     try {
       await api.post('/usuarios/registro', { nombre, nickname, email, password });
       showToast('¡Usuario creado! Ya puedes entrar', 'success');
-      navigation.navigate('Login');
+      router.push('/login');
     } catch (error: any) {
       console.error(error);
       showToast('Error al crear usuario', 'error');
@@ -34,7 +36,7 @@ export default function RegisterScreen({ navigation }: any) {
       <View className="mb-10 items-center w-full">
         <View className="w-full h-40 items-center justify-center">
           <Image 
-            source={require('../../../assets/logos/IMAGOTIPO-bg.png')} 
+            source={require('../../assets/logos/IMAGOTIPO-bg.png')} 
             className="w-full h-full"
             resizeMode="contain"
           />
@@ -83,7 +85,7 @@ export default function RegisterScreen({ navigation }: any) {
           {loading ? <ActivityIndicator color="#0B0E14" /> : <Text className="text-midnight font-black text-lg uppercase tracking-widest">Registrarse</Text>}
         </TouchableOpacity>
         
-        <TouchableOpacity onPress={() => navigation.goBack()} className="mt-8 items-center">
+        <TouchableOpacity onPress={() => router.back()} className="mt-8 items-center">
           <Text className="text-accent-cyan font-bold">¿Ya tienes cuenta? Inicia sesión</Text>
         </TouchableOpacity>
       </View>

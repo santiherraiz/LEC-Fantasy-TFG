@@ -6,6 +6,7 @@ import lombok.Data;
 @Data
 public class CatalogoJugadorDTO {
     private Jugador jugador;
-    private String propietarioNickname; // Nickname del usuario que lo tiene, o null si está libre
-    private Double puntosMedia;
+    private String propietarioNickname;
+    private double puntosMedia;
+    private double puntosTotales;
 }

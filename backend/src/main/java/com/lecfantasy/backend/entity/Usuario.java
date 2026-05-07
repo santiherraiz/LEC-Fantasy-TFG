@@ -26,6 +26,9 @@ public class Usuario {
     @Column(nullable = false)
     private String password;
 
+    @Column(name = "push_token")
+    private String pushToken;
+
     @Column(name = "created_at", updatable = false)
     private java.time.LocalDateTime createdAt;
 

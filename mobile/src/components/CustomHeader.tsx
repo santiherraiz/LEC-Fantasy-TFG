@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image } from 'react-native';
-import { useNavigation, DrawerActions } from '@react-navigation/native';
+import { useRouter, useNavigation } from 'expo-router';
+import { DrawerActions } from '@react-navigation/native';
 import { Menu, ChevronLeft } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
@@ -12,19 +13,25 @@ interface CustomHeaderProps {
 }
 
 export default function CustomHeader({ ligaNombre, showBackButton, onBackPress }: CustomHeaderProps) {
+  const router = useRouter();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { selectedLigaNombre } = useAuthStore();
 
-  const displayNombre = ligaNombre || selectedLigaNombre;
-
   const handlePress = () => {
-    if (showBackButton && onBackPress) {
-      onBackPress();
-    } else if (showBackButton) {
-      navigation.goBack();
+    if (showBackButton) {
+      if (onBackPress) {
+        onBackPress();
+      } else {
+        router.back();
+      }
     } else {
-      navigation.dispatch(DrawerActions.toggleDrawer());
+      // Safely toggle drawer
+      try {
+        navigation.dispatch(DrawerActions.toggleDrawer());
+      } catch (e) {
+        console.warn("Navigation drawer context not found", e);
+      }
     }
   };
 

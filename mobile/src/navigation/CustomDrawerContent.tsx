@@ -1,36 +1,28 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image } from 'react-native';
-import { DrawerContentComponentProps, DrawerContentScrollView } from '@react-navigation/drawer';
+import { useRouter, usePathname } from 'expo-router';
 import { Users, LayoutGrid, LogOut, Shield, Trophy, ShoppingBag, User as UserIcon } from 'lucide-react-native';
 import { useAuthStore } from '../store/authStore';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { DrawerContentComponentProps } from '@react-navigation/drawer';
 
 export default function CustomDrawerContent(props: DrawerContentComponentProps) {
   const { user, logout, setSelectedLiga, selectedLigaNombre } = useAuthStore();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const pathname = usePathname();
 
   const handleOtrasLigas = () => {
     setSelectedLiga(null);
-    props.navigation.closeDrawer();
+    // In expo-router, redirection is handled by the root layout when selectedLigaId is null
   };
 
   const handleLogout = () => {
     logout();
-    props.navigation.closeDrawer();
   };
 
-  const isActive = (routeName: string) => {
-    const state = props.state;
-    const currentRoute = state.routes[state.index];
-    
-    // Si estamos en el navigator de Tabs, buscamos la ruta activa dentro de él
-    if (currentRoute.name === 'Tabs' && currentRoute.state) {
-      const tabState = currentRoute.state;
-      const activeTabName = tabState.routes[tabState.index || 0].name;
-      return activeTabName === routeName;
-    }
-    
-    return currentRoute.name === routeName;
+  const isActive = (path: string) => {
+    return pathname === path;
   };
 
   return (
@@ -67,29 +59,29 @@ export default function CustomDrawerContent(props: DrawerContentComponentProps) 
         <DrawerItem 
           label="Mi Equipo" 
           icon={<Shield size={22} />} 
-          active={isActive('MiEquipo')} 
-          onPress={() => props.navigation.navigate('Tabs', { screen: 'MiEquipo' })} 
+          active={isActive('/equipo')} 
+          onPress={() => router.push('/equipo')} 
         />
         
         <DrawerItem 
           label="Mercado" 
           icon={<ShoppingBag size={22} />} 
-          active={isActive('Mercado')} 
-          onPress={() => props.navigation.navigate('Tabs', { screen: 'Mercado' })} 
+          active={isActive('/mercado')} 
+          onPress={() => router.push('/mercado')} 
         />
 
         <DrawerItem 
           label="Jugadores" 
           icon={<Users size={22} />} 
-          active={isActive('JugadoresList')} 
-          onPress={() => props.navigation.navigate('JugadoresList')} 
+          active={isActive('/jugadores')} 
+          onPress={() => router.push('/jugadores')} 
         />
 
         <DrawerItem 
           label="Ranking" 
           icon={<Trophy size={22} />} 
-          active={isActive('Ranking')} 
-          onPress={() => props.navigation.navigate('Tabs', { screen: 'Ranking' })} 
+          active={isActive('/ranking')} 
+          onPress={() => router.push('/ranking')} 
         />
 
         <Text style={styles.sectionTitle}>Ajustes</Text>
@@ -112,6 +104,7 @@ export default function CustomDrawerContent(props: DrawerContentComponentProps) 
     </View>
   );
 }
+
 
 function DrawerItem({ label, icon, active, onPress }: { label: string, icon: any, active: boolean, onPress: () => void }) {
   return (

@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
+import { Text, View, ScrollView, RefreshControl, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import api from '../../api/api';
-import { RankingEntry } from '../../types';
-import { useAuthStore } from '../../store/authStore';
+import { useRouter } from 'expo-router';
+import api from '../../../src/api/api';
+import { RankingEntry } from '../../../src/types';
+import { useAuthStore } from '../../../src/store/authStore';
 import { Trophy, Medal } from 'lucide-react-native';
+import CustomHeader from '../../../src/components/CustomHeader';
 
 export default function RankingScreen() {
+  const router = useRouter();
   const { selectedLigaId } = useAuthStore();
   const [ranking, setRanking] = useState<RankingEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,18 +52,22 @@ export default function RankingScreen() {
   const safeRanking = ranking || [];
 
   return (
-    <SafeAreaView className="flex-1 bg-midnight">
+    <View className="flex-1 bg-midnight">
+      <CustomHeader />
       <ScrollView 
         className="px-4"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => {setRefreshing(true); fetchRanking();}} tintColor="#00D1FF" />}
+        showsVerticalScrollIndicator={false}
       >
-        <Text className="text-white text-3xl font-bold tracking-tight mb-8 mt-4">Ranking de la Liga</Text>
+        <Text className="text-white text-3xl font-black tracking-tight mb-8 mt-6 italic uppercase">Ranking de la Liga</Text>
         
         <View>
           {safeRanking.map((entry, index) => (
-            <View 
+            <TouchableOpacity 
               key={entry.equipoId ? entry.equipoId.toString() : `rank-${index}`} 
-              className={`bg-surface p-5 rounded-2xl flex-row items-center mb-3 border border-surface-light/20 ${index === 0 ? 'border-l-4 border-l-gold' : ''}`}
+              onPress={() => router.push(`/(main)/rival/${entry.equipoId}`)}
+              activeOpacity={0.7}
+              className={`bg-surface p-5 rounded-2xl flex-row items-center mb-3 border border-surface-light/20 ${index === 0 ? 'border-accent-cyan/30' : ''}`}
             >
               <View className="w-10 items-center mr-4">{getRankIcon(index)}</View>
               <View className="flex-1">
@@ -71,7 +78,7 @@ export default function RankingScreen() {
                 <Text className="text-accent-cyan font-black text-xl">{Math.round(entry.puntosTotales ?? 0)}</Text>
                 <Text className="text-gray-500 text-[10px] font-bold">PTS</Text>
               </View>
-            </View>
+            </TouchableOpacity>
           ))}
           {safeRanking.length === 0 && !loading && (
             <View className="items-center pt-20">
@@ -81,6 +88,6 @@ export default function RankingScreen() {
         </View>
         <View className="h-20" />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

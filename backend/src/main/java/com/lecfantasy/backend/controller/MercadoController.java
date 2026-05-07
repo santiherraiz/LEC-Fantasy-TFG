@@ -70,4 +70,10 @@ public class MercadoController {
 
         return ResponseEntity.ok(agrupadosPorEquipo);
     }
+
+    @PostMapping("/clausulazo")
+    public ResponseEntity<String> ejecutarClausulazo(@RequestBody com.lecfantasy.backend.dto.ClausulazoRequest request) {
+        String mensaje = mercadoService.ejecutarClausulazo(request.getCompradorUsuarioId(), request.getJugadorId(), request.getLigaId());
+        return ResponseEntity.ok(mensaje);
+    }
 }

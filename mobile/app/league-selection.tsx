@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Text, View, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuthStore } from '../../store/authStore';
-import api from '../../api/api';
-import { Trophy, Plus, Link, ChevronRight, LogOut } from 'lucide-react-native';
+import { useAuthStore } from '../src/store/authStore';
+import api from '../src/api/api';
+import { Trophy, Plus, Link as LinkIcon, ChevronRight, LogOut } from 'lucide-react-native';
 
 export default function LeagueSelectionScreen() {
   const { user, setSelectedLiga, logout } = useAuthStore();
@@ -112,7 +112,7 @@ export default function LeagueSelectionScreen() {
             className="flex-row items-center justify-center bg-surface-light/30 p-5 rounded-2xl border border-surface-light/30"
             onPress={() => { setShowJoin(!showJoin); setShowCreate(false); }}
           >
-            <Link color="white" size={20} className="mr-3" />
+            <LinkIcon color="white" size={20} className="mr-3" />
             <Text className="text-white font-bold text-base uppercase tracking-tighter">Unirse con Código</Text>
           </TouchableOpacity>
 
