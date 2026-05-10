@@ -2,6 +2,7 @@ package com.lecfantasy.backend.service;
 
 import com.lecfantasy.backend.entity.Jornada;
 import com.lecfantasy.backend.entity.JornadaEstado;
+import com.lecfantasy.backend.entity.TipoNoticia;
 import com.lecfantasy.backend.repository.JornadaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -23,6 +24,8 @@ public class JornadaScheduler {
     private JornadaRepository jornadaRepository;
     @Autowired
     private ClockService clockService;
+    @Autowired
+    private NoticiaService noticiaService;
 
     /**
      * ¡Magia! En cuanto el servidor arranca, se sincroniza todo solo.
@@ -76,6 +79,15 @@ public class JornadaScheduler {
                 j.setEstado(JornadaEstado.FINALIZADA);
                 jornadaRepository.save(j);
                 System.out.println("✅ [SCHEDULER] Semana " + j.getNumeroSemana() + " FINALIZADA.");
+
+                // Noticia de fin de jornada
+                // Como las noticias son por liga, tenemos que iterar o buscar una forma de llegar a todas las ligas
+                // Por simplicidad en este proyecto, solemos tener una o pocas ligas.
+                noticiaService.crearNoticiaParaTodasLasLigas(
+                    TipoNoticia.RESULTADO_JORNADA,
+                    String.format("¡La Jornada %d ha finalizado! Revisa el ranking para ver tu posición.", j.getNumeroSemana()),
+                    null, null, null
+                );
             } else {
                 // Solo logueamos si han pasado más de 2 horas del fin para no saturar la
                 // consola cada minuto

@@ -2,6 +2,7 @@ package com.lecfantasy.backend.service;
 
 import com.lecfantasy.backend.entity.Equipo;
 import com.lecfantasy.backend.entity.Liga;
+import com.lecfantasy.backend.entity.TipoNoticia;
 import com.lecfantasy.backend.entity.Usuario;
 import com.lecfantasy.backend.repository.EquipoRepository;
 import com.lecfantasy.backend.repository.LigaRepository;
@@ -24,6 +25,9 @@ public class LigaService {
     @Autowired
     private EquipoRepository equipoRepository;
 
+    @Autowired
+    private NoticiaService noticiaService;
+
     @Transactional
     public Liga crearLiga(String nombre, Long adminId) {
         Usuario admin = usuarioRepository.findById(adminId)
@@ -36,6 +40,14 @@ public class LigaService {
 
         // Crear equipo para el admin en su propia liga
         crearEquipoEnLiga(admin, ligaGuardada);
+
+        // Noticia de bienvenida
+        noticiaService.crearNoticia(
+            ligaGuardada.getId(),
+            TipoNoticia.NUEVA_LIGA,
+            "¡Bienvenidos a la liga " + nombre + "! Que gane el mejor manager.",
+            null, null, null
+        );
 
         return ligaGuardada;
     }
@@ -54,6 +66,14 @@ public class LigaService {
         }
 
         crearEquipoEnLiga(usuario, liga);
+
+        // Noticia de nuevo usuario
+        noticiaService.crearNoticia(
+            liga.getId(),
+            TipoNoticia.NUEVA_LIGA,
+            "¡" + usuario.getNickname() + " se ha unido a la liga!",
+            null, null, null
+        );
     }
 
     private void crearEquipoEnLiga(Usuario usuario, Liga liga) {

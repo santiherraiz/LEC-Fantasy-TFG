@@ -45,6 +45,9 @@ public class MercadoService {
     private ClockService clockService;
 
     @Autowired
+    private NoticiaService noticiaService;
+
+    @Autowired
     @org.springframework.context.annotation.Lazy
     private MercadoService self;
 
@@ -291,6 +294,19 @@ public class MercadoService {
                 p.setEstado(EstadoAlineacion.BANQUILLO);
                 plantillaRepository.save(p);
                 log.info("Jugador {} añadido a la plantilla de {}", s.getJugador().getNickname(), equipoGanador.getNombreEquipo());
+
+                // Noticia de subasta ganada
+                noticiaService.crearNoticia(
+                    s.getLiga().getId(),
+                    TipoNoticia.SUBASTA_GANADA,
+                    String.format("¡%s ha ganado la subasta por %s por %.0f €!", 
+                        ganadora.getUsuario().getNickname(), 
+                        s.getJugador().getNickname(), 
+                        ganadora.getCantidad()),
+                    s.getJugador().getId(),
+                    equipoGanador.getId(),
+                    s.getJugador().getImagenUrl()
+                );
             }
 
             // Notificar al ganador
@@ -401,6 +417,19 @@ public class MercadoService {
             "Has fichado a " + jugador.getNickname() + " por " + jugador.getPrecioBase() + " €."
         );
 
+        // 8. Crear noticia en el muro
+        noticiaService.crearNoticia(
+            equipo.getLiga().getId(),
+            TipoNoticia.FICHAJE,
+            String.format("¡%s ha fichado a %s por %.0f €!", 
+                equipo.getUsuario().getNickname(), 
+                jugador.getNickname(), 
+                jugador.getPrecioBase()),
+            jugador.getId(),
+            equipo.getId(),
+            jugador.getImagenUrl()
+        );
+
         return "¡Fichaje exitoso! Has fichado a " + jugador.getNickname() +
                 ". Saldo restante: " + equipo.getPresupuestoDisponible();
     }
@@ -463,6 +492,20 @@ public class MercadoService {
             "¡TE HAN ROBADO UN JUGADOR!",
             equipoComprador.getUsuario().getNickname() + " ha pagado la cláusula de " + jugador.getNickname() + 
             ". Has recibido " + String.format("%.0f", precioClausula) + " €."
+        );
+
+        // 8. Crear noticia en el muro
+        noticiaService.crearNoticia(
+            ligaId,
+            TipoNoticia.CLAUSULAZO,
+            String.format("¡ROBO! %s ha pagado la cláusula de %s (%.0f €) al equipo de %s.", 
+                equipoComprador.getUsuario().getNickname(), 
+                jugador.getNickname(), 
+                precioClausula,
+                equipoVictima.getUsuario().getNickname()),
+            jugador.getId(),
+            equipoComprador.getId(),
+            jugador.getImagenUrl()
         );
 
         return "Has pagado la cláusula de " + jugador.getNickname() + " con éxito.";
@@ -535,6 +578,19 @@ public class MercadoService {
 
         // 3. Borramos la fila de la tabla intermedia
         plantillaRepository.delete(registro);
+
+        // 4. Crear noticia en el muro
+        noticiaService.crearNoticia(
+            equipo.getLiga().getId(),
+            TipoNoticia.VENTA,
+            String.format("%s ha vendido a %s al mercado por %.0f €.", 
+                equipo.getUsuario().getNickname(), 
+                jugador.getNickname(), 
+                jugador.getPrecioBase()),
+            jugador.getId(),
+            equipo.getId(),
+            jugador.getImagenUrl()
+        );
 
         return "Has vendido a " + jugador.getNickname() + " por " + jugador.getPrecioBase()
                 + " monedas. Tu nuevo saldo es: " + nuevoSaldo;
