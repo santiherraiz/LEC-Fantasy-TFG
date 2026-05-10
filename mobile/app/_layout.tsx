@@ -28,7 +28,21 @@ export default function RootLayout() {
     setupAndroid();
   }, []);
 
+  const [hasHydrated, setHasHydrated] = React.useState(false);
+
   useEffect(() => {
+    const unsubHydrate = useAuthStore.persist.onFinishHydration(() => {
+      setHasHydrated(true);
+    });
+
+    setHasHydrated(useAuthStore.persist.hasHydrated());
+
+    return () => unsubHydrate();
+  }, []);
+
+  useEffect(() => {
+    if (!hasHydrated) return; // Esperar a que los datos se lean del disco
+
     const inAuthGroup = segments[0] === '(auth)';
     
     if (!isAuthenticated && !inAuthGroup) {
@@ -44,7 +58,7 @@ export default function RootLayout() {
     } else if (isAuthenticated && selectedLigaId && (segments[0] === 'league-selection' || inAuthGroup)) {
        router.replace('/equipo');
     }
-  }, [isAuthenticated, selectedLigaId, segments]);
+  }, [isAuthenticated, selectedLigaId, segments, hasHydrated]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

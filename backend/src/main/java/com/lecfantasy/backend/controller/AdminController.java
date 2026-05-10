@@ -77,4 +77,10 @@ public class AdminController {
         puntuacionService.resetCalculos();
         return ResponseEntity.ok("Columna puntos_calculados reseteada a 0 para todos los partidos.");
     }
+
+    @PostMapping("/reset-total")
+    public ResponseEntity<String> resetTotal() {
+        puntuacionService.resetTotal();
+        return ResponseEntity.ok("LIMPIEZA TOTAL: Estadísticas borradas, importaciones y cálculos reseteados.");
+    }
 }

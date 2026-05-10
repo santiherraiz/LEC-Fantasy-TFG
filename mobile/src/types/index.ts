@@ -56,6 +56,7 @@ export interface JugadorEstadistica {
   assists: number;
   cs: number;
   puntosGenerados: number;
+  puntosReales: number;
 }
 
 export interface Subasta {

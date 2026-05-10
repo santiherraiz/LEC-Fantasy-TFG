@@ -2,10 +2,11 @@ package com.lecfantasy.backend.config;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import jakarta.annotation.PostConstruct;
 import java.security.Key;
 import java.util.Date;
 import java.util.function.Function;
@@ -13,11 +14,18 @@ import java.util.function.Function;
 @Component
 public class JwtUtils {
 
-    // Generamos una clave segura de al menos 256 bits para firmar los tokens
-    private final Key key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+    @Value("${jwt.secret}")
+    private String secret;
+    
+    private Key key;
     
     // El token caducará en 24 horas (en milisegundos)
     private final long JWT_EXPIRATION = 86400000;
+
+    @PostConstruct
+    public void init() {
+        this.key = Keys.hmacShaKeyFor(secret.getBytes());
+    }
 
     public String generateToken(String email) {
         return Jwts.builder()

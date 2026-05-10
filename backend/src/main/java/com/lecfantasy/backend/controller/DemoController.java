@@ -183,21 +183,27 @@ public class DemoController {
     }
 
     private void inyectarRosterStats(Partido p, List<Jugador> roster, boolean isWinner) {
+        // Usar el último dígito del gameId para variar las stats un poco
+        int mapVariety = 0;
+        try {
+            mapVariety = Integer.parseInt(p.getGameId().substring(p.getGameId().length() - 1));
+        } catch (Exception e) {}
+
         for (Jugador jug : roster) {
             EstadisticaPartido ep = new EstadisticaPartido();
             ep.setPartido(p);
             ep.setJugador(jug);
             if (isWinner) {
-                ep.setKills(8);
+                ep.setKills(8 + mapVariety);
                 ep.setDeaths(1);
-                ep.setAssists(12);
-                ep.setCs(280);
-                ep.setGold(14000);
+                ep.setAssists(12 - mapVariety);
+                ep.setCs(280 + (mapVariety * 10));
+                ep.setGold(14000 + (mapVariety * 500));
             } else {
                 ep.setKills(2);
-                ep.setDeaths(7);
+                ep.setDeaths(7 + mapVariety);
                 ep.setAssists(4);
-                ep.setCs(210);
+                ep.setCs(210 - (mapVariety * 5));
                 ep.setGold(9500);
             }
             ep.setPuntosGenerados(0.0);

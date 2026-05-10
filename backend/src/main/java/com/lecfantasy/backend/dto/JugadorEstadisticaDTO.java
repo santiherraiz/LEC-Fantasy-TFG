@@ -17,4 +17,5 @@ public class JugadorEstadisticaDTO {
     private int assists;
     private int cs;
     private Double puntosGenerados;
+    private Double puntosReales;
 }

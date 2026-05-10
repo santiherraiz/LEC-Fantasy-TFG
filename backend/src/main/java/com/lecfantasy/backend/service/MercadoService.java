@@ -86,7 +86,13 @@ public class MercadoService {
 
             List<EstadisticaPartido> stats = statsPorJugador.getOrDefault(j.getId(), Collections.emptyList());
             double total = stats.stream().mapToDouble(EstadisticaPartido::getPuntosGenerados).sum();
-            double media = stats.isEmpty() ? 0.0 : total / stats.size();
+            
+            long numSeries = stats.stream()
+                    .map(s -> s.getPartido().getSerieId())
+                    .distinct()
+                    .count();
+            
+            double media = numSeries == 0 ? 0.0 : total / numSeries;
             
             dto.setPuntosTotales(total);
             dto.setPuntosMedia(Math.round(media * 10.0) / 10.0);

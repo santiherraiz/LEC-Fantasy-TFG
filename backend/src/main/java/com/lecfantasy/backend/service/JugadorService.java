@@ -139,6 +139,7 @@ public class JugadorService {
             dto.setAssists(e.getAssists());
             dto.setCs(e.getCs());
             dto.setPuntosGenerados(e.getPuntosGenerados());
+            dto.setPuntosReales(e.getPuntosReales());
             return dto;
         }).collect(Collectors.toList());
     }

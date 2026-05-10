@@ -37,4 +37,7 @@ public class EstadisticaPartido {
 
     @Column(name = "puntos_generados", nullable = false)
     private Double puntosGenerados;
+
+    @Column(name = "puntos_reales", nullable = false)
+    private Double puntosReales = 0.0;
 }

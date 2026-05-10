@@ -18,6 +18,8 @@ public interface PartidoRepository extends JpaRepository<Partido, String> {
 
     List<Partido> findByPuntosCalculadosFalse();
 
+    List<Partido> findBySerieId(String serieId);
+
     List<Partido> findByEstadisticasImportadasFalse();
 
     @org.springframework.data.jpa.repository.Modifying

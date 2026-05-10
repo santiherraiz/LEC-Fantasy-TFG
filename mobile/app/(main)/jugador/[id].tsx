@@ -116,6 +116,13 @@ export default function JugadorDetailScreen() {
       grouped[w][s].push(stat);
     });
 
+    // Ordenar los mapas dentro de cada serie por fecha (Ascendente: Mapa 1, Mapa 2...)
+    Object.values(grouped).forEach(week => {
+      Object.values(week).forEach(maps => {
+        maps.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
+      });
+    });
+
     const statsWeeks = Object.keys(grouped).map(Number).sort((a, b) => a - b);
     const wAsc = statsWeeks;
     const wDesc = statsWeeks.slice().sort((a, b) => b - a);
@@ -468,16 +475,21 @@ export default function JugadorDetailScreen() {
                 <View key={week} className="mb-8">
                   <Text className="text-white text-lg font-black mb-3 uppercase italic tracking-wider">SEMANA {week}</Text>
 
-                  {Object.keys(weekStats).map(serieId => {
+                  {Object.keys(weekStats).sort((a, b) => {
+                    const dateA = new Date(weekStats[a][0].fecha).getTime();
+                    const dateB = new Date(weekStats[b][0].fecha).getTime();
+                    return dateB - dateA; // Más reciente arriba
+                  }).map(serieId => {
                     const maps = weekStats[serieId];
                     const isExpanded = expandedSeries[serieId];
                     const currentMapIdx = selectedMapIndex[serieId] || 0;
                     const map = maps[currentMapIdx];
                     if (!map) return null;
 
-                    const totalSeriePoints = maps.reduce((acc, m) => acc + Math.round(m.puntosGenerados || 0), 0);
+                    const totalSeriePoints = Math.round(maps.reduce((acc, m) => acc + (m.puntosGenerados || 0), 0));
                     const wins = maps.filter(m => m.resultado === 'WIN').length;
                     const losses = maps.length - wins;
+                    const isAce = maps.length === 2 && wins === 2;
                     const globalResult = wins > losses ? 'WIN' : 'LOSS';
                     const displayResult = isExpanded ? (map.resultado || 'LOSS') : globalResult;
 
@@ -489,8 +501,18 @@ export default function JugadorDetailScreen() {
                       <View key={serieId} className="bg-surface rounded-2xl p-5 mb-4 border border-surface-light/20 shadow-sm">
                         <TouchableOpacity onPress={() => toggleSerie(serieId)} className="flex-row justify-between items-center">
                           <View>
-                            <Text className="text-white text-lg font-bold">vs {rival}</Text>
-                            <Text className="text-gray-400 text-xs font-bold mt-1 tracking-wider">{totalSeriePoints} Pts Totales</Text>
+                            <View className="flex-row items-center">
+                              <Text className="text-white text-xl font-black">vs {rival}</Text>
+                              {isAce && (
+                                <View className="bg-accent-cyan/20 px-2.5 py-0.5 rounded-lg ml-3 border border-accent-cyan/30">
+                                  <Text className="text-accent-cyan text-[9px] font-black tracking-widest uppercase">ACE +5</Text>
+                                </View>
+                              )}
+                            </View>
+                            <View className="flex-row items-center mt-1">
+                              <Text className="text-accent-cyan text-base font-black">{totalSeriePoints}</Text>
+                              <Text className="text-gray-500 text-[9px] font-bold ml-1.5 uppercase tracking-widest">Pts Fantasy</Text>
+                            </View>
                           </View>
                           <View className="flex-row items-center">
                             <View className={`px-3 py-1.5 rounded-lg mr-4 ${displayResult === 'WIN' ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-rose-500/10 border border-rose-500/20'}`}>
@@ -522,10 +544,10 @@ export default function JugadorDetailScreen() {
                               <View className="flex-row flex-wrap justify-between">
                                 {(() => {
                                   const stats = [
-                                    { icon: <Swords size={18} color="#00D1FF" />, label: 'KILLS', val: map.kills, pts: Math.round(map.kills * 3) },
-                                    { icon: <Skull size={18} color="#FB7185" />, label: 'DEATHS', val: map.deaths, pts: Math.round(map.deaths * -1) },
-                                    { icon: <Users size={18} color="#00D1FF" />, label: 'ASSISTS', val: map.assists, pts: Math.round(map.assists * 1.5) },
-                                    { icon: <Wheat size={18} color="#FBBF24" />, label: 'FARM', val: map.cs, pts: Math.round(map.cs * 0.02) },
+                                    { icon: <Swords size={18} color="#00D1FF" />, label: 'KILLS', val: map.kills, pts: map.kills * 3 },
+                                    { icon: <Skull size={18} color="#FB7185" />, label: 'DEATHS', val: map.deaths, pts: map.deaths * -1 },
+                                    { icon: <Users size={18} color="#00D1FF" />, label: 'ASSISTS', val: map.assists, pts: Math.round(map.assists * 1.5 * 10) / 10 },
+                                    { icon: <Wheat size={18} color="#FBBF24" />, label: 'FARM', val: map.cs, pts: Math.round(map.cs * 0.02 * 100) / 100 },
                                   ];
 
                                   return stats.map((s, i) => (
@@ -538,7 +560,7 @@ export default function JugadorDetailScreen() {
 
                                       <View className={`px-2.5 py-1 rounded-md ${s.pts === 0 ? 'bg-gray-800' : s.pts > 0 ? 'bg-emerald-500/10' : 'bg-rose-500/10'}`}>
                                         <Text className={`text-[10px] font-black ${s.pts === 0 ? 'text-gray-400' : s.pts > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                          {s.pts >= 0 ? `+${s.pts}` : s.pts}
+                                          {s.pts > 0 ? `+${s.pts}` : s.pts}
                                         </Text>
                                       </View>
                                     </View>
@@ -553,13 +575,58 @@ export default function JugadorDetailScreen() {
                                 </View>
                               )}
 
-                              <View className="items-center pt-5 mt-2 border-t border-surface-light/10">
-                                <Text className="text-gray-400 text-xs font-black mb-1 tracking-widest uppercase">Puntuación del Mapa</Text>
-                                <View className="flex-row items-baseline">
-                                  <Text className={`text-4xl font-black ${Math.round(map.puntosGenerados) < 0 ? 'text-rose-400' : 'text-accent-cyan'}`}>
-                                    {Math.round(map.puntosGenerados)}
-                                  </Text>
-                                  <Text className={`text-sm font-bold ml-1.5 ${Math.round(map.puntosGenerados) < 0 ? 'text-rose-400' : 'text-accent-cyan'}`}>PTS</Text>
+                              {/* Nuevo Desglose de Puntos - Orientado al mapa y transparencia */}
+                              <View className="bg-midnight/60 p-6 rounded-[32px] border border-surface-light/20 mt-4">
+                                {/* GRANDE Y BLANCO: Puntos de este mapa */}
+                                <View className="items-center mb-6">
+                                  <Text className="text-gray-500 text-[10px] font-black uppercase tracking-[0.3em] mb-2">Rendimiento Mapa {currentMapIdx + 1}</Text>
+                                  <View className="flex-row items-baseline">
+                                    <Text className="text-white text-6xl font-black tracking-tighter">{Math.round(map.puntosReales || 0)}</Text>
+                                    <Text className="text-gray-400 text-lg font-black ml-2 uppercase">Pts</Text>
+                                  </View>
+                                </View>
+
+                                <View className="h-[1px] bg-white/5 mb-6" />
+
+                                {/* SECCIÓN CÁLCULO: Pequeño y detallado */}
+                                <View>
+                                  <Text className="text-gray-500 text-[9px] font-black uppercase tracking-widest mb-4">Cálculo de la Serie</Text>
+                                  
+                                  {/* Lista de mapas de la serie */}
+                                  <View className="mb-4">
+                                    {maps.map((m, i) => (
+                                      <View key={i} className="flex-row justify-between items-center opacity-60 mb-1">
+                                        <Text className="text-gray-400 text-xs font-bold">Puntos Mapa {i + 1}</Text>
+                                        <Text className="text-white text-xs font-black">{Math.round(m.puntosReales || 0)}</Text>
+                                      </View>
+                                    ))}
+                                  </View>
+
+                                  {/* La Fórmula */}
+                                  <View className="bg-white/5 rounded-2xl p-4 mb-5 border border-white/5">
+                                    <View className="flex-row justify-between items-center mb-2">
+                                      <Text className="text-gray-400 text-[10px] font-medium italic">Promedio ({maps.map(m => Math.round(m.puntosReales)).join(' + ')}) / {maps.length}</Text>
+                                      <Text className="text-white text-sm font-black">{Math.round(maps.reduce((acc, m) => acc + (m.puntosReales || 0), 0) / maps.length)}</Text>
+                                    </View>
+                                    {isAce && (
+                                      <View className="flex-row justify-between items-center">
+                                        <Text className="text-accent-cyan text-[10px] font-black uppercase tracking-tighter italic">Bono ACE (Victoria 2-0)</Text>
+                                        <Text className="text-accent-cyan text-sm font-black">+5</Text>
+                                      </View>
+                                    )}
+                                  </View>
+
+                                  {/* Resultado Final Ranking (Cian y elegante) */}
+                                  <View className="flex-row justify-between items-end">
+                                    <View>
+                                      <Text className="text-accent-cyan text-[10px] font-black uppercase italic tracking-wider">Total para Ranking</Text>
+                                      <Text className="text-gray-600 text-[8px] font-bold uppercase">Suma final de la serie</Text>
+                                    </View>
+                                    <View className="items-end">
+                                      <Text className="text-accent-cyan text-3xl font-black leading-none">{totalSeriePoints}</Text>
+                                      <Text className="text-accent-cyan/60 text-[8px] font-black uppercase tracking-tighter mt-1">Pts Fantasy</Text>
+                                    </View>
+                                  </View>
                                 </View>
                               </View>
                             </View>

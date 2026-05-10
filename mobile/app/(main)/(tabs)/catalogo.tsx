@@ -99,13 +99,13 @@ export default function CatalogoScreen() {
           {/* Avatar y Posición */}
           <View className="relative">
             <View className="w-24 h-24 bg-midnight/50 rounded-3xl items-center justify-center border border-surface-light/20 overflow-hidden shadow-inner">
-              
+
               {item.jugador.imagenUrl ? (
-                <Image 
-                  source={{ uri: item.jugador.imagenUrl }} 
-                  className="w-24 h-24" 
+                <Image
+                  source={{ uri: item.jugador.imagenUrl }}
+                  className="w-24 h-24"
                   style={{ marginTop: 12 }}
-                  resizeMode="contain" 
+                  resizeMode="contain"
                 />
               ) : (
                 <UserIcon size={32} color="#00D1FF" />
@@ -115,10 +115,10 @@ export default function CatalogoScreen() {
             {/* ESCUDO FLOTANTE: Logo limpio sin fondo circular */}
             {item.jugador.equipoLec?.logoUrl && (
               <View className="absolute top-1 left-1">
-                <Image 
-                  source={{ uri: item.jugador.equipoLec.logoUrl }} 
-                  className="w-7 h-7" 
-                  resizeMode="contain" 
+                <Image
+                  source={{ uri: item.jugador.equipoLec.logoUrl }}
+                  className="w-7 h-7"
+                  resizeMode="contain"
                 />
               </View>
             )}
@@ -128,7 +128,7 @@ export default function CatalogoScreen() {
           <View className="ml-6 flex-1 justify-center">
             <View className="flex-row items-center mb-0.5">
               <Text className="text-white font-black text-xl tracking-tight mr-3">{item.jugador.nickname}</Text>
-              
+
               {/* CHIP DE POSICIÓN: Ahora junto al nombre, más elegante */}
               <View className="bg-accent-cyan/10 border border-accent-cyan/40 px-2 py-0.5 rounded-md">
                 <Text className="text-accent-cyan font-black text-[9px] uppercase italic">
@@ -136,19 +136,24 @@ export default function CatalogoScreen() {
                 </Text>
               </View>
             </View>
-            
+
             <Text className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-3">
               {item.jugador.equipoLec?.nombre || 'Sin equipo'}
             </Text>
 
             <View className="flex-row items-center">
               {item.propietarioNickname ? (
-                <View className={`flex-row items-center px-2 py-1 rounded-md ${item.propietarioNickname === user?.nickname ? 'bg-accent-cyan/10 border border-accent-cyan/20' : 'bg-surface-light/20'}`}>
-                  {item.propietarioNickname !== user?.nickname && <Zap size={10} color="#FB7185" className="mr-1" />}
-                  <Text className={`${item.propietarioNickname === user?.nickname ? 'text-accent-cyan' : 'text-gray-300'} text-[10px] font-black uppercase`}>
-                    {item.propietarioNickname === user?.nickname ? 'MÍO' : item.propietarioNickname}
-                  </Text>
-                </View>
+                item.propietarioNickname === user?.nickname ? (
+                  <View className="flex-row items-center bg-indigo-500/10 px-2 py-1 rounded-md border border-indigo-500/20">
+                    <View className="w-1.5 h-1.5 rounded-full bg-indigo-400 mr-1.5" />
+                    <Text className="text-indigo-400 text-[10px] font-black uppercase tracking-wide">MÍO</Text>
+                  </View>
+                ) : (
+                  <View className="flex-row items-center bg-rose-500/10 px-2 py-1 rounded-md border border-rose-500/20">
+                    <View className="w-1.5 h-1.5 rounded-full bg-rose-400 mr-1.5" />
+                    <Text className="text-rose-400 text-[10px] font-black uppercase tracking-wide">{item.propietarioNickname}</Text>
+                  </View>
+                )
               ) : (
                 <View className="flex-row items-center bg-emerald-500/10 px-2 py-1 rounded-md border border-emerald-500/20">
                   <View className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5" />

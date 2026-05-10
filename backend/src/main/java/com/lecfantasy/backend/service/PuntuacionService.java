@@ -133,28 +133,85 @@ public class PuntuacionService {
     }
 
     @Transactional
+    public void resetTotal() {
+        // Borramos todo lo relacionado con puntos y stats para empezar de cero
+        historicoAlineacionRepository.findAll().forEach(h -> { h.setPuntosSemanales(0.0); historicoAlineacionRepository.save(h); });
+        equipoRepository.findAll().forEach(e -> { e.setPuntuacionTotal(0.0); equipoRepository.save(e); });
+        estadisticaPartidoRepository.deleteAllInBatch();
+        partidoRepository.resetAllEstadisticasImportadas();
+        partidoRepository.resetAllPuntosCalculados();
+    }
+
+    @Transactional
     public String calcularPuntos() {
-        List<Partido> partidosNuevos = partidoRepository.findByPuntosCalculadosFalse().stream()
+        // 1. Identificar todas las series que tienen al menos un mapa nuevo
+        List<String> seriesPendientes = partidoRepository.findByPuntosCalculadosFalse().stream()
                 .filter(p -> p.isEstadisticasImportadas() && p.getJornada() != null)
+                .map(Partido::getSerieId)
+                .distinct()
                 .collect(Collectors.toList());
 
-        if (partidosNuevos.isEmpty()) return "✅ Sin series nuevas.";
+        if (seriesPendientes.isEmpty()) return "✅ Sin series nuevas.";
 
-        for (Partido p : partidosNuevos) {
-            List<EstadisticaPartido> stats = estadisticaPartidoRepository.findByPartidoGameId(p.getGameId());
-            for (EstadisticaPartido s : stats) {
-                boolean victoria = s.getJugador().getEquipoLec() != null &&
-                        s.getJugador().getEquipoLec().getNombre().equalsIgnoreCase(p.getWinTeam());
-                int pts = calcularPuntosPartido(s.getKills(), s.getDeaths(), s.getAssists(), s.getCs(), victoria);
-                s.setPuntosGenerados((double) pts);
-                estadisticaPartidoRepository.save(s);
+        int seriesProcesadas = 0;
+        for (String serieId : seriesPendientes) {
+            List<Partido> mapasSerie = partidoRepository.findBySerieId(serieId);
+            
+            boolean todosImportados = mapasSerie.stream().allMatch(Partido::isEstadisticasImportadas);
+            if (!todosImportados) continue;
+
+            Map<String, Long> victorias = mapasSerie.stream()
+                    .filter(m -> m.getWinTeam() != null)
+                    .collect(Collectors.groupingBy(Partido::getWinTeam, Collectors.counting()));
+            
+            boolean terminada = victorias.values().stream().anyMatch(v -> v >= 2) || mapasSerie.size() == 1;
+            if (!terminada && mapasSerie.size() < 3) continue;
+
+            List<EstadisticaPartido> allStatsSerie = estadisticaPartidoRepository.findByPartidoSerieId(serieId);
+            Map<Long, List<EstadisticaPartido>> porJugador = allStatsSerie.stream()
+                    .collect(Collectors.groupingBy(s -> s.getJugador().getId()));
+
+            for (List<EstadisticaPartido> statsJugador : porJugador.values()) {
+                double sumaPuntosReales = 0;
+                for (EstadisticaPartido s : statsJugador) {
+                    boolean victoria = s.getJugador().getEquipoLec() != null &&
+                            s.getJugador().getEquipoLec().getNombre().equalsIgnoreCase(s.getPartido().getWinTeam());
+                    
+                    // Cálculo de puntos REALES del mapa (estándar)
+                    double ptsReales = (s.getKills() * 3.0) + (s.getAssists() * 1.5) + (s.getDeaths() * -1.0) + (s.getCs() * 0.02) + (victoria ? 5.0 : 0.0);
+                    s.setPuntosReales(ptsReales);
+                    sumaPuntosReales += ptsReales;
+                }
+                
+                // 1. Puntos FANTASY de la serie = (Suma Reales / Num Mapas) + ACE
+                double mediaSerie = Math.round(sumaPuntosReales / mapasSerie.size());
+                
+                String equipoJugador = statsJugador.get(0).getJugador().getEquipoLec() != null ? 
+                        statsJugador.get(0).getJugador().getEquipoLec().getNombre() : "";
+                boolean wonSeries = !equipoJugador.isEmpty() && victorias.getOrDefault(equipoJugador, 0L) >= 2;
+                boolean ace = (mapasSerie.size() == 2 && wonSeries);
+                
+                double puntosFantasySerie = mediaSerie + (ace ? 5.0 : 0.0);
+                
+                // 2. Repartimos los puntos fantasy proporcionalmente entre los mapas para facilitar los SUM() en SQL
+                // Pero guardamos los Puntos Reales intactos para la UI
+                double factor = (sumaPuntosReales == 0) ? 0 : puntosFantasySerie / sumaPuntosReales;
+                
+                for (EstadisticaPartido s : statsJugador) {
+                    s.setPuntosGenerados(s.getPuntosReales() * factor);
+                    estadisticaPartidoRepository.save(s);
+                }
             }
-            p.setPuntosCalculados(true);
-            partidoRepository.save(p);
+            
+            for (Partido p : mapasSerie) {
+                p.setPuntosCalculados(true);
+                partidoRepository.save(p);
+            }
+            seriesProcesadas++;
         }
-
+        
         actualizarRankingGlobal();
-        return "Cálculo live finalizado para " + partidosNuevos.size() + " partidos.";
+        return "Cálculo finalizado para " + seriesProcesadas + " series.";
     }
 
     private void actualizarRankingGlobal() {
@@ -163,7 +220,7 @@ public class PuntuacionService {
 
         for (HistoricoAlineacion ha : todosLosHistoricos) {
             if (ha.getEstado() == EstadoAlineacion.TITULAR) {
-                double pts = calcularMediaJugadorEnJornada(ha.getJugador().getId(), ha.getJornada().getId());
+                double pts = calcularPuntosJugadorEnJornada(ha.getJugador().getId(), ha.getJornada().getId());
                 ha.setPuntosSemanales(pts);
                 historicoAlineacionRepository.save(ha);
                 nuevosTotales.put(ha.getEquipo(), nuevosTotales.getOrDefault(ha.getEquipo(), 0.0) + pts);
@@ -176,17 +233,19 @@ public class PuntuacionService {
         });
     }
 
-    private double calcularMediaJugadorEnJornada(Long jugadorId, Long jornadaId) {
+    private double calcularPuntosJugadorEnJornada(Long jugadorId, Long jornadaId) {
         List<EstadisticaPartido> stats = estadisticaPartidoRepository.findByJugadorId(jugadorId).stream()
                 .filter(s -> s.getPartido().getJornada() != null && s.getPartido().getJornada().getId().equals(jornadaId))
                 .collect(Collectors.toList());
         if (stats.isEmpty()) return 0.0;
+        
         Map<String, List<EstadisticaPartido>> porSerie = stats.stream().collect(Collectors.groupingBy(s -> s.getPartido().getSerieId()));
-        double sumaSumasSeries = 0;
+        double sumaSeries = 0;
         for (List<EstadisticaPartido> mapas : porSerie.values()) {
-            sumaSumasSeries += mapas.stream().mapToDouble(EstadisticaPartido::getPuntosGenerados).sum();
+            sumaSeries += mapas.stream().mapToDouble(EstadisticaPartido::getPuntosGenerados).sum();
         }
-        return Math.round(sumaSumasSeries / porSerie.size());
+        // Ahora devolvemos la SUMA de las series en la jornada, no la media
+        return Math.round(sumaSeries);
     }
 
     public int calcularPuntosPartido(int k, int d, int a, int cs, boolean v) {
