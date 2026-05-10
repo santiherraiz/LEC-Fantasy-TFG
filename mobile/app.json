@@ -22,7 +22,8 @@
         "backgroundColor": "#0B0E14"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.santiherraizz.mobile"
+      "package": "com.santiherraiz.fantasylec",
+      "googleServicesFile": "./google-services.json"
     },
     "plugins": [
       "expo-router",

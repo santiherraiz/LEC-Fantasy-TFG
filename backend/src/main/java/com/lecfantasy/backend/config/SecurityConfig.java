@@ -34,7 +34,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/usuarios/login", "/api/usuarios/registro").permitAll()
-                        .requestMatchers("/api/liga/semana-actual").permitAll()
+                        .requestMatchers("/api/liga/semana-actual", "/api/public/**").permitAll()
                         .requestMatchers("/api/admin/**").permitAll() 
                         .requestMatchers("/api/demo/**").permitAll()
                         .anyRequest().authenticated());

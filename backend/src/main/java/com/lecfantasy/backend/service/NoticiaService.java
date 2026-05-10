@@ -5,6 +5,7 @@ import com.lecfantasy.backend.entity.NoticiaLiga;
 import com.lecfantasy.backend.entity.TipoNoticia;
 import com.lecfantasy.backend.repository.LigaRepository;
 import com.lecfantasy.backend.repository.NoticiaLigaRepository;
+import com.lecfantasy.backend.repository.EquipoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -23,6 +24,12 @@ public class NoticiaService {
     @Autowired
     private ClockService clockService;
 
+    @Autowired
+    private NotificationService notificationService;
+
+    @Autowired
+    private EquipoRepository equipoRepository;
+
     @Transactional
     public void crearNoticia(Long ligaId, TipoNoticia tipo, String mensaje, Long jugadorId, Long equipoId,
             String imagenUrl) {
@@ -39,6 +46,23 @@ public class NoticiaService {
         noticia.setImagenUrl(imagenUrl);
 
         noticiaRepository.save(noticia);
+
+        // Enviar notificación push a todos los usuarios de la liga
+        try {
+            equipoRepository.findAllByLigaIdOrderByPuntuacionTotalDesc(ligaId).forEach(equipo -> {
+                String token = equipo.getUsuario().getPushToken();
+                if (token != null && !token.isEmpty()) {
+                    notificationService.enviarNotificacion(
+                        token,
+                        "Novedad en " + liga.getNombre(),
+                        mensaje
+                    );
+                }
+            });
+        } catch (Exception e) {
+            // No bloqueamos la creación de la noticia si falla el envío de notificaciones
+            System.err.println("Error enviando notificaciones de noticia: " + e.getMessage());
+        }
     }
 
     @Transactional
