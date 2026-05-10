@@ -7,12 +7,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
 
 interface CustomHeaderProps {
+  title?: string;
   ligaNombre?: string;
   showBackButton?: boolean;
   onBackPress?: () => void;
 }
 
-export default function CustomHeader({ ligaNombre, showBackButton, onBackPress }: CustomHeaderProps) {
+export default function CustomHeader({ title, ligaNombre, showBackButton, onBackPress }: CustomHeaderProps) {
   const router = useRouter();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
@@ -55,13 +56,19 @@ export default function CustomHeader({ ligaNombre, showBackButton, onBackPress }
         </View>
         
         <View className="flex-1 items-center justify-center h-full">
-          <View style={{ width: 180, height: 45, alignItems: 'center', justifyContent: 'center' }}>
-            <Image 
-              source={require('../../assets/logos/LOGOTIPO-bg.png')} 
-              style={{ width: 280, height: 100 }}
-              resizeMode="contain"
-            />
-          </View>
+          {title ? (
+            <Text className="text-white font-black text-lg tracking-widest uppercase">
+              {title}
+            </Text>
+          ) : (
+            <View style={{ width: 180, height: 45, alignItems: 'center', justifyContent: 'center' }}>
+              <Image 
+                source={require('../../assets/logos/LOGOTIPO-bg.png')} 
+                style={{ width: 280, height: 100 }}
+                resizeMode="contain"
+              />
+            </View>
+          )}
         </View>
 
         <View className="w-12" />

@@ -104,3 +104,21 @@ export interface JugadorDetalleDTO {
   propietarioEquipoId: number | null;
 }
 
+export type TipoNoticia = 
+  | "FICHAJE" 
+  | "CLAUSULAZO" 
+  | "VENTA" 
+  | "RESULTADO_JORNADA" 
+  | "SUBASTA_GANADA" 
+  | "NUEVA_LIGA";
+
+export interface NoticiaLiga {
+  id: number;
+  tipoNoticia: TipoNoticia;
+  mensaje: string;
+  fecha: string;
+  jugadorId: number | null;
+  equipoId: number | null;
+  imagenUrl: string | null;
+}
+

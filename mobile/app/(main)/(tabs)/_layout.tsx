@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Platform } from 'react-native';
 import { Tabs } from 'expo-router';
-import { ShoppingBag, Trophy, Layout, Gavel } from 'lucide-react-native';
+import { ShoppingBag, Trophy, Layout, Gavel, MessageSquare } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabsLayout() {
@@ -14,8 +14,8 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: '#0B0E14',
           borderTopWidth: 0,
-          height: 70 + insets.bottom,
-          paddingBottom: insets.bottom > 0 ? insets.bottom : 12,
+          height: 80 + insets.bottom, // Subimos de 70 a 80
+          paddingBottom: insets.bottom > 0 ? insets.bottom + 10 : 20, // Añadimos más margen
           paddingTop: 12,
           elevation: 0,
         },
@@ -71,6 +71,17 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, focused }) => (
             <View className={`p-2 rounded-2xl ${focused ? 'bg-accent-cyan/10' : ''}`}>
               <Trophy color={color} size={22} strokeWidth={focused ? 2.5 : 2} />
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="feed"
+        options={{
+          tabBarLabel: 'Muro',
+          tabBarIcon: ({ color, focused }) => (
+            <View className={`p-2 rounded-2xl ${focused ? 'bg-accent-cyan/10' : ''}`}>
+              <MessageSquare color={color} size={22} strokeWidth={focused ? 2.5 : 2} />
             </View>
           ),
         }}
