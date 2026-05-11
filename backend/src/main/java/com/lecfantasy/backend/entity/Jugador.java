@@ -24,10 +24,30 @@ public class Jugador {
     @Column(name = "precio_base", nullable = false)
     private Double precioBase;
 
+    @Column(name = "precio_actual")
+    private Double precioActual;
+
+    @Column(name = "tendencia")
+    private String tendencia = "ESTABLE";
+
+    @Column(name = "compras_hoy")
+    private Integer comprasHoy = 0;
+
+    @Column(name = "ventas_hoy")
+    private Integer ventasHoy = 0;
+
     @Column(name = "imagen_url")
     private String imagenUrl;
 
     @ManyToOne
     @JoinColumn(name = "equipo_lec_id")
     private EquipoLec equipoLec;
+
+    public void setPrecioBase(Double precioBase) {
+        this.precioBase = (precioBase != null) ? (double) Math.round(precioBase) : null;
+    }
+
+    public void setPrecioActual(Double precioActual) {
+        this.precioActual = (precioActual != null) ? (double) Math.round(precioActual) : null;
+    }
 }

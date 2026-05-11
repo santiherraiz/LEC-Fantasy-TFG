@@ -21,9 +21,10 @@ export default function CatalogoScreen() {
   const [searchQuery, setSearchQuery] = useState('');
 
   // UI States
-  const [activeTab, setActiveTab] = useState<'PUNTOS' | 'POSICION' | 'EQUIPO' | null>(null);
+  const [activeTab, setActiveTab] = useState<'PUNTOS' | 'PRECIO' | 'POSICION' | 'EQUIPO' | null>(null);
   const [filterPos, setFilterPos] = useState<string | null>(null);
   const [filterTeam, setFilterTeam] = useState<string | null>(null);
+  const [sortType, setSortType] = useState<'PUNTOS' | 'PRECIO'>('PUNTOS');
   const [sortOrder, setSortOrder] = useState<'MAYOR' | 'MENOR'>('MAYOR');
 
   // Extract unique teams and positions from data dynamically
@@ -80,15 +81,20 @@ export default function CatalogoScreen() {
 
     // 4. Sorting
     result.sort((a, b) => {
-      const puntosA = a.puntosTotales || 0;
-      const puntosB = b.puntosTotales || 0;
+      const valA = sortType === 'PUNTOS'
+        ? (a.puntosTotales || 0)
+        : (a.jugador.precioActual || a.jugador.precioBase || 0);
+      const valB = sortType === 'PUNTOS'
+        ? (b.puntosTotales || 0)
+        : (b.jugador.precioActual || b.jugador.precioBase || 0);
+
       return sortOrder === 'MAYOR'
-        ? puntosB - puntosA
-        : puntosA - puntosB;
+        ? valB - valA
+        : valA - valB;
     });
 
     return result;
-  }, [catalogo, searchQuery, filterPos, filterTeam, sortOrder]);
+  }, [catalogo, searchQuery, filterPos, filterTeam, sortType, sortOrder]);
 
   // Renderizado optimizado para el FlatList
   const renderJugador = useCallback(({ item }: { item: CatalogoJugador }) => (
@@ -178,8 +184,24 @@ export default function CatalogoScreen() {
 
         {/* Footer: Valor de mercado */}
         <View className="bg-midnight/60 px-4 py-3 flex-row items-center justify-between border-t border-surface-light/10">
-          <Text className="text-gray-400 text-xs font-bold uppercase tracking-wider">Valor de mercado</Text>
-          <Text className="text-emerald-400 font-black text-base">{item.jugador.precioBase.toLocaleString()} €</Text>
+          <View>
+            <Text className="text-gray-400 text-xs font-bold uppercase tracking-wider">Valor de mercado</Text>
+            <View className="flex-row items-center mt-0.5">
+              {item.jugador.tendencia === 'SUBE' && <ChevronUp size={14} color="#10B981" />}
+              {item.jugador.tendencia === 'BAJA' && <ChevronDown size={14} color="#F43F5E" />}
+              <Text className={`text-[10px] font-black ml-1 ${
+                item.jugador.tendencia === 'SUBE' ? 'text-emerald-400' : 
+                item.jugador.tendencia === 'BAJA' ? 'text-rose-400' : 'text-gray-500'
+              }`}>
+                {item.jugador.tendencia === 'SUBE' ? 'SUBIENDO' : 
+                 item.jugador.tendencia === 'BAJA' ? 'BAJANDO' : 
+                 item.jugador.tendencia || 'ESTABLE'}
+              </Text>
+            </View>
+          </View>
+          <Text className="text-emerald-400 font-black text-base">
+            {(item.jugador.precioActual || item.jugador.precioBase).toLocaleString()} €
+          </Text>
         </View>
       </TouchableOpacity>
     </Link>
@@ -212,56 +234,91 @@ export default function CatalogoScreen() {
 
         {/* Dynamic Filter Section */}
         <View className="mb-2">
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mb-3">
+          {/* GRUPO ORDENAR - Cabecera */}
+          <View className="flex-row items-center mb-1.5 px-1">
+            <TrendingUp size={12} color="#818CF8" />
+            <Text className="ml-2 text-indigo-400 text-[10px] font-black uppercase tracking-[2px]">Ordenar</Text>
+            <View className="flex-1 h-[1px] bg-indigo-500/20 ml-3" />
+          </View>
+
+          <View className="flex-row mb-3">
             <TouchableOpacity
-              onPress={() => setActiveTab(activeTab === 'PUNTOS' ? null : 'PUNTOS')}
-              className={`px-4 py-2.5 rounded-xl mr-3 flex-row items-center border ${activeTab === 'PUNTOS' ? 'bg-accent-cyan/10 border-accent-cyan' : 'bg-surface border-surface-light/30'}`}
+              onPress={() => {
+                if (sortType === 'PUNTOS') {
+                  setSortOrder(sortOrder === 'MAYOR' ? 'MENOR' : 'MAYOR');
+                } else {
+                  setSortType('PUNTOS');
+                  setSortOrder('MAYOR');
+                }
+                setActiveTab(null);
+              }}
+              className={`flex-1 py-2 rounded-xl mr-2 flex-row items-center justify-center border ${sortType === 'PUNTOS' ? 'bg-indigo-500/20 border-indigo-500' : 'bg-surface border-surface-light/30'}`}
             >
-              <Text className={`font-black text-xs ${activeTab === 'PUNTOS' ? 'text-accent-cyan' : 'text-gray-400'}`}>PUNTOS</Text>
-              {activeTab === 'PUNTOS' ? <ChevronUp size={14} color="#00D1FF" style={{ marginLeft: 6 }} /> : <ChevronDown size={14} color="#9CA3AF" style={{ marginLeft: 6 }} />}
+              <Text className={`font-black text-xs ${sortType === 'PUNTOS' ? 'text-indigo-400' : 'text-gray-400'}`}>
+                PUNTOS
+              </Text>
+              {sortType === 'PUNTOS' && (
+                <View className="ml-1.5">
+                  {sortOrder === 'MAYOR' ? <ChevronDown size={14} color="#818CF8" /> : <ChevronUp size={14} color="#818CF8" />}
+                </View>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={() => setActiveTab(activeTab === 'POSICION' ? null : 'POSICION')}
-              className={`px-4 py-2.5 rounded-xl mr-3 flex-row items-center border ${activeTab === 'POSICION' ? 'bg-accent-cyan/10 border-accent-cyan' : 'bg-surface border-surface-light/30'}`}
+              onPress={() => {
+                if (sortType === 'PRECIO') {
+                  setSortOrder(sortOrder === 'MAYOR' ? 'MENOR' : 'MAYOR');
+                } else {
+                  setSortType('PRECIO');
+                  setSortOrder('MAYOR');
+                }
+                setActiveTab(null);
+              }}
+              className={`flex-1 py-2 rounded-xl flex-row items-center justify-center border ${sortType === 'PRECIO' ? 'bg-indigo-500/20 border-indigo-500' : 'bg-surface border-surface-light/30'}`}
             >
-              <Text className={`font-black text-xs ${activeTab === 'POSICION' ? 'text-accent-cyan' : 'text-gray-400'}`}>
+              <Text className={`font-black text-xs ${sortType === 'PRECIO' ? 'text-indigo-400' : 'text-gray-400'}`}>
+                PRECIO
+              </Text>
+              {sortType === 'PRECIO' && (
+                <View className="ml-1.5">
+                  {sortOrder === 'MAYOR' ? <ChevronDown size={14} color="#818CF8" /> : <ChevronUp size={14} color="#818CF8" />}
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* GRUPO FILTRAR - Cabecera */}
+          <View className="flex-row items-center mb-1.5 px-1">
+            <Search size={12} color="#00D1FF" />
+            <Text className="ml-2 text-accent-cyan text-[10px] font-black uppercase tracking-[2px]">Filtrar</Text>
+            <View className="flex-1 h-[1px] bg-accent-cyan/20 ml-3" />
+          </View>
+
+          <View className="flex-row mb-2">
+            <TouchableOpacity
+              onPress={() => setActiveTab(activeTab === 'POSICION' ? null : 'POSICION')}
+              className={`flex-1 py-2 rounded-xl mr-2 flex-row items-center justify-center border ${activeTab === 'POSICION' ? 'bg-accent-cyan/10 border-accent-cyan' : filterPos ? 'bg-accent-cyan/5 border-accent-cyan/30' : 'bg-surface border-surface-light/30'}`}
+            >
+              <Text className={`font-black text-[11px] ${activeTab === 'POSICION' || filterPos ? 'text-accent-cyan' : 'text-gray-400'}`}>
                 {filterPos?.toUpperCase() === 'SUPPORT' ? 'SUPP' : (filterPos?.toUpperCase() || 'POSICIÓN')}
               </Text>
-              {activeTab === 'POSICION' ? <ChevronUp size={14} color="#00D1FF" style={{ marginLeft: 6 }} /> : <ChevronDown size={14} color="#9CA3AF" style={{ marginLeft: 6 }} />}
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => setActiveTab(activeTab === 'EQUIPO' ? null : 'EQUIPO')}
-              className={`px-4 py-2.5 rounded-xl mr-3 flex-row items-center border ${activeTab === 'EQUIPO' ? 'bg-accent-cyan/10 border-accent-cyan' : 'bg-surface border-surface-light/30'}`}
+              className={`flex-1 py-2 rounded-xl flex-row items-center justify-center border ${activeTab === 'EQUIPO' ? 'bg-accent-cyan/10 border-accent-cyan' : filterTeam ? 'bg-accent-cyan/5 border-accent-cyan/30' : 'bg-surface border-surface-light/30'}`}
             >
-              <Text className={`font-black text-xs ${activeTab === 'EQUIPO' ? 'text-accent-cyan' : 'text-gray-400'}`}>
+              <Text className={`font-black text-[11px] ${activeTab === 'EQUIPO' || filterTeam ? 'text-accent-cyan' : 'text-gray-400'}`}>
                 {filterTeam ? (filterTeam.length > 10 ? filterTeam.substring(0, 8) + '...' : filterTeam.toUpperCase()) : 'EQUIPO'}
               </Text>
-              {activeTab === 'EQUIPO' ? <ChevronUp size={14} color="#00D1FF" style={{ marginLeft: 6 }} /> : <ChevronDown size={14} color="#9CA3AF" style={{ marginLeft: 6 }} />}
             </TouchableOpacity>
-          </ScrollView>
+          </View>
 
           {/* Sub-options based on selected Tab */}
           {activeTab && (
-            <View className="bg-surface p-3 rounded-2xl border border-surface-light/20 mb-2">
+            <View className="bg-surface/50 p-2 rounded-2xl border border-surface-light/10 mb-4 mx-1">
               <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
-                {activeTab === 'PUNTOS' && (
-                  <>
-                    <TouchableOpacity
-                      onPress={() => { setSortOrder('MAYOR'); setActiveTab(null); }}
-                      className={`px-4 py-2 rounded-lg mr-2 border ${sortOrder === 'MAYOR' ? 'bg-emerald-500/10 border-emerald-500/50' : 'border-surface-light/20'}`}
-                    >
-                      <Text className={`font-bold text-xs ${sortOrder === 'MAYOR' ? 'text-emerald-400' : 'text-gray-400'}`}>MAYOR A MENOR</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => { setSortOrder('MENOR'); setActiveTab(null); }}
-                      className={`px-4 py-2 rounded-lg mr-2 border ${sortOrder === 'MENOR' ? 'bg-emerald-500/10 border-emerald-500/50' : 'border-surface-light/20'}`}
-                    >
-                      <Text className={`font-bold text-xs ${sortOrder === 'MENOR' ? 'text-emerald-400' : 'text-gray-400'}`}>MENOR A MAYOR</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
+                {(activeTab === 'PUNTOS' || activeTab === 'PRECIO') && null}
 
                 {activeTab === 'POSICION' && (
                   <>

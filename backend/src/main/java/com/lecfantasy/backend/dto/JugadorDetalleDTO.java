@@ -9,6 +9,8 @@ public class JugadorDetalleDTO {
     private String nickname;
     private String rol;
     private Double precioBase;
+    private Double precioActual;
+    private String tendencia;
     private String imagenUrl;
     private String equipoLecNombre;
     private String equipoLecLogo;

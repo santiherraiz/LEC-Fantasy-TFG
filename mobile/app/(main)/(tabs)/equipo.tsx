@@ -6,17 +6,16 @@ import { useAuthStore } from '../../../src/store/authStore';
 import { useToast } from '../../../src/context/ToastContext';
 import api from '../../../src/api/api';
 import { EquipoDetalleDTO, JugadorEnPlantillaDTO } from '../../../src/types';
-import { User, ArrowRightLeft, Shield, TrendingUp, Wallet, Map as MapIcon, Trash2, CircleDollarSign } from 'lucide-react-native';
+import { User, ArrowRightLeft, Shield, TrendingUp, Wallet, Map as MapIcon, Trash2, CircleDollarSign, Sword, Zap, Flame, Crosshair, LifeBuoy } from 'lucide-react-native';
 import CustomHeader from '../../../src/components/CustomHeader';
 
 import MapaImage from '../../../assets/images/mapa.png';
 
 const ROLE_COORDINATES: Record<string, { top: DimensionValue, left: DimensionValue }> = {
-  'TOP': { top: '18%', left: '12%' },
-  'JUNGLE': { top: '48%', left: '25%' },
+  'TOP': { top: '18%', left: '10%' },
+  'JUNGLE': { top: '46%', left: '22%' },
   'MID': { top: '56%', left: '45%' },
-  'BOT': { top: '82%', left: '65%' },
-  'ADC': { top: '88%', left: '75%' },
+  'BOT': { top: '83%', left: '67%' },
   'SUPPORT': { top: '88%', left: '82%' },
 };
 
@@ -37,7 +36,7 @@ export default function MiEquipoScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const MAP_SIZE = width - 32;
+  const MAP_SIZE = width;
 
   const fetchEquipo = async () => {
     if (!user || !selectedLigaId) return;
@@ -137,22 +136,36 @@ export default function MiEquipoScreen() {
     );
   };
 
-  const EmptySlotCard = ({ label }: { label: string }) => (
-    <View className="flex-1 bg-midnight/30 p-3 rounded-[24px] border border-dashed border-surface-light/20 flex-row items-center">
-      <View className="w-14 h-14 rounded-2xl bg-midnight/50 items-center justify-center mr-4 border border-surface-light/10">
-        <User size={24} color="#374151" />
+  const EmptySlotCard = ({ label }: { label: string }) => {
+    const getRoleIcon = () => {
+      switch (label.toUpperCase()) {
+        case 'TOP': return <Sword size={24} color="#4B5563" />;
+        case 'JUNGLE': return <Zap size={24} color="#4B5563" />;
+        case 'MID': return <Flame size={24} color="#4B5563" />;
+        case 'BOT': case 'ADC': return <Crosshair size={24} color="#4B5563" />;
+        case 'SUPP': case 'SUPPORT': return <LifeBuoy size={24} color="#4B5563" />;
+        default: return <User size={24} color="#4B5563" />;
+      }
+    };
+
+    return (
+      <View className="flex-1 bg-surface/30 p-4 rounded-[28px] border border-dashed border-surface-light/20 flex-row items-center">
+        <View className="w-14 h-14 rounded-2xl bg-midnight/40 items-center justify-center mr-4 border border-surface-light/10">
+          {getRoleIcon()}
+        </View>
+        <View>
+          <Text className="text-gray-500 font-black text-base italic uppercase tracking-tighter">POSICIÓN VACÍA</Text>
+          <Text className="text-gray-600 text-[10px] font-bold uppercase tracking-widest mt-0.5">Asigna un {label}</Text>
+        </View>
       </View>
-      <View>
-        <Text className="text-gray-600 font-black text-lg italic uppercase tracking-tighter">VACÍO</Text>
-        <Text className="text-gray-700 text-[10px] font-bold uppercase tracking-widest">Sin jugador asignado</Text>
-      </View>
-    </View>
-  );
+    );
+  };
 
   const JugadorCard = ({ jugador, hideBadge = false, noMargin = false }: { jugador: JugadorEnPlantillaDTO, hideBadge?: boolean, noMargin?: boolean }) => (
     <Link href={`/jugador/${jugador.idJugador}`} asChild>
       <TouchableOpacity
-        className={`bg-surface p-3 rounded-[24px] flex-row items-center border ${noMargin ? '' : 'mb-3'} ${jugador.estado === 'TITULAR' ? 'border-accent-cyan/40 shadow-sm shadow-accent-cyan/10' : 'border-surface-light/20'}`}
+        activeOpacity={0.7}
+        className={`bg-surface p-3.5 rounded-[28px] flex-row items-center border ${noMargin ? '' : 'mb-4'} ${jugador.estado === 'TITULAR' ? 'border-accent-cyan/50 bg-accent-cyan/5 shadow-lg shadow-accent-cyan/20' : 'border-surface-light/30'}`}
       >
         <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-4 border overflow-hidden relative ${jugador.estado === 'TITULAR' ? 'bg-accent-cyan/10 border-accent-cyan/30' : 'bg-midnight border-surface-light/30'}`}>
           {jugador.imagenUrl ? (
@@ -169,18 +182,18 @@ export default function MiEquipoScreen() {
           )}
         </View>
         <View className="flex-1">
-          <View className="flex-row items-center mb-0.5">
-            <Text className="text-white font-bold text-lg">{jugador.nickname}</Text>
-            <View className="ml-2 px-1.5 py-0.5 rounded-full bg-accent-cyan/10 border border-accent-cyan/20">
-              <Text className="text-accent-cyan text-[7px] font-black italic">
-                {jugador.rol.toUpperCase() === 'SUPPORT' ? 'SUPP' : jugador.rol.toUpperCase()}
+          {jugador.nickname && (
+            <View className="flex-row items-center">
+              <Text className="text-white font-bold text-lg flex-1" numberOfLines={1}>{jugador.nickname}</Text>
+            </View>
+          )}
+          {jugador.estado === 'BANQUILLO' && (
+            <View className="flex-row items-center">
+              <Text className="text-gray-400 text-[10px] font-black uppercase tracking-widest">
+                {jugador.rol.toUpperCase() === 'SUPPORT' ? 'SUPPORT' : jugador.rol.toUpperCase()}
               </Text>
             </View>
-          </View>
-          <View className="flex-row items-center">
-            <View className={`w-1.5 h-1.5 rounded-full mr-1.5 ${jugador.estado === 'TITULAR' ? 'bg-accent-cyan' : 'bg-gray-600'}`} />
-            <Text className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">{jugador.estado}</Text>
-          </View>
+          )}
         </View>
         <View className="flex-row items-center">
           {jugador.estado === 'BANQUILLO' && (
@@ -188,7 +201,7 @@ export default function MiEquipoScreen() {
               onPress={() => handleVender(jugador.idJugador, jugador.nickname)}
               className="w-10 h-10 rounded-full items-center justify-center bg-rose-500/10 border border-rose-500/30 mr-3 shadow-sm shadow-rose-500/10"
             >
-              <Trash2 size={18} color="#FB7185" />
+              <CircleDollarSign size={20} color="#FB7185" />
             </TouchableOpacity>
           )}
           <TouchableOpacity
@@ -250,8 +263,8 @@ export default function MiEquipoScreen() {
             </View>
 
             {/* Minimap Section */}
-            <View className="px-4 mb-8">
-              <View className="flex-row items-center justify-between mb-4">
+            <View className="mb-10">
+              <View className="flex-row items-center justify-between mb-4 px-4">
                 <View className="flex-row items-center">
                   <MapIcon color="white" size={20} />
                   <Text className="text-white text-xl font-black ml-2 italic">ESTRATEGIA</Text>
@@ -264,13 +277,14 @@ export default function MiEquipoScreen() {
               <View className="relative items-center">
                 <ImageBackground
                   source={MapaImage}
-                  style={{ width: MAP_SIZE, height: MAP_SIZE }}
+                  style={{ width: MAP_SIZE * 0.9, height: MAP_SIZE * 0.9 }}
                   imageStyle={{
-                    borderRadius: 24,
-                    opacity: titulares.length === 0 ? 0.3 : 1
+                    borderRadius: 32,
+                    opacity: titulares.length === 0 ? 0.3 : 1,
+                    transform: [{ scale: 1.05 }]
                   }}
                   resizeMode="cover"
-                  className="border border-accent-cyan/20 rounded-[24px] overflow-hidden shadow-2xl shadow-black bg-surface"
+                  className="border-2 border-accent-cyan/30 rounded-[32px] overflow-hidden shadow-2xl shadow-black bg-surface"
                 >
                   {titulares.map(j => <MinimapMarker key={j.idJugador} jugador={j} />)}
                   {titulares.length === 0 && (
@@ -298,8 +312,8 @@ export default function MiEquipoScreen() {
                 {ROLES_ORDEN.map(rol => {
                   const jugador = titulares.find(j => j.rol.toUpperCase() === rol.key);
                   return (
-                    <View key={rol.key} className="flex-row items-center">
-                      <View className="w-10 items-center justify-center mr-2">
+                    <View key={rol.key} className="flex-row items-center mb-5">
+                      <View className="w-12 items-center justify-center mr-3">
                         <Text className="text-accent-cyan font-black text-[10px] uppercase italic -rotate-90" style={{ width: 60, textAlign: 'center' }}>
                           {rol.label}
                         </Text>

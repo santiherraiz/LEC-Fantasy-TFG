@@ -9,16 +9,15 @@ import {
   ChevronLeft,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   Swords,
   TrendingUp,
   Activity,
   Skull,
   Users,
   Wheat,
-  AlertTriangle,
   Zap,
   Shield,
-  Search
 } from 'lucide-react-native';
 
 const { width } = Dimensions.get('window');
@@ -49,7 +48,8 @@ export default function JugadorDetailScreen() {
         ]);
         setJugador(jugadorRes.data);
         setEstadisticas(statsRes.data);
-        setMaxWeek(semanaRes.data || 1);
+        const currentWeek = semanaRes.data || 1;
+        setMaxWeek(currentWeek > 90 ? currentWeek - 90 : currentWeek);
       } catch (error) {
         console.error("Error cargando detalle:", error);
       } finally {
@@ -61,17 +61,17 @@ export default function JugadorDetailScreen() {
 
   const handleClausulazo = async () => {
     if (!jugador || isProcessing) return;
-    
-    const precio = Math.round(jugador.precioBase * 1.5);
-    
+
+    const precio = Math.round((jugador.precioActual || jugador.precioBase) * 1.5);
+
     Alert.alert(
       "💣 CLAUSULAZO",
       `¿Quieres robar a ${jugador.nickname} pagando su cláusula de ${precio.toLocaleString()} €?\n\n(150% de su valor actual)`,
       [
         { text: "Cancelar", style: "cancel" },
-        { 
-          text: "¡ROBAR!", 
-          style: "destructive", 
+        {
+          text: "¡ROBAR!",
+          style: "destructive",
           onPress: async () => {
             setIsProcessing(true);
             try {
@@ -79,9 +79,9 @@ export default function JugadorDetailScreen() {
                 ligaId: selectedLigaId,
                 jugadorId: jugador.id
               });
-              
+
               Alert.alert("✅ ÉXITO", `${jugador.nickname} ahora forma parte de tu equipo.`);
-              
+
               // Recargar datos
               const jugadorRes = await api.get(`/jugadores/${id}`, { params: { ligaId: selectedLigaId } });
               setJugador(jugadorRes.data);
@@ -90,7 +90,7 @@ export default function JugadorDetailScreen() {
             } finally {
               setIsProcessing(false);
             }
-          } 
+          }
         }
       ]
     );
@@ -109,7 +109,8 @@ export default function JugadorDetailScreen() {
     const grouped: Record<number, Record<string, JugadorEstadistica[]>> = {};
 
     estadisticas.forEach(stat => {
-      const w = stat.semana || 1;
+      let w = stat.semana || 1;
+      if (w > 90) w -= 90;
       const s = stat.serieId || `GAME_${stat.gameId}`;
       if (!grouped[w]) grouped[w] = {};
       if (!grouped[w][s]) grouped[w][s] = [];
@@ -177,11 +178,18 @@ export default function JugadorDetailScreen() {
         <TouchableOpacity onPress={() => router.back()} className="p-2.5 bg-surface rounded-xl border border-surface-light/50">
           <ChevronLeft color="white" size={24} />
         </TouchableOpacity>
-        <View className="flex-1 ml-4">
-          <Text className="text-white text-lg font-black italic uppercase">{jugador.nickname}</Text>
-          <Text className="text-gray-500 text-[10px] font-bold tracking-widest uppercase">
-            {jugador.rol.toUpperCase() === 'SUPPORT' ? 'SUPP' : jugador.rol} • {jugador.equipoLecNombre || 'AGENTE LIBRE'}
-          </Text>
+        <View className="flex-1 ml-4 flex-row items-center">
+          {jugador.equipoLecLogo && (
+            <View className="w-10 h-10 bg-surface rounded-lg items-center justify-center mr-3 border border-surface-light/20">
+              <Image source={{ uri: jugador.equipoLecLogo }} className="w-7 h-7" resizeMode="contain" />
+            </View>
+          )}
+          <View>
+            <Text className="text-white text-lg font-black italic uppercase">{jugador.nickname}</Text>
+            <Text className="text-gray-500 text-[10px] font-bold tracking-widest uppercase">
+              {jugador.rol.toUpperCase() === 'SUPPORT' ? 'SUPP' : jugador.rol} • {jugador.equipoLecNombre || 'AGENTE LIBRE'}
+            </Text>
+          </View>
         </View>
       </View>
 
@@ -208,36 +216,55 @@ export default function JugadorDetailScreen() {
             <View className="py-8 bg-surface rounded-[32px] border border-surface-light/30 shadow-sm mt-2 overflow-hidden relative">
               {/* Logo de equipo de fondo - Watermark */}
               {jugador.equipoLecLogo && (
-                <Image 
-                  source={{ uri: jugador.equipoLecLogo }} 
-                  className="w-64 h-64 absolute -right-4 top-10 opacity-[0.12]" 
+                <Image
+                  source={{ uri: jugador.equipoLecLogo }}
+                  className="w-64 h-64 absolute -right-4 top-10 opacity-[0.18]"
                   style={{ transform: [{ rotate: '10deg' }] }}
-                  resizeMode="contain" 
+                  resizeMode="contain"
                 />
               )}
               <View className="flex-row px-6 items-center pt-4">
                 <View className="w-32 h-32 bg-midnight/50 rounded-[32px] items-center justify-center border border-surface-light/40 overflow-hidden relative">
                   {jugador.imagenUrl ? (
-                    <Image 
-                      source={{ uri: jugador.imagenUrl }} 
-                      className="w-32 h-32" 
-                      style={{ marginTop: 16 }}
-                      resizeMode="contain" 
-                    />
+                    <>
+                      <Image
+                        source={{ uri: jugador.imagenUrl }}
+                        className="w-32 h-32"
+                        style={{ marginTop: 16 }}
+                        resizeMode="contain"
+                      />
+                      {/* Logo de equipo superpuesto */}
+                      {jugador.equipoLecLogo && (
+                        <View className="absolute bottom-2 right-2 bg-midnight/90 p-1.5 rounded-xl border border-surface-light/30 shadow-2xl">
+                          <Image source={{ uri: jugador.equipoLecLogo }} className="w-6 h-6" resizeMode="contain" />
+                        </View>
+                      )}
+                    </>
                   ) : jugador.equipoLecLogo ? (
-                    <Image source={{ uri: jugador.equipoLecLogo }} className="w-20 h-20 opacity-50" resizeMode="contain" />
+                    <Image source={{ uri: jugador.equipoLecLogo }} className="w-20 h-20 opacity-90" resizeMode="contain" />
                   ) : (
                     <Text className="text-accent-cyan text-3xl font-bold">{jugador.nickname?.substring(0, 1)}</Text>
                   )}
                 </View>
-                
+
                 <View className="flex-1 ml-6 pt-2">
                   <Text className="text-white text-4xl font-black tracking-tighter uppercase italic leading-none">{jugador.nickname}</Text>
                   <Text className="text-gray-400 text-xs font-bold mt-2 uppercase tracking-widest">{jugador.nombreReal}</Text>
-                  
+
                   <View className="flex-row items-center mt-4">
                     <View className="bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20">
-                      <Text className="text-emerald-400 font-black text-sm">{jugador.precioBase?.toLocaleString()} €</Text>
+                      <Text className="text-emerald-400 font-black text-sm">{(jugador.precioActual || jugador.precioBase)?.toLocaleString()} €</Text>
+                    </View>
+                    <View className="flex-row items-center ml-3 bg-surface/50 px-2 py-1 rounded-md">
+                      {jugador.tendencia === 'SUBE' && <ChevronUp size={12} color="#10B981" />}
+                      {jugador.tendencia === 'BAJA' && <ChevronDown size={12} color="#F43F5E" />}
+                      <Text className={`text-[9px] font-black ml-1 ${jugador.tendencia === 'SUBE' ? 'text-emerald-400' :
+                        jugador.tendencia === 'BAJA' ? 'text-rose-400' : 'text-gray-500'
+                        }`}>
+                        {jugador.tendencia === 'SUBE' ? 'SUBIENDO' :
+                          jugador.tendencia === 'BAJA' ? 'BAJANDO' :
+                            jugador.tendencia || 'ESTABLE'}
+                      </Text>
                     </View>
                   </View>
                 </View>
@@ -259,7 +286,7 @@ export default function JugadorDetailScreen() {
                         {jugador.propietarioNickname ? 'CONTRATADO POR' : 'ESTADO ACTUAL'}
                       </Text>
                       {jugador.propietarioNickname ? (
-                        <TouchableOpacity 
+                        <TouchableOpacity
                           onPress={() => router.push(`/(main)/rival/${jugador.propietarioEquipoId}`)}
                           className="flex-row items-center"
                         >
@@ -275,7 +302,7 @@ export default function JugadorDetailScreen() {
                   </View>
 
                   {!esPropietario && jugador.propietarioNickname && (
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       onPress={handleClausulazo}
                       disabled={isProcessing}
                       className="bg-rose-600 px-5 py-3 rounded-2xl flex-row items-center shadow-lg shadow-rose-900/40 active:scale-95"
@@ -493,27 +520,41 @@ export default function JugadorDetailScreen() {
                     const globalResult = wins > losses ? 'WIN' : 'LOSS';
                     const displayResult = isExpanded ? (map.resultado || 'LOSS') : globalResult;
 
-                    const rival = (map.team1?.toLowerCase() === jugador.equipoLecNombre?.toLowerCase())
-                      ? (map.team2 || 'Rival')
-                      : (map.team1 || 'Rival');
+                    const isTeam1 = map.team1?.toLowerCase() === jugador.equipoLecNombre?.toLowerCase();
+                    const rival = isTeam1 ? (map.team2 || 'Rival') : (map.team1 || 'Rival');
+                    const rivalLogo = isTeam1 ? map.team2Logo : map.team1Logo;
 
                     return (
                       <View key={serieId} className="bg-surface rounded-2xl p-5 mb-4 border border-surface-light/20 shadow-sm">
                         <TouchableOpacity onPress={() => toggleSerie(serieId)} className="flex-row justify-between items-center">
-                          <View>
+                          <View className="flex-1 mr-4">
                             <View className="flex-row items-center">
-                              <Text className="text-white text-xl font-black">vs {rival}</Text>
+                              <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest mr-2">vs</Text>
+                              <View className="w-8 h-8 bg-surface-light/10 rounded-lg items-center justify-center mr-1 border border-surface-light/10">
+                                {rivalLogo ? (
+                                  <Image
+                                    key={rivalLogo}
+                                    source={{ uri: rivalLogo }}
+                                    style={{ width: 24, height: 24 }}
+                                    resizeMode="contain"
+                                  />
+                                ) : (
+                                  <Text className="text-[8px] text-gray-500 font-black">{rival.substring(0, 2)}</Text>
+                                )}
+                              </View>
+                              <Text className="text-white text-xl font-black flex-shrink" numberOfLines={1}>{rival}</Text>
                               {isAce && (
-                                <View className="bg-accent-cyan/20 px-2.5 py-0.5 rounded-lg ml-3 border border-accent-cyan/30">
-                                  <Text className="text-accent-cyan text-[9px] font-black tracking-widest uppercase">ACE +5</Text>
+                                <View className="bg-accent-cyan/20 px-2 py-0.5 rounded-lg ml-2 border border-accent-cyan/30">
+                                  <Text className="text-accent-cyan text-[9px] font-black tracking-widest uppercase">ACE</Text>
                                 </View>
                               )}
                             </View>
                             <View className="flex-row items-center mt-1">
                               <Text className="text-accent-cyan text-base font-black">{totalSeriePoints}</Text>
-                              <Text className="text-gray-500 text-[9px] font-bold ml-1.5 uppercase tracking-widest">Pts Fantasy</Text>
+                              <Text className="text-gray-500 text-[9px] font-bold ml-2 uppercase tracking-widest">Pts Fantasy</Text>
                             </View>
                           </View>
+
                           <View className="flex-row items-center">
                             <View className={`px-3 py-1.5 rounded-lg mr-4 ${displayResult === 'WIN' ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-rose-500/10 border border-rose-500/20'}`}>
                               <Text className={`text-[10px] font-black tracking-widest ${displayResult === 'WIN' ? 'text-emerald-400' : 'text-rose-400'}`}>
@@ -591,7 +632,7 @@ export default function JugadorDetailScreen() {
                                 {/* SECCIÓN CÁLCULO: Pequeño y detallado */}
                                 <View>
                                   <Text className="text-gray-500 text-[9px] font-black uppercase tracking-widest mb-4">Cálculo de la Serie</Text>
-                                  
+
                                   {/* Lista de mapas de la serie */}
                                   <View className="mb-4">
                                     {maps.map((m, i) => (

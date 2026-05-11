@@ -116,6 +116,7 @@ public class JugadorService {
         return jugadorRepository.findAllWithTotalPoints();
     }
 
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public List<JugadorEstadisticaDTO> obtenerEstadisticasJugador(Long idJugador) {
         List<EstadisticaPartido> estadisticas = estadisticaPartidoRepository.findByJugadorId(idJugador);
         return estadisticas.stream().map(e -> {
@@ -124,6 +125,8 @@ public class JugadorService {
             dto.setMatchName(e.getPartido().getTeam1() + " vs " + e.getPartido().getTeam2());
             dto.setTeam1(e.getPartido().getTeam1());
             dto.setTeam2(e.getPartido().getTeam2());
+            dto.setTeam1Logo(e.getPartido().getTeam1Entity() != null ? e.getPartido().getTeam1Entity().getLogoUrl() : null);
+            dto.setTeam2Logo(e.getPartido().getTeam2Entity() != null ? e.getPartido().getTeam2Entity().getLogoUrl() : null);
             dto.setFecha(e.getPartido().getFechaUtc() != null ? e.getPartido().getFechaUtc().toString() : null);
             dto.setSemana(e.getPartido().getJornada() != null ? e.getPartido().getJornada().getNumeroSemana() : null);
             dto.setSerieId(e.getPartido().getSerieId());
@@ -144,7 +147,7 @@ public class JugadorService {
         }).collect(Collectors.toList());
     }
 
-    public JugadorDetalleDTO obtenerDetalleJugadorConPropietario(Long id, Long ligaId) {
+    public JugadorDetalleDTO obtenerDetalleJugador(Long id, Long ligaId) {
         Jugador j = jugadorRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Jugador no encontrado"));
 
@@ -154,6 +157,8 @@ public class JugadorService {
         dto.setNombreReal(j.getNombreReal());
         dto.setRol(j.getRol());
         dto.setPrecioBase(j.getPrecioBase());
+        dto.setPrecioActual(j.getPrecioActual());
+        dto.setTendencia(j.getTendencia());
         dto.setImagenUrl(j.getImagenUrl());
         
         if (j.getEquipoLec() != null) {
@@ -161,21 +166,22 @@ public class JugadorService {
             dto.setEquipoLecLogo(j.getEquipoLec().getLogoUrl());
         }
 
-        // Buscar propietario en la liga
-        List<Plantilla> propiedad = plantillaRepository.findByJugadorId(j.getId());
-        for (Plantilla p : propiedad) {
-            if (p.getEquipo().getLiga().getId().equals(ligaId)) {
-                dto.setPropietarioNickname(p.getEquipo().getUsuario().getNickname());
-                dto.setPropietarioEquipoId(p.getEquipo().getId());
-                break;
+        if (ligaId != null) {
+            // Buscar propietario en la liga
+            List<Plantilla> propiedad = plantillaRepository.findByJugadorId(j.getId());
+            for (Plantilla p : propiedad) {
+                if (p.getEquipo().getLiga().getId().equals(ligaId)) {
+                    dto.setPropietarioNickname(p.getEquipo().getUsuario().getNickname());
+                    dto.setPropietarioEquipoId(p.getEquipo().getId());
+                    break;
+                }
             }
         }
 
         return dto;
     }
 
-    public Jugador obtenerDetalleJugador(Long id) {
-        return jugadorRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Jugador no encontrado con ID: " + id));
+    public JugadorDetalleDTO obtenerDetalleJugador(Long id) {
+        return obtenerDetalleJugador(id, null);
     }
 }

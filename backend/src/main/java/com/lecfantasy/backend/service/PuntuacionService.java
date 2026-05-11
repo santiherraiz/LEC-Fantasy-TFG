@@ -265,6 +265,21 @@ public class PuntuacionService {
         historicoAlineacionRepository.findAll().forEach(h -> { h.setPuntosSemanales(0.0); historicoAlineacionRepository.save(h); });
     }
 
+    @Transactional
+    public void limpiarJornada(int numeroSemana) {
+        jornadaRepository.findByNumeroSemana(numeroSemana).ifPresent(j -> {
+            List<HistoricoAlineacion> historicos = historicoAlineacionRepository.findByJornada(j);
+            historicoAlineacionRepository.deleteAll(historicos);
+            
+            List<Partido> partidos = partidoRepository.findByJornada(j);
+            for (Partido p : partidos) {
+                List<EstadisticaPartido> stats = estadisticaPartidoRepository.findByPartidoGameId(p.getGameId());
+                estadisticaPartidoRepository.deleteAll(stats);
+                partidoRepository.delete(p);
+            }
+        });
+    }
+
     public void importarPartidosDeLeaguepedia() {
         RestTemplate rt = new RestTemplate();
         String url = UriComponentsBuilder.fromUriString("https://lol.fandom.com/api.php")

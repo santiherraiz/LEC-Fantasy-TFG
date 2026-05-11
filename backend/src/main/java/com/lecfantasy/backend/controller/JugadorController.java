@@ -27,10 +27,7 @@ public class JugadorController {
     public ResponseEntity<?> obtenerDetalleJugador(
             @PathVariable Long id,
             @RequestParam(required = false) Long ligaId) {
-        if (ligaId != null) {
-            return ResponseEntity.ok(jugadorService.obtenerDetalleJugadorConPropietario(id, ligaId));
-        }
-        return ResponseEntity.ok(jugadorService.obtenerDetalleJugador(id));
+        return ResponseEntity.ok(jugadorService.obtenerDetalleJugador(id, ligaId));
     }
 
     // Obtener el historial de estadísticas de un jugador (puntos por partido)

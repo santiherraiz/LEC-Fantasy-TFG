@@ -115,8 +115,8 @@ public class MercadoService {
             throw new RuntimeException("La subasta ya ha finalizado");
         }
 
-        if (request.getCantidad() < subasta.getJugador().getPrecioBase()) {
-            throw new RuntimeException("La puja mínima es de " + subasta.getJugador().getPrecioBase());
+        if (request.getCantidad() < subasta.getJugador().getPrecioActual()) {
+            throw new RuntimeException("La puja mínima es de " + subasta.getJugador().getPrecioActual());
         }
 
         Equipo equipo = equipoRepository.findByUsuarioIdAndLigaId(request.getUsuarioId(), subasta.getLiga().getId())
@@ -295,6 +295,12 @@ public class MercadoService {
                 plantillaRepository.save(p);
                 log.info("Jugador {} añadido a la plantilla de {}", s.getJugador().getNickname(), equipoGanador.getNombreEquipo());
 
+                // Incrementar comprasHoy
+                Jugador j = s.getJugador();
+                int actuales = (j.getComprasHoy() != null) ? j.getComprasHoy() : 0;
+                j.setComprasHoy(actuales + 1);
+                jugadorRepository.save(j);
+
                 // Noticia de subasta ganada
                 noticiaService.crearNoticia(
                     s.getLiga().getId(),
@@ -394,14 +400,19 @@ public class MercadoService {
         }
 
         // 4. Comprobamos la cartera (saldo)
-        if (equipo.getPresupuestoDisponible() < jugador.getPrecioBase()) {
+        if (equipo.getPresupuestoDisponible() < jugador.getPrecioActual()) {
             throw new RuntimeException("Presupuesto insuficiente. Tienes " + equipo.getPresupuestoDisponible()
-                    + " y cuesta " + jugador.getPrecioBase());
+                    + " y cuesta " + jugador.getPrecioActual());
         }
 
         // 5. ¡Ejecutamos la compra! Restamos el dinero
-        equipo.setPresupuestoDisponible(equipo.getPresupuestoDisponible() - jugador.getPrecioBase());
+        equipo.setPresupuestoDisponible(equipo.getPresupuestoDisponible() - jugador.getPrecioActual());
         equipoRepository.save(equipo);
+
+        // Incrementar comprasHoy
+        int actualesC = (jugador.getComprasHoy() != null) ? jugador.getComprasHoy() : 0;
+        jugador.setComprasHoy(actualesC + 1);
+        jugadorRepository.save(jugador);
 
         // 6. Añadimos el jugador a la plantilla (por defecto al banquillo)
         Plantilla nuevoFichaje = new Plantilla();
@@ -414,7 +425,7 @@ public class MercadoService {
         notificationService.enviarNotificacion(
             equipo.getUsuario().getPushToken(),
             "¡Fichaje Confirmado!",
-            "Has fichado a " + jugador.getNickname() + " por " + jugador.getPrecioBase() + " €."
+            "Has fichado a " + jugador.getNickname() + " por " + jugador.getPrecioActual() + " €."
         );
 
         // 8. Crear noticia en el muro
@@ -424,7 +435,7 @@ public class MercadoService {
             String.format("¡%s ha fichado a %s por %.0f €!", 
                 equipo.getUsuario().getNickname(), 
                 jugador.getNickname(), 
-                jugador.getPrecioBase()),
+                jugador.getPrecioActual()),
             jugador.getId(),
             equipo.getId(),
             jugador.getImagenUrl()
@@ -453,8 +464,8 @@ public class MercadoService {
             throw new RuntimeException("No puedes robarte a ti mismo... aunque sería divertido.");
         }
 
-        // 3. Calculamos la cláusula (150% del valor de mercado)
-        double precioClausula = jugador.getPrecioBase() * 1.5;
+        // 3. Calculamos la cláusula (150% del valor de mercado - Redondeado)
+        double precioClausula = Math.round(jugador.getPrecioActual() * 1.5);
 
         // 4. Validamos presupuesto
         if (equipoComprador.getPresupuestoDisponible() < precioClausula) {
@@ -465,6 +476,11 @@ public class MercadoService {
         // 5. Transferencia de dinero
         equipoComprador.setPresupuestoDisponible(equipoComprador.getPresupuestoDisponible() - precioClausula);
         equipoVictima.setPresupuestoDisponible(equipoVictima.getPresupuestoDisponible() + precioClausula);
+
+        // Incrementar comprasHoy
+        int actualesC = (jugador.getComprasHoy() != null) ? jugador.getComprasHoy() : 0;
+        jugador.setComprasHoy(actualesC + 1);
+        jugadorRepository.save(jugador);
 
         // 6. Transferencia de jugador
         plantillaRepository.delete(relacionActual);
@@ -572,9 +588,14 @@ public class MercadoService {
         Jugador jugador = registro.getJugador();
 
         // 2. Ingresamos el dinero en la cuenta del equipo
-        double nuevoSaldo = equipo.getPresupuestoDisponible() + jugador.getPrecioBase();
+        double nuevoSaldo = equipo.getPresupuestoDisponible() + jugador.getPrecioActual();
         equipo.setPresupuestoDisponible(nuevoSaldo);
         equipoRepository.save(equipo);
+
+        // Incrementar ventasHoy
+        int actualesV = (jugador.getVentasHoy() != null) ? jugador.getVentasHoy() : 0;
+        jugador.setVentasHoy(actualesV + 1);
+        jugadorRepository.save(jugador);
 
         // 3. Borramos la fila de la tabla intermedia
         plantillaRepository.delete(registro);
@@ -586,13 +607,13 @@ public class MercadoService {
             String.format("%s ha vendido a %s al mercado por %.0f €.", 
                 equipo.getUsuario().getNickname(), 
                 jugador.getNickname(), 
-                jugador.getPrecioBase()),
+                jugador.getPrecioActual()),
             jugador.getId(),
             equipo.getId(),
             jugador.getImagenUrl()
         );
 
-        return "Has vendido a " + jugador.getNickname() + " por " + jugador.getPrecioBase()
+        return "Has vendido a " + jugador.getNickname() + " por " + jugador.getPrecioActual()
                 + " monedas. Tu nuevo saldo es: " + nuevoSaldo;
     }
 }

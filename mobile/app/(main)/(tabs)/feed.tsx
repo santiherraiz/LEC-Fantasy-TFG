@@ -109,7 +109,10 @@ export default function FeedScreen() {
                             </Text>
                         </View>
                         <Text className="text-gray-100 text-[13px] font-semibold leading-5 pr-2">
-                            {item.mensaje}
+                            {item.mensaje.replace(/Jornada (\d+)/g, (match, p1) => {
+                                const w = parseInt(p1);
+                                return `Jornada ${w > 90 ? w - 90 : w}`;
+                            })}
                         </Text>
                     </View>
 

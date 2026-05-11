@@ -8,6 +8,8 @@ public class JugadorEstadisticaDTO {
     private String matchName; // e.g., "G2 vs Fnatic"
     private String team1;
     private String team2;
+    private String team1Logo;
+    private String team2Logo;
     private String fecha;
     private Integer semana;
     private String serieId;

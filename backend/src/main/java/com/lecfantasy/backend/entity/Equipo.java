@@ -47,4 +47,8 @@ public class Equipo {
     protected void onUpdate() {
         updatedAt = java.time.LocalDateTime.now();
     }
+
+    public void setPresupuestoDisponible(Double presupuestoDisponible) {
+        this.presupuestoDisponible = (presupuestoDisponible != null) ? (double) Math.round(presupuestoDisponible) : null;
+    }
 }

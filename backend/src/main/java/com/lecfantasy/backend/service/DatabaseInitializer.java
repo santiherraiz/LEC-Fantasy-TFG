@@ -17,18 +17,18 @@ public class DatabaseInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         System.out.println("🚀 [INIT] Comprobando integridad de imágenes...");
-        
+
         Integer count = jdbcTemplate.queryForObject(
-            "SELECT COUNT(*) FROM jugadores WHERE imagen_url IS NOT NULL", Integer.class);
+                "SELECT COUNT(*) FROM jugadores WHERE imagen_url IS NOT NULL", Integer.class);
 
         if (count == null || count == 0) {
             System.out.println("📸 [INIT] No se detectaron imágenes. Aplicando script de auto-actualización...");
             try {
                 // Leemos el script SQL (buscamos en la raíz del proyecto)
                 String sql = Files.lines(Paths.get("../scratch/update_images_2026.sql"))
-                                  .filter(line -> !line.startsWith("--") && !line.trim().isEmpty())
-                                  .collect(Collectors.joining("\n"));
-                
+                        .filter(line -> !line.startsWith("--") && !line.trim().isEmpty())
+                        .collect(Collectors.joining("\n"));
+
                 // Dividimos por punto y coma para ejecutar cada comando
                 for (String statement : sql.split(";")) {
                     if (!statement.trim().isEmpty()) {
@@ -42,5 +42,11 @@ public class DatabaseInitializer implements CommandLineRunner {
         } else {
             System.out.println("✅ [INIT] Las imágenes ya están presentes en la base de datos.");
         }
+
+        // Inicializar precioActual si es null
+        jdbcTemplate.execute("UPDATE jugadores SET precio_actual = precio_base WHERE precio_actual IS NULL");
+        jdbcTemplate.execute("UPDATE jugadores SET compras_hoy = 0 WHERE compras_hoy IS NULL");
+        jdbcTemplate.execute("UPDATE jugadores SET ventas_hoy = 0 WHERE ventas_hoy IS NULL");
+        System.out.println("✅ [INIT] Precios dinámicos y contadores inicializados.");
     }
 }

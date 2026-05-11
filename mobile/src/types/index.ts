@@ -12,6 +12,8 @@ export interface Jugador {
   rol: string;
   equipoLec: EquipoLec;
   precioBase: number;
+  precioActual: number;
+  tendencia: string;
   imagenUrl: string | null;
 }
 
@@ -47,6 +49,8 @@ export interface JugadorEstadistica {
   matchName: string;
   team1?: string;
   team2?: string;
+  team1Logo?: string;
+  team2Logo?: string;
   fecha: string;
   semana: number;
   serieId: string;
@@ -88,6 +92,8 @@ export interface JugadorRival {
   rol: string;
   equipoLec: string;
   precioBase: number;
+  precioActual: number;
+  tendencia: string;
   estado: "TITULAR" | "BANQUILLO";
 }
 
@@ -97,6 +103,8 @@ export interface JugadorDetalleDTO {
   nickname: string;
   rol: string;
   precioBase: number;
+  precioActual: number;
+  tendencia: string;
   imagenUrl: string | null;
   equipoLecNombre: string | null;
   equipoLecLogo: string | null;

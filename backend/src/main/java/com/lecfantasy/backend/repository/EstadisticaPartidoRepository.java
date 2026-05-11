@@ -14,6 +14,11 @@ public interface EstadisticaPartidoRepository extends JpaRepository<EstadisticaP
     @Query("SELECT MAX(ep.partido.jornada.numeroSemana) FROM EstadisticaPartido ep WHERE ep.partido.jornada.numeroSemana < 90")
     Integer findMaxSemanaConStats();
 
+    @Query("SELECT ep FROM EstadisticaPartido ep " +
+           "JOIN FETCH ep.partido p " +
+           "LEFT JOIN FETCH p.team1Entity " +
+           "LEFT JOIN FETCH p.team2Entity " +
+           "WHERE ep.jugador.id = :jugadorId")
     List<EstadisticaPartido> findByJugadorId(Long jugadorId);
 
     List<EstadisticaPartido> findByPartidoJornada(Jornada jornada);

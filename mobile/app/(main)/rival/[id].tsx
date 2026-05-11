@@ -28,11 +28,12 @@ export default function RivalTeamScreen() {
     }
   };
 
-  const handleClausulazo = async (jugadorId: number, nickname: string, precioBase: number) => {
+  const handleClausulazo = async (jugadorId: number, nickname: string, precioBase: number, precioActual: number) => {
     const { user, selectedLigaId } = useAuthStore.getState();
     if (!user || !selectedLigaId) return;
 
-    const precioClausula = precioBase * 1.5;
+    const precioFinal = precioActual || precioBase;
+    const precioClausula = precioFinal * 1.5;
     
     const confirm = await new Promise((resolve) => {
       import('react-native').then(({ Alert }) => {
@@ -142,13 +143,14 @@ export default function RivalTeamScreen() {
   );
 }
 
-function JugadorCard({ jugador, onClausulazo }: { jugador: any, onClausulazo: (id: number, nick: string, precio: number) => void }) {
+function JugadorCard({ jugador, onClausulazo }: { jugador: any, onClausulazo: (id: number, nick: string, precioBase: number, precioActual: number) => void }) {
   const router = useRouter();
+  const { ChevronUp, ChevronDown } = require('lucide-react-native');
 
   return (
     <TouchableOpacity 
       onPress={() => router.push(`/(main)/jugador/${jugador.id}`)}
-      className="bg-surface p-4 rounded-3xl flex-row items-center border border-surface-light/20"
+      className="bg-surface p-4 rounded-3xl flex-row items-center border border-surface-light/20 mb-3"
     >
       <View className="w-20 h-20 bg-midnight rounded-3xl items-center justify-center mr-5 overflow-hidden border border-surface-light/20 relative">
         {jugador.foto ? (
@@ -171,13 +173,27 @@ function JugadorCard({ jugador, onClausulazo }: { jugador: any, onClausulazo: (i
       <View className="flex-1">
         <Text className="text-white font-black text-xl tracking-tight">{jugador.nickname}</Text>
         <Text className="text-gray-500 text-xs font-bold uppercase tracking-widest">{jugador.equipoLec}</Text>
+        
+        {/* Trend Indicator for Rival Card */}
+        <View className="flex-row items-center mt-1">
+          {jugador.tendencia === 'SUBE' && <ChevronUp size={10} color="#10B981" />}
+          {jugador.tendencia === 'BAJA' && <ChevronDown size={10} color="#F43F5E" />}
+          <Text className={`text-[8px] font-black ml-1 ${
+            jugador.tendencia === 'SUBE' ? 'text-emerald-400' : 
+            jugador.tendencia === 'BAJA' ? 'text-rose-400' : 'text-gray-500'
+          }`}>
+            {jugador.tendencia === 'SUBE' ? 'SUBIENDO' : 
+             jugador.tendencia === 'BAJA' ? 'BAJANDO' : 
+             jugador.tendencia || 'ESTABLE'}
+          </Text>
+        </View>
       </View>
 
       <View className="items-end">
-        <Text className="text-white font-black text-sm italic">{jugador.precioBase.toLocaleString()} €</Text>
+        <Text className="text-white font-black text-sm italic">{(jugador.precioActual || jugador.precioBase).toLocaleString()} €</Text>
         <TouchableOpacity 
           className="bg-accent-magenta/20 px-3 py-1.5 rounded-xl mt-1 flex-row items-center"
-          onPress={() => onClausulazo(jugador.id, jugador.nickname, jugador.precioBase)}
+          onPress={() => onClausulazo(jugador.id, jugador.nickname, jugador.precioBase, jugador.precioActual)}
         >
           <Zap size={12} color="#FF00FF" fill="#FF00FF" />
           <Text className="text-accent-magenta font-black text-[10px] ml-1 uppercase">Clausulazo</Text>

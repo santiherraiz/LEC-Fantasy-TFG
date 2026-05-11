@@ -90,8 +90,10 @@ export default function SubastasScreen() {
       return;
     }
 
-    if (amount < selectedSubasta.jugador.precioBase) {
-      showToast(`La puja mínima es de ${selectedSubasta.jugador.precioBase.toLocaleString()} €`, "error");
+    const minPrice = selectedSubasta.jugador.precioActual || selectedSubasta.jugador.precioBase;
+
+    if (amount < minPrice) {
+      showToast(`La puja mínima es de ${minPrice.toLocaleString()} €`, "error");
       return;
     }
 
@@ -184,8 +186,8 @@ export default function SubastasScreen() {
             </Text>
           </View>
           <View className="items-end">
-             <Text className="text-neon-green font-black text-lg">{subasta.jugador.precioBase.toLocaleString()} €</Text>
-             <Text className="text-gray-500 text-[10px] font-bold uppercase">PRECIO BASE</Text>
+             <Text className="text-neon-green font-black text-lg">{(subasta.jugador.precioActual || subasta.jugador.precioBase).toLocaleString()} €</Text>
+             <Text className="text-gray-500 text-[10px] font-bold uppercase">VALOR MERCADO</Text>
           </View>
         </TouchableOpacity>
       </Link>
@@ -287,7 +289,7 @@ export default function SubastasScreen() {
 
               <Text className="text-gray-400 font-bold text-center mb-4">
                 Estás {selectedSubasta?.miPuja ? 'editando tu puja' : 'pujando'} por <Text className="text-white">{selectedSubasta?.jugador.nickname}</Text>.
-                {'\n'}Precio base: <Text className="text-neon-green">{selectedSubasta?.jugador.precioBase.toLocaleString()} €</Text>
+                {'\n'}Precio actual: <Text className="text-neon-green">{(selectedSubasta?.jugador.precioActual || selectedSubasta?.jugador.precioBase || 0).toLocaleString()} €</Text>
               </Text>
 
               <View className="flex-row justify-center mb-8">
