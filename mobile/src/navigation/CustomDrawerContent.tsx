@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
-import { Users, LayoutGrid, LogOut, Shield, Trophy, ShoppingBag, User as UserIcon } from 'lucide-react-native';
+import { Users, LayoutGrid, LogOut, Shield, Trophy, ShoppingBag, Calendar, User as UserIcon } from 'lucide-react-native';
 import { useAuthStore } from '../store/authStore';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DrawerContentComponentProps } from '@react-navigation/drawer';
@@ -82,6 +82,13 @@ export default function CustomDrawerContent(props: DrawerContentComponentProps) 
           icon={<Trophy size={22} />} 
           active={isActive('/ranking')} 
           onPress={() => router.push('/ranking')} 
+        />
+
+        <DrawerItem 
+          label="Calendario" 
+          icon={<Calendar size={22} />} 
+          active={isActive('/calendario')} 
+          onPress={() => router.push('/calendario')} 
         />
 
         <Text style={styles.sectionTitle}>Ajustes</Text>

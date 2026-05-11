@@ -20,7 +20,7 @@ public class PublicController {
     public Map<String, Object> getServerTime() {
         Map<String, Object> response = new HashMap<>();
         response.put("serverTime", clockService.ahora());
-        response.put("isDemoMode", true); // Podríamos hacerlo dinámico, pero para este caso sirve
+        response.put("isDemoMode", clockService.isModoDemoActivo());
         return response;
     }
 }

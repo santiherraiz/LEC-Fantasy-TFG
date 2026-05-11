@@ -132,3 +132,25 @@ export interface NoticiaLiga {
   imagenUrl: string | null;
 }
 
+export interface PartidoCalendario {
+  gameId: string;
+  team1: string;
+  team2: string;
+  team1Abrev: string;
+  team2Abrev: string;
+  team1Logo: string;
+  team2Logo: string;
+  fecha: string;
+  winTeam: string | null;
+}
+
+export interface DiaCalendario {
+  fecha: string;
+  partidos: PartidoCalendario[];
+}
+
+export interface JornadaCalendario {
+  semana: number;
+  dias: DiaCalendario[];
+}
+

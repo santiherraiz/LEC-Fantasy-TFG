@@ -28,6 +28,12 @@ export default function MainLayout() {
           drawerLabel: 'Lista de Jugadores',
         }} 
       />
+      <Drawer.Screen 
+        name="calendario" 
+        options={{ 
+          drawerLabel: 'Calendario',
+        }} 
+      />
       {/* Detail screens should be here if we want them reachable but hidden from drawer */}
       <Drawer.Screen 
         name="jugador/[id]" 
