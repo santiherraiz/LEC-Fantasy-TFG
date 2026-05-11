@@ -29,6 +29,8 @@ public class DemoService {
     private MercadoService mercadoService;
     @Autowired
     private MercadoScheduler mercadoScheduler;
+    @Autowired
+    private SubastaRepository subastaRepository;
 
     /**
      * INICIO DE LA DEMO: Prepara las 7 semanas (91-97) clonando datos reales.
@@ -40,11 +42,15 @@ public class DemoService {
         equipoRepository.findAll().forEach(e -> snapshot.put(e.getId(), e.getPresupuestoDisponible()));
 
         // Reloj: Empezamos el 22 de Junio 2026 (una semana antes de la Jornada 91)
-        LocalDateTime fechaBaseDemo = LocalDateTime.of(2026, 6, 22, 10, 0); 
+        LocalDateTime fechaBaseDemo = LocalDateTime.of(2026, 6, 22, 10, 0);
         clockService.activarModoDemo(fechaBaseDemo, snapshot);
 
-        // 2. Limpiar todo lo anterior de demo
-        limpiarTodasLasSemanasDemo();
+        // 2. Limpiar todo lo anterior de demo (Aseguramos limpieza total)
+        for (int i = 91; i <= 99; i++) {
+            puntuacionService.limpiarJornada(i);
+            final int sem = i;
+            jornadaRepository.findByNumeroSemana(sem).ifPresent(j -> jornadaRepository.delete(j));
+        }
 
         // 3. Clonar las 7 semanas reales
         for (int i = 1; i <= 7; i++) {
@@ -63,12 +69,13 @@ public class DemoService {
 
     private void clonarSemanaRealADemo(int semanaReal, int semanaDemo) {
         Jornada real = jornadaRepository.findByNumeroSemana(semanaReal).orElse(null);
-        if (real == null) return;
+        if (real == null)
+            return;
 
         // Crear Jornada Demo (Desplazada al verano de 2026)
         Jornada demo = new Jornada();
         demo.setNumeroSemana(semanaDemo);
-        demo.setFechaInicio(real.getFechaInicio().plusWeeks(13)); 
+        demo.setFechaInicio(real.getFechaInicio().plusWeeks(13));
         demo.setFechaFin(real.getFechaFin().plusWeeks(13));
         demo.setEstado(JornadaEstado.PROGRAMADA);
         jornadaRepository.save(demo);
@@ -142,6 +149,7 @@ public class DemoService {
                     sDemo.setAssists(sReal.getAssists());
                     sDemo.setCs(sReal.getCs());
                     sDemo.setGold(sReal.getGold());
+                    sDemo.setEquipoNombre(sReal.getEquipoNombre());
                     sDemo.setPuntosGenerados(0.0);
                     sDemo.setPuntosReales(sReal.getPuntosReales());
                     estadisticaPartidoRepository.save(sDemo);
@@ -169,6 +177,11 @@ public class DemoService {
             });
         });
         limpiarTodasLasSemanasDemo();
+
+        // Borrar todas las subastas activas para que al refrescar se generen con la
+        // fecha real actual
+        subastaRepository.deleteAll();
+
         mercadoService.forzarRefrescoMercado();
     }
 }

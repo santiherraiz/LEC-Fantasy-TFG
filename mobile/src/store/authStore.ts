@@ -15,10 +15,12 @@ interface AuthState {
   selectedLigaId: number | null;
   selectedLigaNombre: string | null;
   pushToken: string | null;
+  pendingReveal: boolean;
   isAuthenticated: boolean;
   setAuth: (user: User, token: string) => void;
   setPushToken: (token: string | null) => void;
   setSelectedLiga: (ligaId: number | null, ligaNombre?: string | null) => void;
+  setPendingReveal: (pending: boolean) => void;
   logout: () => void;
 }
 
@@ -43,16 +45,19 @@ export const useAuthStore = create<AuthState>()(
       selectedLigaId: null,
       selectedLigaNombre: null,
       pushToken: null,
+      pendingReveal: false,
       isAuthenticated: false,
       setAuth: (user, token) => set({ user, token, isAuthenticated: true }),
       setPushToken: (token) => set({ pushToken: token }),
       setSelectedLiga: (ligaId, ligaNombre = null) => set({ selectedLigaId: ligaId, selectedLigaNombre: ligaNombre }),
+      setPendingReveal: (pending) => set({ pendingReveal: pending }),
       logout: () => set({ 
         user: null, 
         token: null, 
         selectedLigaId: null, 
         selectedLigaNombre: null, 
         pushToken: null, 
+        pendingReveal: false,
         isAuthenticated: false 
       }),
     }),

@@ -20,6 +20,8 @@ public class MatchDataResponse {
 
         @JsonProperty("Link")
         private String nickname; // El ID/Nickname del jugador
+        @JsonProperty("Team")
+        private String team;
         @JsonProperty("Kills")
         private String kills;
         @JsonProperty("Deaths")

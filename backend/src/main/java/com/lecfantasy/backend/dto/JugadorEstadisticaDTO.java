@@ -10,6 +10,7 @@ public class JugadorEstadisticaDTO {
     private String team2;
     private String team1Logo;
     private String team2Logo;
+    private String jugadorEquipo;
     private String fecha;
     private Integer semana;
     private String serieId;

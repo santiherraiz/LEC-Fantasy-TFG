@@ -36,8 +36,8 @@ public class LigaController {
     public ResponseEntity<?> unirseALiga(@RequestBody Map<String, Object> payload) {
         String codigo = (String) payload.get("codigoAcceso");
         Long usuarioId = Long.valueOf(payload.get("usuarioId").toString());
-        ligaService.unirseALiga(codigo, usuarioId);
-        return ResponseEntity.ok(Map.of("message", "Te has unido a la liga con éxito"));
+        Liga liga = ligaService.unirseALiga(codigo, usuarioId);
+        return ResponseEntity.ok(liga);
     }
 
     @GetMapping("/usuarios/{usuarioId}/mis-ligas")

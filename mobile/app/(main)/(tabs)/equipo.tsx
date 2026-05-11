@@ -8,6 +8,7 @@ import api from '../../../src/api/api';
 import { EquipoDetalleDTO, JugadorEnPlantillaDTO } from '../../../src/types';
 import { User, ArrowRightLeft, Shield, TrendingUp, Wallet, Map as MapIcon, Trash2, CircleDollarSign, Sword, Zap, Flame, Crosshair, LifeBuoy } from 'lucide-react-native';
 import CustomHeader from '../../../src/components/CustomHeader';
+import RosterRevealModal from '../../../src/components/RosterRevealModal';
 
 import MapaImage from '../../../assets/images/mapa.png';
 
@@ -29,12 +30,13 @@ const ROLES_ORDEN = [
 
 export default function MiEquipoScreen() {
   const router = useRouter();
-  const { user, selectedLigaId } = useAuthStore();
+  const { user, selectedLigaId, selectedLigaNombre, pendingReveal, setPendingReveal } = useAuthStore();
   const { showToast } = useToast();
   const { width } = useWindowDimensions();
   const [equipo, setEquipo] = useState<EquipoDetalleDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showReveal, setShowReveal] = useState(false);
 
   const MAP_SIZE = width;
 
@@ -58,6 +60,14 @@ export default function MiEquipoScreen() {
       fetchEquipo();
     }, [selectedLigaId])
   );
+
+  // Comprobar si hay una revelación pendiente tras cargar el equipo
+  useEffect(() => {
+    if (pendingReveal && equipo && equipo.jugadores.length > 0) {
+      setShowReveal(true);
+      setPendingReveal(false);
+    }
+  }, [pendingReveal, equipo]);
 
   const handleAlinear = async (jugadorId: number) => {
     if (!equipo?.equipoId) return;
@@ -226,6 +236,13 @@ export default function MiEquipoScreen() {
   return (
     <View className="flex-1 bg-midnight">
       <CustomHeader />
+      
+      <RosterRevealModal 
+        visible={showReveal} 
+        players={equipo?.jugadores || []} 
+        ligaNombre={selectedLigaNombre || 'la liga'} 
+        onClose={() => setShowReveal(false)} 
+      />
 
       <ScrollView
         className="flex-1"

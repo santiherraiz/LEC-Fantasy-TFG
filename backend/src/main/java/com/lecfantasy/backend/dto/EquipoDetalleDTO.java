@@ -20,5 +20,6 @@ public class EquipoDetalleDTO {
         private String rol;
         private String estado; // "TITULAR" o "BANQUILLO"
         private String imagenUrl;
+        private Double precio;
     }
 }

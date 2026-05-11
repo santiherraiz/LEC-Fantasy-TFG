@@ -39,6 +39,9 @@ public class JugadorService {
     @Autowired
     private PuntuacionService puntuacionService;
 
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
     private final String MIS_COOKIES = "exp_bucket=v8-30; exp_bucket_2=v5-71; Geo=OK; addtl_consent=1~; euconsent-v2=CPt3fQAPt3fQACNAFAENDLCgAAAAAAAAACiQAAAOCgDAB-AIsAZ8A6QDBAHBAAAA.YAAAAAAAAAAA; tracking-opt-in-status=rejected; eb=21; wikia_beacon_id=UoF5QNPsWU; _b2=33lVvLjkgb.1772207254112; wikia_session_id=YoPddHOEPf; tech-update-disable-banner-global=1; Geo={%22region%22:%22VC%22%2C%22city%22:%22valencia%22%2C%22country_name%22:%22spain%22%2C%22country%22:%22ES%22%2C%22continent%22:%22EU%22}; csrf_token_7edb4307044064c5213d44940aa94f48ab88fe0b5ead052fbb75851a981aa6c4=WUhtlDDhR4uxQnsEXOMPBm7g1FOj9RECs3OMmRh2kHM=; fandom_session=MTc3MjIwODAxMXxGSl9JQUx1YWxNZmtsWU50NjhTbHZGWEN0d3JwbEprblhBUzVSTUNxNmVsYjE1TThxRlFBMkx6VUlOVGNvMnpvTldjSGtkSG1kTHJvVWRkcEhZOFIzZ0t5SjlHMTBYZGxjWVQxRDc4Y045ZEpwVmc1Ri1NYXNHRVk4dlMwVVN6NkdscVA4ckJaRGppc1dtTjJrN1ZSUFZ2R1NUMHcwNEtNQjZjeTM3OEZScUhWWlhYZWI0M21aRzJQYUo3S0hxMW9oWU5BVDlzMHhNcVdaUmpyR3l0OV9kQkFLWG93cEROQTZuQ1RJTVk0ZW5pRkxIRENRTkctSkU2T21OUkl5bVVfb1dmTHBpazFackdEd2YtQTJjc1Z8CDwpld0LGuQXDiEgSulsFHKfgSqQk0eDnLbQDnVty5g=; cf_clearance=RZYlgTyXRq4z9_tvnuR6SSVBnyeCvmeVztHKYgZyKyM-1772210450-1.2.1.1-053OqMFwETU1SPNpCGKpUgTisLoPPm3wY5gmZ_3ASpsilx7Itu5d1n54Jgo.a4.yxcP2oWbk1beah5jwJaYynCpPB0orsPqx5Bl_rtNIAiNwiXWZw3H_WWZTK.5IGbX9FlvFBYjyWPlPa.dGdU3cAW2ns0la04lt.9aIo6hfeDhZ1T_oHNVfVyJsb5I8GPc2wFGLPN.DgK29QpWX5grOa5VSaHqYQgV3KCnRnKMU9bA; __cf_bm=cciPxjAC.b5vokkRLHBYlpD6CDGvxrJuMVQcmDako1s-1772217511-1.0.1.1-eN9AopuYZDmd.BQdurja5xDDRPMO0lNgeY0cV1mMF4u4ctqG2vpQAy3SBUn7Jrdj5KVeT6VCicJey8LzTm4BkqZFwBXXvRJtj3M9YRByQ90; leftPanelOpen=0";
 
     public void importarJugadoresDeLeaguepedia() {
@@ -100,6 +103,7 @@ public class JugadorService {
                     }
                 }
                 System.out.println("🏁 [JUGADOR] Importación de 2026 completada.");
+                forzarActualizacionImagenes();
             } else {
                 System.out.println("⚠️ [JUGADOR] La respuesta de la API está vacía.");
             }
@@ -127,13 +131,18 @@ public class JugadorService {
             dto.setTeam2(e.getPartido().getTeam2());
             dto.setTeam1Logo(e.getPartido().getTeam1Entity() != null ? e.getPartido().getTeam1Entity().getLogoUrl() : null);
             dto.setTeam2Logo(e.getPartido().getTeam2Entity() != null ? e.getPartido().getTeam2Entity().getLogoUrl() : null);
+            dto.setJugadorEquipo(e.getEquipoNombre());
             dto.setFecha(e.getPartido().getFechaUtc() != null ? e.getPartido().getFechaUtc().toString() : null);
             dto.setSemana(e.getPartido().getJornada() != null ? e.getPartido().getJornada().getNumeroSemana() : null);
             dto.setSerieId(e.getPartido().getSerieId());
 
-            if (e.getJugador().getEquipoLec() != null && e.getPartido().getWinTeam() != null) {
+            // Usamos el equipo que tenía el jugador en ese momento (si lo tenemos), si no usamos el actual
+            String equipoDelJugador = (e.getEquipoNombre() != null) ? e.getEquipoNombre() : 
+                (e.getJugador().getEquipoLec() != null ? e.getJugador().getEquipoLec().getNombre() : null);
+
+            if (equipoDelJugador != null && e.getPartido().getWinTeam() != null) {
                 dto.setResultado(
-                        e.getJugador().getEquipoLec().getNombre().equalsIgnoreCase(e.getPartido().getWinTeam()) ? "WIN"
+                        equipoDelJugador.equalsIgnoreCase(e.getPartido().getWinTeam()) ? "WIN"
                                 : "LOSS");
             }
 
@@ -183,5 +192,33 @@ public class JugadorService {
 
     public JugadorDetalleDTO obtenerDetalleJugador(Long id) {
         return obtenerDetalleJugador(id, null);
+    }
+
+    public void forzarActualizacionImagenes() {
+        System.out.println("📸 [JUGADOR] Iniciando actualización de fotos y logos desde SQL...");
+        try {
+            String sqlPath = "../scratch/update_images_2026.sql";
+            java.util.List<String> lines = java.nio.file.Files.readAllLines(java.nio.file.Paths.get(sqlPath));
+
+            StringBuilder currentStatement = new StringBuilder();
+            for (String line : lines) {
+                String trimmedLine = line.trim();
+                if (trimmedLine.isEmpty() || trimmedLine.startsWith("--") || trimmedLine.startsWith("USE ")) {
+                    continue;
+                }
+
+                currentStatement.append(line);
+                if (trimmedLine.endsWith(";")) {
+                    String sql = currentStatement.toString().replace(";", "").trim();
+                    if (!sql.isEmpty()) {
+                        jdbcTemplate.execute(sql);
+                    }
+                    currentStatement.setLength(0);
+                }
+            }
+            System.out.println("✅ [JUGADOR] Imágenes y logos actualizados correctamente.");
+        } catch (Exception e) {
+            System.err.println("❌ [JUGADOR] Error al aplicar el script de imágenes: " + e.getMessage());
+        }
     }
 }

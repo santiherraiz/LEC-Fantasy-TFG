@@ -23,6 +23,7 @@ export interface JugadorEnPlantillaDTO {
   rol: string;
   estado: "TITULAR" | "BANQUILLO";
   imagenUrl: string | null;
+  precio: number;
 }
 
 export interface EquipoDetalleDTO {
@@ -51,6 +52,7 @@ export interface JugadorEstadistica {
   team2?: string;
   team1Logo?: string;
   team2Logo?: string;
+  jugadorEquipo?: string;
   fecha: string;
   semana: number;
   serieId: string;

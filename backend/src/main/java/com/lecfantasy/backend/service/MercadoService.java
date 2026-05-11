@@ -202,7 +202,7 @@ public class MercadoService {
                 .collect(Collectors.toCollection(ArrayList::new));
 
         List<Jugador> seleccionados = new ArrayList<>();
-        String[] roles = {"TOP", "JUNGLE", "MID", "ADC", "SUPPORT"};
+        String[] roles = {"TOP", "JUNGLE", "MID", "BOT", "SUPPORT"};
         LocalDateTime ahora = clockService.ahora();
 
         // 3. Intentar elegir uno de cada rol
@@ -356,6 +356,7 @@ public class MercadoService {
         subastaRepository.save(s);
     }
 
+    @Transactional
     public void forzarRefrescoMercado() {
         log.info("FORZANDO refresco manual del mercado...");
         // 1. Resolvemos las que ya deberían haber terminado
@@ -363,24 +364,33 @@ public class MercadoService {
 
         // 2. Para cada liga, si no hay activas, generamos nuevas YA
         List<Liga> ligas = ligaRepository.findAll();
-        LocalDateTime ahora = clockService.ahora();
         for (Liga liga : ligas) {
             boolean tieneActivas = subastaRepository.existsByLigaIdAndFinalizadaFalse(liga.getId());
             if (!tieneActivas) {
                 log.info("Liga {} sin subastas activas. Generando nuevas...", liga.getNombre());
-                
-                // Calculamos el próximo fin basado en la hora de creación de la liga
-                java.time.LocalTime horaReset = liga.getCreatedAt().toLocalTime();
-                LocalDateTime proximoFin = ahora.toLocalDate().atTime(horaReset);
-                if (!proximoFin.isAfter(ahora)) {
-                    proximoFin = proximoFin.plusDays(1);
-                }
-                
-                generarSubastasConFechaFin(liga, proximoFin);
+                initMercadoParaLiga(liga);
             } else {
                 log.info("Liga {} todavía tiene subastas activas. No se generan nuevas.", liga.getNombre());
             }
         }
+    }
+
+    @Transactional
+    public void initMercadoParaLiga(Liga liga) {
+        LocalDateTime ahora = clockService.ahora();
+        // El reset es a la hora en que se creó la liga (o ahora si es nueva y aún no se ha guardado el createdAt)
+        java.time.LocalTime horaReset = (liga.getCreatedAt() != null) 
+            ? liga.getCreatedAt().toLocalTime() 
+            : ahora.toLocalTime();
+
+        LocalDateTime proximoFin = ahora.toLocalDate().atTime(horaReset);
+        // Si la hora de reset ya pasó o es justo ahora, el próximo fin es mañana
+        if (!proximoFin.isAfter(ahora)) {
+            proximoFin = proximoFin.plusDays(1);
+        }
+
+        log.info("Iniciando mercado para la liga {} con fecha fin {}", liga.getNombre(), proximoFin);
+        generarSubastasConFechaFin(liga, proximoFin);
     }
 
     @Transactional

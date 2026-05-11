@@ -4,9 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../src/store/authStore';
 import api from '../src/api/api';
 import { Trophy, Plus, Link as LinkIcon, ChevronRight, LogOut } from 'lucide-react-native';
+import RosterRevealModal from '../src/components/RosterRevealModal';
 
 export default function LeagueSelectionScreen() {
-  const { user, setSelectedLiga, logout } = useAuthStore();
+  const { user, setSelectedLiga, setPendingReveal, logout } = useAuthStore();
   const [ligas, setLigas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -35,11 +36,14 @@ export default function LeagueSelectionScreen() {
   const handleCreate = async () => {
     if (!nombreLiga) return;
     try {
-      await api.post('/ligas/crear', { nombre: nombreLiga, adminId: user?.id });
-      Alert.alert('Éxito', 'Liga creada correctamente');
+      const response = await api.post('/ligas/crear', { nombre: nombreLiga, adminId: user?.id });
+      const nuevaLiga = response.data;
       setNombreLiga('');
       setShowCreate(false);
-      fetchLigas();
+      
+      // Activar revelación y seleccionar liga (esto disparará la navegación automática en RootLayout)
+      setPendingReveal(true);
+      setSelectedLiga(nuevaLiga.id, nuevaLiga.nombre);
     } catch (error: any) {
       Alert.alert('Error', error.response?.data?.message || 'No se pudo crear la liga');
     }
@@ -48,11 +52,14 @@ export default function LeagueSelectionScreen() {
   const handleJoin = async () => {
     if (!codigo) return;
     try {
-      await api.post('/ligas/unirse', { codigoAcceso: codigo, usuarioId: user?.id });
-      Alert.alert('Éxito', 'Te has unido a la liga');
+      const response = await api.post('/ligas/unirse', { codigoAcceso: codigo, usuarioId: user?.id });
+      const ligaUnida = response.data;
       setCodigo('');
       setShowJoin(false);
-      fetchLigas();
+
+      // Activar revelación y seleccionar liga
+      setPendingReveal(true);
+      setSelectedLiga(ligaUnida.id, ligaUnida.nombre);
     } catch (error: any) {
       Alert.alert('Error', error.response?.data?.message || 'Código inválido o ya estás en la liga');
     }

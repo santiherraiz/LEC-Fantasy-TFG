@@ -35,6 +35,9 @@ public class EstadisticaPartido {
     @Column(nullable = false)
     private Integer gold;
 
+    @Column(name = "equipo_nombre")
+    private String equipoNombre;
+
     @Column(name = "puntos_generados", nullable = false)
     private Double puntosGenerados;
 

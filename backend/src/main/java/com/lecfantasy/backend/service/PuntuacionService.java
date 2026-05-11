@@ -339,11 +339,11 @@ public class PuntuacionService {
         
         for (Partido p : pendientes) {
             try {
-                String url = "https://lol.fandom.com/api.php?action=cargoquery&format=json&tables=ScoreboardGames=SG,ScoreboardPlayers=SP&fields=SP.GameId,SP.Link,SP.Kills,SP.Deaths,SP.Assists,SP.CS,SP.Gold&join_on=SG.GameId=SP.GameId&where=SG.GameId='" + p.getGameId() + "'&limit=500";
+                String url = "https://lol.fandom.com/api.php?action=cargoquery&format=json&tables=ScoreboardGames=SG,ScoreboardPlayers=SP&fields=SP.GameId,SP.Link,SP.Team,SP.Kills,SP.Deaths,SP.Assists,SP.CS,SP.Gold&join_on=SG.GameId=SP.GameId&where=SG.GameId='" + p.getGameId() + "'&limit=500";
                 HttpHeaders h = new HttpHeaders(); h.set("User-Agent", "Mozilla/5.0"); h.set(HttpHeaders.COOKIE, MIS_COOKIES);
                 ResponseEntity<String> res = rt.exchange(url, HttpMethod.GET, new HttpEntity<>(h), String.class);
                 MatchDataResponse r = m.readValue(res.getBody(), MatchDataResponse.class);
-                
+
                 if (r.getCargoquery() != null && !r.getCargoquery().isEmpty()) {
                     transactionTemplate.execute(status -> {
                         for (MatchDataResponse.CargoItem i : r.getCargoquery()) {
@@ -353,8 +353,10 @@ public class PuntuacionService {
                                 if (!estadisticaPartidoRepository.existsByPartidoGameIdAndJugadorId(p.getGameId(), jug.getId())) {
                                     EstadisticaPartido ep = new EstadisticaPartido();
                                     ep.setPartido(p); ep.setJugador(jug);
-                                    ep.setKills(parsearEnteroSeguro(s.getKills())); 
+                                    ep.setEquipoNombre(s.getTeam());
+                                    ep.setKills(parsearEnteroSeguro(s.getKills()));
                                     ep.setDeaths(parsearEnteroSeguro(s.getDeaths()));
+
                                     ep.setAssists(parsearEnteroSeguro(s.getAssists())); 
                                     ep.setCs(parsearEnteroSeguro(s.getCs()));
                                     ep.setGold(parsearEnteroSeguro(s.getGold()));

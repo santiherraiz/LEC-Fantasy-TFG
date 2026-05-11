@@ -520,7 +520,9 @@ export default function JugadorDetailScreen() {
                     const globalResult = wins > losses ? 'WIN' : 'LOSS';
                     const displayResult = isExpanded ? (map.resultado || 'LOSS') : globalResult;
 
-                    const isTeam1 = map.team1?.toLowerCase() === jugador.equipoLecNombre?.toLowerCase();
+                    // Usamos el equipo que tenía el jugador en ese partido para calcular el rival correctamente
+                    const equipoEnEsePartido = map.jugadorEquipo || jugador.equipoLecNombre;
+                    const isTeam1 = map.team1?.toLowerCase() === equipoEnEsePartido?.toLowerCase();
                     const rival = isTeam1 ? (map.team2 || 'Rival') : (map.team1 || 'Rival');
                     const rivalLogo = isTeam1 ? map.team2Logo : map.team1Logo;
 

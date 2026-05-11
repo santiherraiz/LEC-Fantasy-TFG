@@ -6,8 +6,6 @@ import com.lecfantasy.backend.repository.SubastaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.List;
 import com.lecfantasy.backend.entity.Jugador;
 import com.lecfantasy.backend.entity.Jornada;
@@ -15,6 +13,7 @@ import com.lecfantasy.backend.repository.JugadorRepository;
 import com.lecfantasy.backend.repository.EstadisticaPartidoRepository;
 import com.lecfantasy.backend.repository.JornadaRepository;
 import com.lecfantasy.backend.repository.PartidoRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class MercadoScheduler {
@@ -40,12 +39,9 @@ public class MercadoScheduler {
     @Autowired
     private PartidoRepository partidoRepository;
 
-    @Autowired
-    private ClockService clockService;
-
     // Se ejecuta cada día a las 04:00 AM
     @Scheduled(cron = "0 0 4 * * ?")
-    @org.springframework.transaction.annotation.Transactional
+    @Transactional
     public void recalcularPreciosDiarios() {
         System.out.println("📈 [MERCADO] Iniciando recalibración de precios diarios (ALTA VOLATILIDAD)...");
 
@@ -155,7 +151,6 @@ public class MercadoScheduler {
 
             // 2. Comprobar si alguna liga necesita nuevos jugadores
             List<Liga> todasLasLigas = ligaRepository.findAll();
-            LocalDateTime ahora = clockService.ahora();
 
             for (Liga liga : todasLasLigas) {
                 try {
@@ -163,17 +158,7 @@ public class MercadoScheduler {
 
                     if (!tieneSubastasActivas) {
                         System.out.println("Programando nuevas subastas para la liga: " + liga.getNombre());
-                        // El reset es a la hora en que se creó la liga
-                        LocalTime horaReset = liga.getCreatedAt().toLocalTime();
-
-                        LocalDateTime proximoFin = ahora.toLocalDate().atTime(horaReset);
-                        // Si la hora de reset ya pasó o es justo ahora, el próximo fin es mañana
-                        if (!proximoFin.isAfter(ahora)) {
-                            proximoFin = proximoFin.plusDays(1);
-                        }
-
-                        // Generamos subastas con fecha fin en el próximo reset
-                        mercadoService.generarSubastasConFechaFin(liga, proximoFin);
+                        mercadoService.initMercadoParaLiga(liga);
                     }
                 } catch (Exception e) {
                     System.err.println("Error procesando mercado para liga " + liga.getId() + ": " + e.getMessage());
