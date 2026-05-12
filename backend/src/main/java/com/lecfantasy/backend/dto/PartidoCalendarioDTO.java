@@ -14,4 +14,6 @@ public class PartidoCalendarioDTO {
     private String team2Logo;
     private LocalDateTime fecha;
     private String winTeam;
+    private Integer team1Score;
+    private Integer team2Score;
 }

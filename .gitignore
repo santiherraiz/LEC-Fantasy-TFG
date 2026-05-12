@@ -19,3 +19,7 @@ fandom-api-architect/
 GEMINI.md
 
 src/api/config.ts
+
+
+# Scripts
+simulate_season.sh

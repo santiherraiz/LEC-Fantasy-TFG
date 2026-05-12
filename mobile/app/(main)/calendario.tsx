@@ -149,7 +149,7 @@ export default function CalendarioScreen() {
           {calendario.map((jornada, jIdx) => (
             <View key={jornada.semana} className="mb-10">
               <View className="flex-row items-center mb-6">
-                <Text className="text-white font-black text-2xl italic uppercase tracking-tighter">Semana {jornada.semana}</Text>
+                <Text className="text-white font-black text-2xl italic uppercase tracking-tighter">Semana {jornada.semana || (jIdx + 1)}</Text>
                 <View className="flex-1 h-[1px] bg-accent-cyan/20 ml-4" />
               </View>
 
@@ -184,10 +184,14 @@ export default function CalendarioScreen() {
                             </View>
 
                             {/* Status Center */}
-                            <View className="items-center px-4 min-w-[80px]">
+                            <View className="items-center px-2 min-w-[100px]">
                               {isPlayed ? (
-                                <View className="bg-midnight px-2 py-1 rounded-md border border-white/5">
-                                  <Text className="text-gray-500 font-black text-[10px]">FINAL</Text>
+                                <View className="flex-row items-center">
+                                  <Text className="text-white font-black text-lg mx-1">{partido.team1Score}</Text>
+                                  <View className="bg-midnight px-2 py-1 rounded-md border border-white/5 mx-1">
+                                    <Text className="text-gray-500 font-black text-[10px]">FINAL</Text>
+                                  </View>
+                                  <Text className="text-white font-black text-lg mx-1">{partido.team2Score}</Text>
                                 </View>
                               ) : (
                                 <Text className="text-accent-cyan font-black text-sm">{new Date(partido.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })}</Text>

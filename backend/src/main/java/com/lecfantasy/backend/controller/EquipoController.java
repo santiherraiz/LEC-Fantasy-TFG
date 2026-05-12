@@ -33,13 +33,18 @@ public class EquipoController {
     }
 
     @GetMapping("/ranking")
-    public ResponseEntity<List<RankingDTO>> obtenerRanking(@RequestParam Long ligaId) {
-        return ResponseEntity.ok(equipoService.obtenerRanking(ligaId));
+    public ResponseEntity<List<RankingDTO>> obtenerRanking(@RequestParam Long ligaId, @RequestParam(required = false) Long jornadaId) {
+        return ResponseEntity.ok(equipoService.obtenerRanking(ligaId, jornadaId));
     }
 
     // Nuevo endpoint para ver el equipo de un rival
     @GetMapping("/rival/{equipoId}")
     public ResponseEntity<?> obtenerEquipoRival(@PathVariable Long equipoId) {
         return ResponseEntity.ok(equipoService.obtenerEquipoRival(equipoId));
+    }
+
+    @GetMapping("/{equipoId}/jornada/{jornadaId}")
+    public ResponseEntity<?> obtenerEquipoJornada(@PathVariable Long equipoId, @PathVariable Long jornadaId) {
+        return ResponseEntity.ok(equipoService.obtenerDetalleEquipoJornada(equipoId, jornadaId));
     }
 }

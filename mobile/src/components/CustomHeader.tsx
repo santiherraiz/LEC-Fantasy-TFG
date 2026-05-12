@@ -29,7 +29,11 @@ export default function CustomHeader({ title, ligaNombre, showBackButton, onBack
     } else {
       // Safely toggle drawer
       try {
-        navigation.dispatch(DrawerActions.toggleDrawer());
+        if (navigation) {
+          navigation.dispatch(DrawerActions.toggleDrawer());
+        } else {
+          console.warn("Navigation object not available for toggleDrawer");
+        }
       } catch (e) {
         console.warn("Navigation drawer context not found", e);
       }

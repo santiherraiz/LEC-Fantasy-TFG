@@ -8,10 +8,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import com.lecfantasy.backend.entity.Jugador;
-import com.lecfantasy.backend.entity.Jornada;
 import com.lecfantasy.backend.repository.JugadorRepository;
 import com.lecfantasy.backend.repository.EstadisticaPartidoRepository;
-import com.lecfantasy.backend.repository.JornadaRepository;
 import com.lecfantasy.backend.repository.PartidoRepository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,93 +32,80 @@ public class MercadoScheduler {
     private EstadisticaPartidoRepository estadisticaPartidoRepository;
 
     @Autowired
-    private JornadaRepository jornadaRepository;
+    private PartidoRepository partidoRepository;
 
     @Autowired
-    private PartidoRepository partidoRepository;
+    private PuntuacionService puntuacionService;
 
     // Se ejecuta cada día a las 04:00 AM
     @Scheduled(cron = "0 0 4 * * ?")
     @Transactional
     public void recalcularPreciosDiarios() {
-        System.out.println("📈 [MERCADO] Iniciando recalibración de precios diarios (ALTA VOLATILIDAD)...");
+        System.out.println("📈 [MERCADO] Iniciando motor de fluctuación (FASE 2 & 3)...");
 
         List<Jugador> todosLosJugadores = jugadorRepository.findAll();
+        int semanaActual = puntuacionService.obtenerSemanaActual();
 
-        // Obtener las próximas jornadas activas para el factor Look-Ahead
-        List<Jornada> proximasJornadas = jornadaRepository
-                .findAllByEstadoNot(com.lecfantasy.backend.entity.JornadaEstado.FINALIZADA)
-                .stream()
-                .sorted((j1, j2) -> j1.getNumeroSemana().compareTo(j2.getNumeroSemana()))
-                .limit(2) // Miramos esta semana y la que viene
-                .collect(java.util.stream.Collectors.toList());
+        // 1. Calcular media de puntos de todos los jugadores en la jornada actual
+        double mediaPuntosGlobal = obtenerMediaPuntosJornada(semanaActual);
+        System.out.println("📊 [MERCADO] Media de puntos en semana " + semanaActual + ": " + mediaPuntosGlobal);
 
         for (Jugador jugador : todosLosJugadores) {
             try {
-                double precioAnterior = jugador.getPrecioActual() != null ? jugador.getPrecioActual()
+                double precioActual = jugador.getPrecioActual() != null ? jugador.getPrecioActual()
                         : jugador.getPrecioBase();
+                double variacionFinal = 0;
 
-                // --- PILAR 1: Valor Fundamental (Rendimiento Histórico) ---
-                List<com.lecfantasy.backend.entity.EstadisticaPartido> stats = estadisticaPartidoRepository
-                        .findByJugadorId(jugador.getId());
-                double totalPuntos = stats.stream()
-                        .mapToDouble(com.lecfantasy.backend.entity.EstadisticaPartido::getPuntosGenerados).sum();
-                long numSeries = stats.stream().map(s -> s.getPartido().getSerieId()).distinct().count();
+                // --- FACTOR 1: Rendimiento Relativo (60%) ---
+                double puntosJugador = obtenerPuntosJugadorSemana(jugador.getId(), semanaActual);
+                double diferenciaPuntos = puntosJugador - mediaPuntosGlobal;
 
-                double mediaPuntos = numSeries == 0 ? 0.0 : totalPuntos / numSeries;
-                double precioIdeal = mediaPuntos * 1000.0;
+                // Un punto por encima/debajo de la media equivale a un ~0.5% de variación base
+                // Si la media es baja y puntúa alto, el impacto es mayor
+                double impactoRendimiento = (diferenciaPuntos * 0.005) * 0.60;
+                variacionFinal += impactoRendimiento;
 
-                // AJUSTE AGRESIVO: Mover el precio un 15% hacia el precio ideal
-                double ajusteFundamental = (precioIdeal - precioAnterior) * 0.15;
-                double nuevoPrecio = precioAnterior + ajusteFundamental;
+                // --- FACTOR 2: Factor Calendario (25%) ---
+                long numSeriesProximaSemana = contarSeriesEquipoSemana(jugador.getEquipoLec().getId(),
+                        semanaActual + 1);
+                double impactoCalendario = 0;
+                if (numSeriesProximaSemana >= 2) {
+                    impactoCalendario = 0.02 * 0.25; // +2% diario ponderado
+                } else if (numSeriesProximaSemana == 0) {
+                    impactoCalendario = -0.01 * 0.25; // Freno al crecimiento
+                }
+                variacionFinal += impactoCalendario;
 
-                // --- PILAR 2: Factor Calendario (Context & Look-Ahead Aware) ---
-                double multiplicadorCalendarioTotal = 1.0;
+                // --- FACTOR 3: Oferta y Demanda (15%) ---
+                int compras = jugador.getComprasHoy() != null ? jugador.getComprasHoy() : 0;
+                double impactoDemanda = (compras * 0.01) * 0.15; // +1% por compra ponderado al 15%
+                variacionFinal += impactoDemanda;
 
-                for (int i = 0; i < proximasJornadas.size(); i++) {
-                    Jornada j = proximasJornadas.get(i);
-                    long numPartidos = partidoRepository.findByJornada(j).stream()
-                            .filter(p -> (p.getTeam1Entity() != null
-                                    && p.getTeam1Entity().getId().equals(jugador.getEquipoLec().getId())) ||
-                                    (p.getTeam2Entity() != null
-                                            && p.getTeam2Entity().getId().equals(jugador.getEquipoLec().getId())))
-                            .count();
+                // --- CASTIGO POR INACTIVIDAD ---
+                boolean suEquipoHaJugadoYa = equipoLecHaJugadoEnSemana(jugador.getEquipoLec().getId(), semanaActual);
+                boolean haJugado = haJugadoAlgunaVezEnSemana(jugador.getId(), semanaActual);
 
-                    double multEstaJornada = 1.0;
-                    if (numPartidos == 0)
-                        multEstaJornada = 0.85; // -15%
-                    else if (numPartidos == 1)
-                        multEstaJornada = 1.05; // +5%
-                    else if (numPartidos == 2)
-                        multEstaJornada = 1.15; // +15%
-                    else if (numPartidos >= 3)
-                        multEstaJornada = 1.25; // +25%
-
-                    // Si es la semana que viene, el impacto es la mitad (Ponderación por lejanía)
-                    if (i == 1) {
-                        multEstaJornada = 1.0 + ((multEstaJornada - 1.0) * 0.5);
-                    }
-
-                    multiplicadorCalendarioTotal *= multEstaJornada;
+                if (suEquipoHaJugadoYa && !haJugado) {
+                    variacionFinal -= 0.04; // Caída del 4% (entre 3% y 5%)
                 }
 
-                nuevoPrecio *= multiplicadorCalendarioTotal;
+                // --- APLICACIÓN Y MUROS DE SEGURIDAD (FASE 3) ---
+                // 1. El Tope Diario (+/- 5%)
+                if (variacionFinal > 0.05)
+                    variacionFinal = 0.05;
+                if (variacionFinal < -0.05)
+                    variacionFinal = -0.05;
 
-                // --- PILAR 3: Mercado Real (Usuarios) ---
-                // AJUSTE AGRESIVO: 2.000€ por cada compra/venta
-                nuevoPrecio += (jugador.getComprasHoy() != null ? jugador.getComprasHoy() : 0) * 2000.0;
-                nuevoPrecio -= (jugador.getVentasHoy() != null ? jugador.getVentasHoy() : 0) * 2000.0;
+                double nuevoPrecio = precioActual * (1 + variacionFinal);
 
-                // Restricciones: Suelo 1.000€ y Techo 100.000€
+                // 2. El Suelo de Cristal (1.000 €)
                 if (nuevoPrecio < 1000.0)
                     nuevoPrecio = 1000.0;
-                if (nuevoPrecio > 100000.0)
-                    nuevoPrecio = 100000.0;
 
-                // Actualizar tendencia
-                if (nuevoPrecio > precioAnterior + 10) { // Margen de 10€ para evitar fluctuaciones por redondeo
+                // Actualizar tendencia para la UI
+                if (nuevoPrecio > precioActual * 1.001) {
                     jugador.setTendencia("SUBE");
-                } else if (nuevoPrecio < precioAnterior - 10) {
+                } else if (nuevoPrecio < precioActual * 0.999) {
                     jugador.setTendencia("BAJA");
                 } else {
                     jugador.setTendencia("ESTABLE");
@@ -135,11 +120,53 @@ public class MercadoScheduler {
                 jugadorRepository.save(jugador);
 
             } catch (Exception e) {
-                System.err.println("Error recalibrando precio para " + jugador.getNickname() + ": " + e.getMessage());
-                e.printStackTrace();
+                System.err.println("Error en motor económico para " + jugador.getNickname() + ": " + e.getMessage());
             }
         }
-        System.out.println("✅ [MERCADO] Recalibración agresiva completada.");
+        System.out.println("✅ [MERCADO] Recalibración económica completada.");
+    }
+
+    private double obtenerMediaPuntosJornada(int semana) {
+        return estadisticaPartidoRepository.findAll().stream()
+                .filter(s -> s.getPartido().getJornada() != null
+                        && s.getPartido().getJornada().getNumeroSemana() == semana)
+                .mapToDouble(com.lecfantasy.backend.entity.EstadisticaPartido::getPuntosGenerados)
+                .average().orElse(0.0);
+    }
+
+    private double obtenerPuntosJugadorSemana(Long jugadorId, int semana) {
+        return estadisticaPartidoRepository.findByJugadorId(jugadorId).stream()
+                .filter(s -> s.getPartido().getJornada() != null
+                        && s.getPartido().getJornada().getNumeroSemana() == semana)
+                .mapToDouble(com.lecfantasy.backend.entity.EstadisticaPartido::getPuntosGenerados)
+                .sum();
+    }
+
+    private boolean haJugadoAlgunaVezEnSemana(Long jugadorId, int semana) {
+        return estadisticaPartidoRepository.findByJugadorId(jugadorId).stream()
+                .anyMatch(s -> s.getPartido().getJornada() != null
+                        && s.getPartido().getJornada().getNumeroSemana() == semana);
+    }
+
+    private boolean equipoLecHaJugadoEnSemana(Long equipoLecId, int semana) {
+        return estadisticaPartidoRepository.findAll().stream()
+                .anyMatch(s -> s.getPartido().getJornada() != null &&
+                        s.getPartido().getJornada().getNumeroSemana() == semana &&
+                        s.getPartido().isEstadisticasImportadas() &&
+                        ((s.getPartido().getTeam1Entity() != null
+                                && s.getPartido().getTeam1Entity().getId().equals(equipoLecId)) ||
+                                (s.getPartido().getTeam2Entity() != null
+                                        && s.getPartido().getTeam2Entity().getId().equals(equipoLecId))));
+    }
+
+    private long contarSeriesEquipoSemana(Long equipoLecId, int semana) {
+        return partidoRepository.findAll().stream()
+                .filter(p -> p.getJornada() != null && p.getJornada().getNumeroSemana() == semana)
+                .filter(p -> (p.getTeam1Entity() != null && p.getTeam1Entity().getId().equals(equipoLecId)) ||
+                        (p.getTeam2Entity() != null && p.getTeam2Entity().getId().equals(equipoLecId)))
+                .map(com.lecfantasy.backend.entity.Partido::getSerieId)
+                .distinct()
+                .count();
     }
 
     // Se ejecuta cada minuto

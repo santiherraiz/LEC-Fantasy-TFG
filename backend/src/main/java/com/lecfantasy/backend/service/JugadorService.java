@@ -91,7 +91,23 @@ public class JugadorService {
                         nuevoJugador.setNickname(nickname);
                         nuevoJugador.setNombreReal(nombreReal != null && !nombreReal.isEmpty() ? nombreReal : nickname);
                         nuevoJugador.setRol(rol);
-                        nuevoJugador.setPrecioBase(5000.0);
+                        
+                        // FASE 1: Configuración Inicial (Asimetría de Mercado)
+                        // Tier S (Estrellas): ~35.000 € (G2, FNC, VIT)
+                        // Tier A/B (Medios): ~15.000 €
+                        // Tier C (Novatos): ~5.000 €
+                        double precioBase = 5000.0;
+                        String team = title.getTeam();
+                        if (team != null) {
+                            if (team.contains("G2") || team.contains("Fnatic") || team.contains("Vitality")) {
+                                precioBase = 35000.0; // Tier S
+                            } else if (team.contains("Karmine") || team.contains("Heretics") || team.contains("KOI") || team.contains("MAD")) {
+                                precioBase = 15000.0; // Tier A/B
+                            }
+                        }
+                        
+                        nuevoJugador.setPrecioBase(precioBase);
+                        nuevoJugador.setPrecioActual(precioBase);
 
                         // Usamos el método centralizado de PuntuacionService que ya tiene la lógica HD
                         EquipoLec el = puntuacionService.getOrCreateEquipo(title.getTeam());

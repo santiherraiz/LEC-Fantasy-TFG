@@ -142,6 +142,8 @@ export interface PartidoCalendario {
   team2Logo: string;
   fecha: string;
   winTeam: string | null;
+  team1Score?: number;
+  team2Score?: number;
 }
 
 export interface DiaCalendario {
@@ -152,5 +154,30 @@ export interface DiaCalendario {
 export interface JornadaCalendario {
   semana: number;
   dias: DiaCalendario[];
+}
+
+export interface JugadorPuntosDTO {
+  idJugador: number;
+  nickname: string;
+  rol: string;
+  imagenUrl: string | null;
+  puntosSemanales: number;
+  equipoLec: string;
+}
+
+export interface EquipoJornadaDTO {
+  equipoId: number;
+  nombreEquipo: string;
+  nombreUsuario: string;
+  puntosTotalesJornada: number;
+  jugadores: JugadorPuntosDTO[];
+}
+
+export interface Jornada {
+  id: number;
+  numeroSemana: number;
+  estado: "PROGRAMADA" | "BLOQUEADA" | "PROCESANDO" | "FINALIZADA";
+  fechaInicio: string;
+  fechaFin: string;
 }
 

@@ -93,7 +93,7 @@ public class LigaService {
     private void crearEquipoEnLiga(Usuario usuario, Liga liga) {
         Equipo equipo = new Equipo();
         equipo.setNombreEquipo("Equipo de " + usuario.getNickname());
-        equipo.setPresupuestoDisponible(50000.0);
+        equipo.setPresupuestoDisponible(40000.0);
         equipo.setPuntuacionTotal(0.0);
         equipo.setUsuario(usuario);
         equipo.setLiga(liga);
@@ -106,8 +106,8 @@ public class LigaService {
         log.info("Generando plantilla inicial para el equipo {} de la liga {}", equipo.getId(),
                 equipo.getLiga().getId());
         String[] roles = { "TOP", "JUNGLE", "MID", "BOT", "SUPPORT" };
-        double targetValue = 25000.0;
-        double variance = 4000.0;
+        double targetValue = 60000.0;
+        double variance = 10000.0;
         int maxAttempts = 50;
 
         Random random = new Random();

@@ -9,10 +9,15 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.core.env.Environment;
+import java.util.Arrays;
 import java.util.List;
 
 @Component
 public class JornadaScheduler {
+
+    @Autowired
+    private Environment env;
 
     @Autowired
     private JornadaService jornadaService;
@@ -29,7 +34,7 @@ public class JornadaScheduler {
 
     /**
      * ¡Magia! En cuanto el servidor arranca, se sincroniza todo solo.
-     * ESTÁ COMPROBADO: ApplicationReadyEvent garantiza que la DB esté lista.
+     * EXCEPCIÓN: En modo demo no sincronizamos al arrancar para que el usuario sea el "Dios del Tiempo".
      */
     @EventListener(ApplicationReadyEvent.class)
     public void alArrancar() {
@@ -67,7 +72,12 @@ public class JornadaScheduler {
         }
 
         // 3. Procesamiento Live
-        // Nota: Solo importa stats si hay partidos pendientes para ahorrar consumo
+        if (Arrays.asList(env.getActiveProfiles()).contains("demo")) {
+            // En demo, necesitamos re-importar el calendario a menudo para que los partidos
+            // "descubran" su ganador a medida que el reloj avanza.
+            puntuacionService.importarPartidosDeLeaguepedia();
+        }
+        
         puntuacionService.importarEstadisticasDeLeaguepedia();
         puntuacionService.calcularPuntos();
 

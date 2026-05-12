@@ -3,11 +3,16 @@ package com.lecfantasy.backend.service;
 import com.lecfantasy.backend.dto.EquipoDetalleDTO;
 import com.lecfantasy.backend.dto.RankingDTO;
 import com.lecfantasy.backend.dto.EquipoRivalDTO;
+import com.lecfantasy.backend.dto.EquipoJornadaDTO;
 import com.lecfantasy.backend.entity.Equipo;
 import com.lecfantasy.backend.entity.Plantilla;
+import com.lecfantasy.backend.entity.HistoricoAlineacion;
+import com.lecfantasy.backend.entity.Jornada;
 import com.lecfantasy.backend.entity.EstadoAlineacion;
 import com.lecfantasy.backend.repository.EquipoRepository;
 import com.lecfantasy.backend.repository.PlantillaRepository;
+import com.lecfantasy.backend.repository.JornadaRepository;
+import com.lecfantasy.backend.repository.HistoricoAlineacionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
@@ -26,6 +31,12 @@ public class EquipoService {
 
     @Autowired
     private PlantillaRepository plantillaRepository;
+
+    @Autowired
+    private JornadaRepository jornadaRepository;
+
+    @Autowired
+    private HistoricoAlineacionRepository historicoAlineacionRepository;
 
     public EquipoDetalleDTO obtenerDetalleEquipo(Long usuarioId, Long ligaId) {
         log.debug("Obteniendo detalle de equipo para usuarioId: {} y ligaId: {}", usuarioId, ligaId);
@@ -89,7 +100,51 @@ public class EquipoService {
         return dto;
     }
 
-    public List<RankingDTO> obtenerRanking(Long ligaId) {
+    public EquipoJornadaDTO obtenerDetalleEquipoJornada(Long equipoId, Long jornadaId) {
+        Equipo equipo = equipoRepository.findById(equipoId)
+                .orElseThrow(() -> new RuntimeException("Equipo no encontrado"));
+        
+        Jornada jornada = jornadaRepository.findById(jornadaId)
+                .orElseThrow(() -> new RuntimeException("Jornada no encontrada"));
+
+        List<HistoricoAlineacion> historicos = historicoAlineacionRepository.findByEquipoIdAndJornada(equipoId, jornada);
+
+        EquipoJornadaDTO dto = new EquipoJornadaDTO();
+        dto.setEquipoId(equipo.getId());
+        dto.setNombreEquipo(equipo.getNombreEquipo());
+        dto.setNombreUsuario(equipo.getUsuario().getNickname());
+
+        List<EquipoJornadaDTO.JugadorPuntosDTO> jugadores = historicos.stream()
+                .filter(h -> h.getEstado() == EstadoAlineacion.TITULAR)
+                .map(h -> {
+                    EquipoJornadaDTO.JugadorPuntosDTO jDto = new EquipoJornadaDTO.JugadorPuntosDTO();
+                    jDto.setIdJugador(h.getJugador().getId());
+                    jDto.setNickname(h.getJugador().getNickname());
+                    jDto.setRol(h.getJugador().getRol());
+                    jDto.setImagenUrl(h.getJugador().getImagenUrl());
+                    jDto.setPuntosSemanales(h.getPuntosSemanales());
+                    jDto.setEquipoLec(h.getJugador().getEquipoLec() != null ? h.getJugador().getEquipoLec().getNombre() : "S/E");
+                    return jDto;
+                }).collect(Collectors.toList());
+
+        dto.setJugadores(jugadores);
+        dto.setPuntosTotalesJornada(jugadores.stream().mapToDouble(EquipoJornadaDTO.JugadorPuntosDTO::getPuntosSemanales).sum());
+
+        return dto;
+    }
+
+    public List<RankingDTO> obtenerRanking(Long ligaId, Long jornadaId) {
+        if (jornadaId != null) {
+            List<Object[]> resultados = historicoAlineacionRepository.findRankingByJornada(ligaId, jornadaId);
+            return resultados.stream().map(r -> {
+                RankingDTO dto = new RankingDTO();
+                dto.setEquipoId((Long) r[0]);
+                dto.setNombreUsuario((String) r[1]);
+                dto.setPuntosTotales((Double) r[2]);
+                return dto;
+            }).collect(Collectors.toList());
+        }
+
         List<Equipo> equipos = equipoRepository.findAllByLigaIdOrderByPuntuacionTotalDesc(ligaId);
 
         return equipos.stream().map(e -> {

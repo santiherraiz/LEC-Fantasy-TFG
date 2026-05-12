@@ -93,9 +93,12 @@ public class PuntuacionService {
         return equipoLecRepository.save(e);
     }
 
+    @Autowired private ClockService clockService;
+
     public int obtenerSemanaActual() {
         // Primero, intentamos obtener la semana más alta que ya tenga estadísticas calculadas
         Integer maxSemanaConStats = estadisticaPartidoRepository.findMaxSemanaConStats();
+        
         if (maxSemanaConStats != null && maxSemanaConStats > 0) {
             return maxSemanaConStats;
         }
@@ -214,8 +217,10 @@ public class PuntuacionService {
         return "Cálculo finalizado para " + seriesProcesadas + " series.";
     }
 
-    private void actualizarRankingGlobal() {
+    @Transactional
+    public void actualizarRankingGlobal() {
         List<HistoricoAlineacion> todosLosHistoricos = historicoAlineacionRepository.findAll();
+        
         Map<Equipo, Double> nuevosTotales = new HashMap<>();
 
         for (HistoricoAlineacion ha : todosLosHistoricos) {
@@ -227,9 +232,10 @@ public class PuntuacionService {
             }
         }
 
-        nuevosTotales.forEach((equipo, total) -> {
-            equipo.setPuntuacionTotal(total);
-            equipoRepository.save(equipo);
+        // Resetear a 0 primero para los equipos que no tengan puntos en el rango actual
+        equipoRepository.findAll().forEach(e -> {
+            e.setPuntuacionTotal(nuevosTotales.getOrDefault(e, 0.0));
+            equipoRepository.save(e);
         });
     }
 
@@ -297,20 +303,41 @@ public class PuntuacionService {
                 for (PartidoLeaguepediaDTO.CargoItem item : body.getCargoquery()) {
                     PartidoLeaguepediaDTO.PartidoData d = item.getTitle();
                     Optional<Partido> po = partidoRepository.findById(d.getGameId());
+                    
+                    // Si el partido ya existe y ya tiene puntos calculados, no lo tocamos
+                    if (po.isPresent() && po.get().isPuntosCalculados()) continue;
+                    
                     Partido p = po.orElse(new Partido());
                     p.setGameId(d.getGameId()); p.setTeam1(d.getTeam1()); p.setTeam2(d.getTeam2());
-                    p.setWinTeam(d.getWinTeam()); p.setLossTeam(d.getLossTeam()); 
                     
                     p.setTeam1Entity(getOrCreateEquipo(d.getTeam1()));
                     p.setTeam2Entity(getOrCreateEquipo(d.getTeam2()));
-                    p.setWinTeamEntity(getOrCreateEquipo(d.getWinTeam()));
-                    p.setLossTeamEntity(getOrCreateEquipo(d.getLossTeam()));
 
                     if (d.getDateTimeUtc() != null) {
-                        p.setFechaUtc(LocalDateTime.parse(d.getDateTimeUtc().replace(" ", "T")));
+                        LocalDateTime fechaPartido = LocalDateTime.parse(d.getDateTimeUtc().replace(" ", "T"));
+                        p.setFechaUtc(fechaPartido);
+
+                        // LÓGICA DIOS DEL TIEMPO:
+                        // Solo importamos ganadores si el partido YA ha ocurrido en nuestro tiempo virtual.
+                        if (fechaPartido.isBefore(clockService.ahora())) {
+                            p.setWinTeam(d.getWinTeam());
+                            p.setLossTeam(d.getLossTeam());
+                            p.setWinTeamEntity(getOrCreateEquipo(d.getWinTeam()));
+                            p.setLossTeamEntity(getOrCreateEquipo(d.getLossTeam()));
+                        } else {
+                            // Si aún es "futuro", nos aseguramos de que no tenga ganador (por si el reloj se mueve atrás)
+                            p.setWinTeam(null);
+                            p.setLossTeam(null);
+                            p.setWinTeamEntity(null);
+                            p.setLossTeamEntity(null);
+                        }
                     }
                     p.setSerieId(d.getGameId().contains("_") ? d.getGameId().substring(0, d.getGameId().lastIndexOf("_")) : d.getGameId());
-                    jornadaRepository.findByNumeroSemana(extraerSemana(d.getGameId())).ifPresent(p::setJornada);
+                    
+                    // Asignación de semana más robusta
+                    int semana = extraerSemana(d.getGameId());
+                    jornadaRepository.findByNumeroSemana(semana).ifPresent(p::setJornada);
+                    
                     partidoRepository.save(p);
                 }
             }
@@ -318,15 +345,24 @@ public class PuntuacionService {
     }
 
     private int extraerSemana(String gid) {
-        if (gid.toLowerCase().contains("week")) {
+        String lowerGid = gid.toLowerCase();
+        
+        // Formato estándar: LEC/2026 Season/Spring Season/Week 1_1
+        if (lowerGid.contains("week")) {
             try {
-                int idx = gid.toLowerCase().indexOf("week");
+                int idx = lowerGid.indexOf("week");
                 String sub = gid.substring(idx + 4).trim();
+                // Tomamos solo los dígitos que siguen a "Week "
                 StringBuilder sb = new StringBuilder();
-                for (char c : sub.toCharArray()) { if (Character.isDigit(c)) sb.append(c); else if (sb.length() > 0) break; }
-                return sb.length() > 0 ? Integer.parseInt(sb.toString()) : 1;
+                for (int i = 0; i < sub.length(); i++) {
+                    char c = sub.charAt(i);
+                    if (Character.isDigit(c)) sb.append(c);
+                    else break; 
+                }
+                if (sb.length() > 0) return Integer.parseInt(sb.toString());
             } catch (Exception e) {}
         }
+        
         return 1;
     }
 
@@ -337,7 +373,15 @@ public class PuntuacionService {
         RestTemplate rt = new RestTemplate();
         ObjectMapper m = new ObjectMapper(); m.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         
+        LocalDateTime ahoraVirtual = clockService.ahora();
+
         for (Partido p : pendientes) {
+            // LÓGICA DIOS DEL TIEMPO:
+            // No intentamos importar estadísticas de un partido que aún no ha ocurrido
+            if (p.getFechaUtc() != null && p.getFechaUtc().isAfter(ahoraVirtual)) {
+                continue;
+            }
+
             try {
                 String url = "https://lol.fandom.com/api.php?action=cargoquery&format=json&tables=ScoreboardGames=SG,ScoreboardPlayers=SP&fields=SP.GameId,SP.Link,SP.Team,SP.Kills,SP.Deaths,SP.Assists,SP.CS,SP.Gold&join_on=SG.GameId=SP.GameId&where=SG.GameId='" + p.getGameId() + "'&limit=500";
                 HttpHeaders h = new HttpHeaders(); h.set("User-Agent", "Mozilla/5.0"); h.set(HttpHeaders.COOKIE, MIS_COOKIES);

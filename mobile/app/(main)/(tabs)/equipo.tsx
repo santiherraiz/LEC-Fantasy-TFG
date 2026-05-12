@@ -6,7 +6,7 @@ import { useAuthStore } from '../../../src/store/authStore';
 import { useToast } from '../../../src/context/ToastContext';
 import api from '../../../src/api/api';
 import { EquipoDetalleDTO, JugadorEnPlantillaDTO } from '../../../src/types';
-import { User, ArrowRightLeft, Shield, TrendingUp, Wallet, Map as MapIcon, Trash2, CircleDollarSign, Sword, Zap, Flame, Crosshair, LifeBuoy } from 'lucide-react-native';
+import { User, ArrowRightLeft, Shield, TrendingUp, Wallet, Map as MapIcon, Trash2, CircleDollarSign, Sword, Zap, Flame, Crosshair, LifeBuoy, Eye } from 'lucide-react-native';
 import CustomHeader from '../../../src/components/CustomHeader';
 import RosterRevealModal from '../../../src/components/RosterRevealModal';
 
@@ -270,12 +270,20 @@ export default function MiEquipoScreen() {
                 </View>
                 <Text className="text-neon-green text-lg font-black">{equipo?.presupuestoDisponible?.toLocaleString()} €</Text>
               </View>
-              <View className="flex-1 bg-surface p-4 rounded-3xl border border-surface-light/20 ml-2">
+              <View className="flex-1 bg-surface p-4 rounded-3xl border border-surface-light/20 ml-2 relative">
                 <View className="flex-row items-center mb-1">
                   <TrendingUp color="#00D1FF" size={14} />
                   <Text className="text-gray-500 text-[9px] font-bold uppercase ml-1.5">Puntos</Text>
                 </View>
-                <Text className="text-accent-cyan text-lg font-black">{Math.round(equipo?.puntuacionTotal ?? 0)} pts</Text>
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-accent-cyan text-lg font-black">{Math.round(equipo?.puntuacionTotal ?? 0)} pts</Text>
+                  <TouchableOpacity
+                    onPress={() => router.push(`/(main)/equipo-jornada/${equipo?.equipoId}`)}
+                    className="w-8 h-8 bg-accent-cyan/10 rounded-xl items-center justify-center border border-accent-cyan/20"
+                  >
+                    <Eye color="#00D1FF" size={14} />
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
 

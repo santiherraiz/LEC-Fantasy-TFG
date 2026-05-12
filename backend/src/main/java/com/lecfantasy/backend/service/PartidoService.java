@@ -17,21 +17,11 @@ public class PartidoService {
     @Autowired
     private PartidoRepository partidoRepository;
 
-    @Autowired
-    private ClockService clockService;
-
     public List<JornadaCalendarioDTO> obtenerCalendario() {
-        boolean esDemo = clockService.isModoDemoActivo();
         List<Partido> partidos = partidoRepository.findAll();
         
-        // Filtrar por modo: En demo solo queremos semanas > 10, en normal semanas <= 10
-        // (Basado en la convención que parece seguir el proyecto para separar demo de real)
         List<Partido> partidosFiltrados = partidos.stream()
                 .filter(p -> p.getJornada() != null)
-                .filter(p -> {
-                    int semana = p.getJornada().getNumeroSemana();
-                    return esDemo ? semana > 10 : semana <= 10;
-                })
                 .collect(Collectors.toList());
 
         Map<Integer, List<Partido>> porSemana = partidosFiltrados.stream()
@@ -52,17 +42,36 @@ public class PartidoService {
                 DiaCalendarioDTO diaDTO = new DiaCalendarioDTO();
                 diaDTO.setFecha(fecha);
                 
-                // Agrupar por serieId para mostrar solo el primer mapa de una serie (o el primero del día si no hay serie)
-                // En LEC normalmente son Bo1 o Bo3. Si es Bo3 queremos la hora de inicio del primero.
-                Collection<Partido> partidosUnicos = partidosDia.stream()
-                        .collect(Collectors.toMap(
-                                p -> p.getSerieId() != null ? p.getSerieId() : p.getGameId(),
-                                p -> p,
-                                (p1, p2) -> p1.getFechaUtc().isBefore(p2.getFechaUtc()) ? p1 : p2
-                        )).values();
+                // Agrupar por serieId para calcular el resultado global (2-0, 2-1, etc.)
+                Map<String, List<Partido>> porSerie = partidosDia.stream()
+                        .collect(Collectors.groupingBy(p -> p.getSerieId() != null ? p.getSerieId() : p.getGameId()));
 
-                List<PartidoCalendarioDTO> partidoDTOs = partidosUnicos.stream()
-                        .map(this::convertToDTO)
+                List<PartidoCalendarioDTO> partidoDTOs = porSerie.values().stream()
+                        .map(serie -> {
+                            // Usamos el primer partido para la información básica (hora, logos)
+                            Partido p1 = serie.stream()
+                                    .sorted(Comparator.comparing(Partido::getFechaUtc))
+                                    .findFirst()
+                                    .orElseThrow();
+                            
+                            PartidoCalendarioDTO dto = convertToDTO(p1);
+                            
+                            // Calcular scores
+                            int t1Wins = (int) serie.stream().filter(p -> p1.getTeam1().equals(p.getWinTeam())).count();
+                            int t2Wins = (int) serie.stream().filter(p -> p1.getTeam2().equals(p.getWinTeam())).count();
+                            
+                            dto.setTeam1Score(t1Wins);
+                            dto.setTeam2Score(t2Wins);
+                            
+                            // Determinar ganador de la serie si ha terminado
+                            // Si es Bo3 (serie.size() > 1 o detectado por serieId), necesitamos 2 victorias
+                            // Si es Bo1, basta con 1 victoria
+                            if (t1Wins > t2Wins) dto.setWinTeam(p1.getTeam1());
+                            else if (t2Wins > t1Wins) dto.setWinTeam(p1.getTeam2());
+                            else dto.setWinTeam(null);
+                            
+                            return dto;
+                        })
                         .sorted(Comparator.comparing(PartidoCalendarioDTO::getFecha))
                         .collect(Collectors.toList());
                 

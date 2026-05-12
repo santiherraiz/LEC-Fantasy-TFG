@@ -11,7 +11,7 @@ import java.util.List;
 @Repository
 public interface EstadisticaPartidoRepository extends JpaRepository<EstadisticaPartido, Long> {
 
-    @Query("SELECT MAX(ep.partido.jornada.numeroSemana) FROM EstadisticaPartido ep WHERE ep.partido.jornada.numeroSemana < 90")
+    @Query("SELECT MAX(ep.partido.jornada.numeroSemana) FROM EstadisticaPartido ep")
     Integer findMaxSemanaConStats();
 
     @Query("SELECT ep FROM EstadisticaPartido ep " +

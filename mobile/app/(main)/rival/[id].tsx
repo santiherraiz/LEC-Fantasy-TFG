@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, Image, TouchableOpacity, ActivityIndicator, Alert, Dimensions, RefreshControl, ImageBackground, StyleSheet, DimensionValue } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Zap,
@@ -11,7 +11,8 @@ import {
   Shield,
   TrendingUp,
   Map as MapIcon,
-  Wallet
+  Wallet,
+  Eye
 } from 'lucide-react-native';
 import Animated, {
   FadeInDown,
@@ -48,13 +49,16 @@ export default function RivalTeamScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { showToast } = useToast();
+  const { user } = useAuthStore();
   const [equipo, setEquipo] = useState<EquipoRivalDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    fetchEquipoRival();
-  }, [id]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchEquipoRival();
+    }, [id])
+  );
 
   const fetchEquipoRival = async () => {
     try {
@@ -116,6 +120,7 @@ export default function RivalTeamScreen() {
 
   if (!equipo) return null;
 
+  const isOwnTeam = user?.id === equipo?.usuarioId;
   const titulares = equipo.jugadores.filter(j => j.estado === 'TITULAR');
   const banquillo = equipo.jugadores.filter(j => j.estado === 'BANQUILLO');
   const valorPlantilla = equipo.jugadores.reduce((acc, j) => acc + (j.precioActual || j.precioBase), 0);
@@ -144,7 +149,7 @@ export default function RivalTeamScreen() {
 
   return (
     <View className="flex-1 bg-midnight">
-      <CustomHeader title="Equipo Rival" showBackButton />
+      <CustomHeader title={isOwnTeam ? "Mi Perfil" : "Equipo Rival"} showBackButton />
 
       <ScrollView
         className="flex-1"
@@ -161,7 +166,9 @@ export default function RivalTeamScreen() {
               <User color="#00D1FF" size={40} />
             </View>
             <View className="ml-6 flex-1">
-              <Text className="text-gray-500 text-[10px] font-black uppercase tracking-[3px] mb-1">Manager de la Liga</Text>
+              <Text className="text-gray-500 text-[10px] font-black uppercase tracking-[3px] mb-1">
+                {isOwnTeam ? "Tu perfil de Manager" : "Manager de la Liga"}
+              </Text>
               <Text className="text-white font-black text-4xl italic uppercase tracking-tighter leading-none" numberOfLines={1}>
                 {equipo.nombreUsuario}
               </Text>
@@ -175,9 +182,17 @@ export default function RivalTeamScreen() {
                 <TrendingUp color="#00D1FF" size={14} />
                 <Text className="text-gray-500 text-[9px] font-black uppercase tracking-widest ml-2">Puntos Totales</Text>
               </View>
-              <View className="flex-row items-end">
-                <Text className="text-white text-3xl font-black italic">{Math.round(equipo.puntosTotales)}</Text>
-                <Text className="text-accent-cyan font-black mb-1 ml-1.5 text-[10px]">PTS</Text>
+              <View className="flex-row items-end justify-between">
+                <View className="flex-row items-end">
+                  <Text className="text-white text-3xl font-black italic">{Math.round(equipo.puntosTotales)}</Text>
+                  <Text className="text-accent-cyan font-black mb-1 ml-1.5 text-[10px]">PTS</Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => router.push(`/(main)/equipo-jornada/${equipo.id}`)}
+                  className="w-10 h-10 bg-accent-cyan/10 rounded-2xl items-center justify-center border border-accent-cyan/20"
+                >
+                  <Eye color="#00D1FF" size={18} />
+                </TouchableOpacity>
               </View>
             </View>
             <View className="flex-1 bg-surface/80 p-5 rounded-[32px] border border-surface-light/20">
@@ -243,7 +258,7 @@ export default function RivalTeamScreen() {
                     </View>
                     <View className="flex-1">
                       {jugador ? (
-                        <JugadorRivalCard jugador={jugador} onClausulazo={handleClausulazo} noMargin />
+                        <JugadorRivalCard jugador={jugador} onClausulazo={handleClausulazo} noMargin isOwnTeam={isOwnTeam} />
                       ) : (
                         <View className="flex-1 bg-midnight/30 p-5 rounded-[28px] border border-dashed border-surface-light/20 items-center justify-center">
                           <Text className="text-gray-600 font-black text-[10px] uppercase tracking-widest italic">Posición Vacía</Text>
@@ -264,7 +279,7 @@ export default function RivalTeamScreen() {
           {banquillo.length > 0 ? (
             banquillo.map((j, idx) => (
               <Animated.View key={j.id} entering={FadeInRight.delay((idx + 5) * 100)}>
-                <JugadorRivalCard jugador={j} onClausulazo={handleClausulazo} />
+                <JugadorRivalCard jugador={j} onClausulazo={handleClausulazo} isOwnTeam={isOwnTeam} />
               </Animated.View>
             ))
           ) : (
@@ -278,7 +293,7 @@ export default function RivalTeamScreen() {
   );
 }
 
-function JugadorRivalCard({ jugador, onClausulazo, noMargin }: { jugador: JugadorRival, onClausulazo: (id: number, nick: string, precioBase: number, precioActual: number) => void, noMargin?: boolean }) {
+function JugadorRivalCard({ jugador, onClausulazo, noMargin, isOwnTeam }: { jugador: JugadorRival, onClausulazo: (id: number, nick: string, precioBase: number, precioActual: number) => void, noMargin?: boolean, isOwnTeam?: boolean }) {
   const router = useRouter();
   const precio = jugador.precioActual || jugador.precioBase;
 
@@ -324,12 +339,14 @@ function JugadorRivalCard({ jugador, onClausulazo, noMargin }: { jugador: Jugado
 
       <View className="items-end">
         <Text className="text-white font-black text-xs mb-2 italic tracking-tighter">{precio.toLocaleString()} €</Text>
-        <TouchableOpacity
-          onPress={() => onClausulazo(jugador.id, jugador.nickname, jugador.precioBase, jugador.precioActual)}
-          className="border border-crimson/40 px-4 py-2.5 rounded-2xl items-center justify-center bg-crimson/5"
-        >
-          <Text className="text-crimson font-black text-[11px] uppercase tracking-tighter">Robar</Text>
-        </TouchableOpacity>
+        {!isOwnTeam && (
+          <TouchableOpacity
+            onPress={() => onClausulazo(jugador.id, jugador.nickname, jugador.precioBase, jugador.precioActual)}
+            className="border border-crimson/40 px-4 py-2.5 rounded-2xl items-center justify-center bg-crimson/5"
+          >
+            <Text className="text-crimson font-black text-[11px] uppercase tracking-tighter">Robar</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </TouchableOpacity>
   );

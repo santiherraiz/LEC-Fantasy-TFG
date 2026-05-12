@@ -16,11 +16,4 @@ public class ConfiguracionDemo {
 
     @Column(name = "fecha_simulada")
     private LocalDateTime fechaSimulada;
-
-    // Campos de backup para el "Universo Paralelo"
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "demo_backup_presupuestos", joinColumns = @JoinColumn(name = "config_id"))
-    @MapKeyColumn(name = "equipo_id")
-    @Column(name = "presupuesto")
-    private java.util.Map<Long, Double> backupPresupuestos = new java.util.HashMap<>();
 }
