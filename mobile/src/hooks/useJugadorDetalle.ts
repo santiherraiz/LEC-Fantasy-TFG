@@ -57,15 +57,17 @@ export const useJugadorDetalle = (id: string | string[] | undefined) => {
           onPress: async () => {
             setIsProcessing(true);
             try {
-              await api.post('/mercado/clausulazo', {
+              const res = await api.post('/mercado/clausulazo', {
                 ligaId: selectedLigaId,
-                jugadorId: jugador.id
+                jugadorId: jugador.id,
+                usuarioId: user?.id
               });
 
-              Alert.alert("✅ ÉXITO", `${jugador.nickname} ahora forma parte de tu equipo.`);
+              Alert.alert("✅ ÉXITO", res.data.message || `${jugador.nickname} ahora forma parte de tu equipo.`);
               fetchDetail();
             } catch (error: any) {
-              Alert.alert("❌ ERROR", error.response?.data || "No se pudo ejecutar el clausulazo");
+              const errorMsg = error.response?.data?.message || error.response?.data || "No se pudo ejecutar el clausulazo";
+              Alert.alert("❌ ERROR", errorMsg);
             } finally {
               setIsProcessing(false);
             }

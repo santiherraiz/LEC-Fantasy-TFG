@@ -7,6 +7,7 @@ import com.lecfantasy.backend.entity.Usuario;
 import com.lecfantasy.backend.service.UsuarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import com.lecfantasy.backend.dto.MessageResponse;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -32,9 +33,9 @@ public class UsuarioController {
     }
 
     @PostMapping("/registro")
-    public ResponseEntity<String> registrarUsuario(@RequestBody Usuario nuevoUsuario) {
+    public ResponseEntity<MessageResponse> registrarUsuario(@RequestBody Usuario nuevoUsuario) {
         usuarioService.registrarNuevoUsuario(nuevoUsuario);
-        return ResponseEntity.ok("Usuario registrado con éxito");
+        return ResponseEntity.ok(new MessageResponse("Usuario registrado con éxito"));
     }
 
     @GetMapping("/perfil/{id}")
@@ -44,8 +45,9 @@ public class UsuarioController {
     }
 
     @PostMapping("/update-push-token")
-    public ResponseEntity<String> actualizarPushToken(@RequestParam Long usuarioId, @RequestParam String token) {
+    public ResponseEntity<MessageResponse> actualizarPushToken(@RequestParam Long usuarioId,
+            @RequestParam String token) {
         usuarioService.actualizarPushToken(usuarioId, token);
-        return ResponseEntity.ok("Token actualizado correctamente");
+        return ResponseEntity.ok(new MessageResponse("Token actualizado correctamente"));
     }
 }

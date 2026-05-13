@@ -1,14 +1,15 @@
 package com.lecfantasy.backend.controller;
 
-import com.lecfantasy.backend.dto.PujaRequest;
 import com.lecfantasy.backend.dto.SubastaDTO;
 import com.lecfantasy.backend.dto.CatalogoJugadorDTO;
+import com.lecfantasy.backend.dto.MarketActionRequest;
 import com.lecfantasy.backend.entity.Jugador;
 import com.lecfantasy.backend.service.JugadorService;
 import com.lecfantasy.backend.service.MercadoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.lecfantasy.backend.dto.MessageResponse;
 
 import java.util.List;
 import java.util.Map;
@@ -26,21 +27,23 @@ public class MercadoController {
 
     @GetMapping("/subastas")
     public ResponseEntity<List<SubastaDTO>> obtenerSubastas(
-            @RequestParam Long ligaId, 
+            @RequestParam Long ligaId,
             @RequestParam Long usuarioId) {
         return ResponseEntity.ok(mercadoService.obtenerSubastasActivas(ligaId, usuarioId));
     }
 
     @PostMapping("/pujar")
-    public ResponseEntity<String> pujar(@RequestBody PujaRequest request) {
-        return ResponseEntity.ok(mercadoService.pujar(request));
+    public ResponseEntity<MessageResponse> pujar(@RequestBody MarketActionRequest request) {
+        String msg = mercadoService.pujar(request);
+        return ResponseEntity.ok(new MessageResponse(msg));
     }
 
     @DeleteMapping("/pujar")
-    public ResponseEntity<String> eliminarPuja(
-            @RequestParam Long subastaId, 
+    public ResponseEntity<MessageResponse> eliminarPuja(
+            @RequestParam Long subastaId,
             @RequestParam Long usuarioId) {
-        return ResponseEntity.ok(mercadoService.eliminarPuja(subastaId, usuarioId));
+        String msg = mercadoService.eliminarPuja(subastaId, usuarioId);
+        return ResponseEntity.ok(new MessageResponse(msg));
     }
 
     @GetMapping("/catalogo")
@@ -55,9 +58,9 @@ public class MercadoController {
     }
 
     @PostMapping("/vender")
-    public ResponseEntity<String> vender(@RequestBody com.lecfantasy.backend.dto.VentaRequest request) {
-        String mensaje = mercadoService.venderJugador(request.getEquipoId(), request.getJugadorId());
-        return ResponseEntity.ok(mensaje);
+    public ResponseEntity<MessageResponse> vender(@RequestBody MarketActionRequest request) {
+        String msg = mercadoService.venderJugador(request.getEquipoId(), request.getJugadorId());
+        return ResponseEntity.ok(new MessageResponse(msg));
     }
 
     @GetMapping("/equipos-lec")
@@ -72,8 +75,9 @@ public class MercadoController {
     }
 
     @PostMapping("/clausulazo")
-    public ResponseEntity<String> ejecutarClausulazo(@RequestBody com.lecfantasy.backend.dto.ClausulazoRequest request) {
-        String mensaje = mercadoService.ejecutarClausulazo(request.getCompradorUsuarioId(), request.getJugadorId(), request.getLigaId());
-        return ResponseEntity.ok(mensaje);
+    public ResponseEntity<MessageResponse> ejecutarClausulazo(@RequestBody MarketActionRequest request) {
+        String msg = mercadoService.ejecutarClausulazo(request.getUsuarioId(), request.getJugadorId(),
+                request.getLigaId());
+        return ResponseEntity.ok(new MessageResponse(msg));
     }
 }

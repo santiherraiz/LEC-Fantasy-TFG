@@ -55,13 +55,13 @@ export const useCatalogo = () => {
 
   // Extract unique teams and positions from data dynamically
   const availableTeams = useMemo(() => {
-    const teams = catalogo.map(item => item.jugador.equipoLec?.nombre).filter(Boolean);
-    return Array.from(new Set(teams)).sort();
+    const teams = catalogo.map(item => item.equipoLecNombre).filter(Boolean);
+    return Array.from(new Set(teams)).sort() as string[];
   }, [catalogo]);
 
   const availablePositions = useMemo(() => {
-    const positions = catalogo.map(item => item.jugador.rol).filter(Boolean);
-    return Array.from(new Set(positions)).sort();
+    const positions = catalogo.map(item => item.rol).filter(Boolean);
+    return Array.from(new Set(positions)).sort() as string[];
   }, [catalogo]);
 
   // Derived filtered data
@@ -72,28 +72,28 @@ export const useCatalogo = () => {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       result = result.filter(item =>
-        item.jugador.nickname.toLowerCase().includes(query)
+        item.nickname.toLowerCase().includes(query)
       );
     }
 
     // 2. Position Filter
     if (filterPos) {
-      result = result.filter(item => item.jugador.rol === filterPos);
+      result = result.filter(item => item.rol === filterPos);
     }
 
     // 3. Team Filter
     if (filterTeam) {
-      result = result.filter(item => item.jugador.equipoLec?.nombre === filterTeam);
+      result = result.filter(item => item.equipoLecNombre === filterTeam);
     }
 
     // 4. Sorting
     result.sort((a, b) => {
       const valA = sortType === 'PUNTOS'
         ? (a.puntosTotales || 0)
-        : (a.jugador.precioActual || a.jugador.precioBase || 0);
+        : (a.precioActual || 0);
       const valB = sortType === 'PUNTOS'
         ? (b.puntosTotales || 0)
-        : (b.jugador.precioActual || b.jugador.precioBase || 0);
+        : (b.precioActual || 0);
 
       return sortOrder === 'MAYOR'
         ? valB - valA

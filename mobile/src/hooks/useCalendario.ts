@@ -15,7 +15,6 @@ export const useCalendario = () => {
         api.get('/public/time')
       ]);
       setCalendario(calRes.data);
-      console.log("CALENDARIO DATA:", calRes.data.map((j: any) => ({ semana: j.semana, hasDias: !!j.dias })));
       setServerTime(new Date(timeRes.data.serverTime));
     } catch (error) {
       console.error("Error fetching data:", error);

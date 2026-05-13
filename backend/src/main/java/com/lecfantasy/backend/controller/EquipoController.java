@@ -1,13 +1,13 @@
 package com.lecfantasy.backend.controller;
 
-import com.lecfantasy.backend.dto.AlinearRequest;
 import com.lecfantasy.backend.dto.RankingDTO;
+import com.lecfantasy.backend.dto.MarketActionRequest;
 import com.lecfantasy.backend.service.EquipoService;
 import com.lecfantasy.backend.service.MercadoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import com.lecfantasy.backend.dto.MessageResponse;
 import java.util.List;
 
 @RestController
@@ -27,13 +27,14 @@ public class EquipoController {
     }
 
     @PutMapping("/alinear")
-    public ResponseEntity<String> gestionarAlineacion(@RequestBody AlinearRequest request) {
+    public ResponseEntity<MessageResponse> gestionarAlineacion(@RequestBody MarketActionRequest request) {
         String mensaje = mercadoService.cambiarEstadoAlineacion(request.getEquipoId(), request.getJugadorId());
-        return ResponseEntity.ok(mensaje);
+        return ResponseEntity.ok(new MessageResponse(mensaje));
     }
 
     @GetMapping("/ranking")
-    public ResponseEntity<List<RankingDTO>> obtenerRanking(@RequestParam Long ligaId, @RequestParam(required = false) Long jornadaId) {
+    public ResponseEntity<List<RankingDTO>> obtenerRanking(@RequestParam Long ligaId,
+            @RequestParam(required = false) Long jornadaId) {
         return ResponseEntity.ok(equipoService.obtenerRanking(ligaId, jornadaId));
     }
 

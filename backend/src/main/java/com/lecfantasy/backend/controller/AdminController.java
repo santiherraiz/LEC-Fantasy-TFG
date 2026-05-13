@@ -2,6 +2,7 @@ package com.lecfantasy.backend.controller;
 
 import com.lecfantasy.backend.service.JugadorService;
 import com.lecfantasy.backend.service.PuntuacionService;
+import com.lecfantasy.backend.dto.MessageResponse;
 import com.lecfantasy.backend.service.JornadaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -24,63 +25,63 @@ public class AdminController {
     private com.lecfantasy.backend.service.MercadoService mercadoService;
 
     @PostMapping("/mercado/refrescar")
-    public ResponseEntity<String> refrescarMercado() {
+    public ResponseEntity<MessageResponse> refrescarMercado() {
         mercadoService.forzarRefrescoMercado();
-        return ResponseEntity.ok("Mercado refrescado manualmente: subastas resueltas y nuevos jugadores generados.");
+        return ResponseEntity.ok(new MessageResponse("Mercado refrescado manualmente: subastas resueltas y nuevos jugadores generados."));
     }
 
     @PostMapping("/jornadas/sincronizar")
-    public ResponseEntity<String> sincronizarCalendario() {
+    public ResponseEntity<MessageResponse> sincronizarCalendario() {
         jornadaService.sincronizarCalendario();
-        return ResponseEntity.ok("Calendario de jornadas sincronizado con Leaguepedia.");
+        return ResponseEntity.ok(new MessageResponse("Calendario de jornadas sincronizado con Leaguepedia."));
     }
 
     @PostMapping("/puntuacion/snapshot/{semana}")
-    public ResponseEntity<String> hacerSnapshot(@PathVariable int semana) {
+    public ResponseEntity<MessageResponse> hacerSnapshot(@PathVariable int semana) {
         puntuacionService.hacerSnapshotSemana(semana);
-        return ResponseEntity.ok("Snapshot de la semana " + semana + " realizado con éxito.");
+        return ResponseEntity.ok(new MessageResponse("Snapshot de la semana " + semana + " realizado con éxito."));
     }
 
     @PostMapping("/calcular-puntos")
-    public ResponseEntity<String> calcularPuntos() {
+    public ResponseEntity<MessageResponse> calcularPuntos() {
         String resultado = puntuacionService.calcularPuntos();
-        return ResponseEntity.ok(resultado);
+        return ResponseEntity.ok(new MessageResponse(resultado));
     }
 
     @PostMapping("/importar-partidos")
-    public ResponseEntity<String> importarPartidos() {
+    public ResponseEntity<MessageResponse> importarPartidos() {
         puntuacionService.importarPartidosDeLeaguepedia();
-        return ResponseEntity.ok("Importación de partidos completada. Revisa la consola.");
+        return ResponseEntity.ok(new MessageResponse("Importación de partidos completada. Revisa la consola."));
     }
 
     @PostMapping("/importar-jugadores")
-    public ResponseEntity<String> forzarImportacion() {
+    public ResponseEntity<MessageResponse> forzarImportacion() {
         jugadorService.importarJugadoresDeLeaguepedia();
-        return ResponseEntity.ok("Proceso de importación de jugadores lanzado. Revisa la consola.");
+        return ResponseEntity.ok(new MessageResponse("Proceso de importación de jugadores lanzado. Revisa la consola."));
     }
 
     @PostMapping("/importar-estadisticas")
-    public ResponseEntity<String> importarEstadisticas() {
+    public ResponseEntity<MessageResponse> importarEstadisticas() {
         puntuacionService.importarEstadisticasDeLeaguepedia();
         return ResponseEntity
-                .ok("Proceso de importación (lote de 10) lanzado en segundo plano. Revisa los logs del servidor.");
+                .ok(new MessageResponse("Proceso de importación (lote de 10) lanzado en segundo plano. Revisa los logs del servidor."));
     }
 
     @PostMapping("/reset-importaciones")
-    public ResponseEntity<String> resetImportaciones() {
+    public ResponseEntity<MessageResponse> resetImportaciones() {
         puntuacionService.resetImportaciones();
-        return ResponseEntity.ok("Columna estadisticas_importadas reseteada a 0 para todos los partidos.");
+        return ResponseEntity.ok(new MessageResponse("Columna estadisticas_importadas reseteada a 0 para todos los partidos."));
     }
 
     @PostMapping("/reset-calculos")
-    public ResponseEntity<String> resetCalculos() {
+    public ResponseEntity<MessageResponse> resetCalculos() {
         puntuacionService.resetCalculos();
-        return ResponseEntity.ok("Columna puntos_calculados reseteada a 0 para todos los partidos.");
+        return ResponseEntity.ok(new MessageResponse("Columna puntos_calculados reseteada a 0 para todos los partidos."));
     }
 
     @PostMapping("/reset-total")
-    public ResponseEntity<String> resetTotal() {
+    public ResponseEntity<MessageResponse> resetTotal() {
         puntuacionService.resetTotal();
-        return ResponseEntity.ok("LIMPIEZA TOTAL: Estadísticas borradas, importaciones y cálculos reseteados.");
+        return ResponseEntity.ok(new MessageResponse("LIMPIEZA TOTAL: Estadísticas borradas, importaciones y cálculos reseteados."));
     }
 }

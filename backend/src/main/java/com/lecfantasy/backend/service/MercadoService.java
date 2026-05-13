@@ -95,7 +95,18 @@ public class MercadoService {
 
         return todos.stream().map(j -> {
             CatalogoJugadorDTO dto = new CatalogoJugadorDTO();
-            dto.setJugador(j);
+            dto.setId(j.getId());
+            dto.setNickname(j.getNickname());
+            dto.setRol(j.getRol());
+            dto.setPrecioActual(j.getPrecioActual());
+            dto.setTendencia(j.getTendencia());
+            dto.setImagenUrl(j.getImagenUrl());
+            
+            if (j.getEquipoLec() != null) {
+                dto.setEquipoLecNombre(j.getEquipoLec().getNombre());
+                dto.setEquipoLecLogo(j.getEquipoLec().getLogoUrl());
+            }
+
             dto.setPropietarioNickname(propietarios.get(j.getId()));
 
             List<EstadisticaPartido> stats = statsPorJugador.getOrDefault(j.getId(), Collections.emptyList());
@@ -111,14 +122,12 @@ public class MercadoService {
             dto.setPuntosTotales(total);
             dto.setPuntosMedia(Math.round(media * 10.0) / 10.0);
             
-            System.out.println("DEBUG: Jugador " + j.getNickname() + " - Puntos: " + total);
-
             return dto;
         }).collect(Collectors.toList());
     }
 
     @Transactional
-    public String pujar(PujaRequest request) {
+    public String pujar(MarketActionRequest request) {
         Subasta subasta = subastaRepository.findById(request.getSubastaId())
                 .orElseThrow(() -> new RuntimeException("Subasta no encontrada"));
 
@@ -370,19 +379,25 @@ public class MercadoService {
     @Transactional
     public void forzarRefrescoMercado() {
         log.info("FORZANDO refresco manual del mercado...");
-        // 1. Resolvemos las que ya deberían haber terminado
-        resolverSubastasExpiradas();
+        
+        // 1. Resolvemos TODAS las subastas que no estén finalizadas (incluidas las del futuro lejano)
+        List<Subasta> activas = subastaRepository.findByFinalizadaFalse();
+        log.info("Cerrando {} subastas activas para limpiar el mercado...", activas.size());
+        
+        for (Subasta s : activas) {
+            try {
+                // Forzamos el cierre resolviéndolas (el que haya pujado más se lo lleva, el resto recupera dinero)
+                self.resolverSubastaIndividual(s.getId());
+            } catch (Exception e) {
+                log.error("Error limpiando subasta {}: {}", s.getId(), e.getMessage());
+            }
+        }
 
-        // 2. Para cada liga, si no hay activas, generamos nuevas YA
+        // 2. Para cada liga, generamos subastas nuevas sincronizadas con el reloj actual
         List<Liga> ligas = ligaRepository.findAll();
         for (Liga liga : ligas) {
-            boolean tieneActivas = subastaRepository.existsByLigaIdAndFinalizadaFalse(liga.getId());
-            if (!tieneActivas) {
-                log.info("Liga {} sin subastas activas. Generando nuevas...", liga.getNombre());
-                initMercadoParaLiga(liga);
-            } else {
-                log.info("Liga {} todavía tiene subastas activas. No se generan nuevas.", liga.getNombre());
-            }
+            log.info("Liga {} - Generando nuevas subastas sincronizadas...", liga.getNombre());
+            initMercadoParaLiga(liga);
         }
     }
 

@@ -40,10 +40,10 @@ export default function CalendarioScreen() {
       >
         {/* Header Hero */}
         <View className="px-6 pt-6 pb-4">
-          <Text className="text-white text-4xl font-black tracking-tighter italic uppercase">Match Center</Text>
+          <Text className="text-white text-4xl font-black tracking-tighter italic uppercase">Calendario</Text>
           <View className="flex-row items-center mt-1">
             <View className="w-2 h-2 rounded-full bg-accent-cyan mr-2 animate-pulse" />
-            <Text className="text-gray-500 font-bold text-xs uppercase tracking-widest">Live Schedule 2026</Text>
+            <Text className="text-gray-500 font-bold text-xs uppercase tracking-widest">Horario Oficial 2026</Text>
           </View>
         </View>
 
@@ -61,9 +61,14 @@ export default function CalendarioScreen() {
           {calendario.map((jornada, jIdx) => (
             <View key={jornada.semana || jIdx} className="mb-10">
               <View className="flex-row items-center mb-6">
-                <Text className="text-white font-black text-2xl italic uppercase">
-                  Semana <Text className="text-accent-cyan">{jornada.semana || (jIdx + 1)}</Text>
-                </Text>
+                <View className="flex-row items-center">
+                  <Text className="text-white font-black text-2xl italic uppercase">
+                    Semana{' '}
+                  </Text>
+                  <Text className="text-accent-cyan font-black text-2xl italic uppercase">
+                    {jornada.semana || (jIdx + 1)}
+                  </Text>
+                </View>
                 <View className="flex-1 h-[1px] bg-accent-cyan/20 ml-4" />
               </View>
 

@@ -75,7 +75,14 @@ export interface Subasta {
 }
 
 export interface CatalogoJugador {
-  jugador: Jugador;
+  id: number;
+  nickname: string;
+  rol: string;
+  precioActual: number;
+  tendencia: string;
+  imagenUrl: string | null;
+  equipoLecNombre: string | null;
+  equipoLecLogo: string | null;
   propietarioNickname: string | null;
   puntosMedia: number;
   puntosTotales: number;

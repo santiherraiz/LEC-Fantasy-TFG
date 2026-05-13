@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import com.lecfantasy.backend.dto.MessageResponse;
 
 @RestController
 @RequestMapping("/api/demo")
@@ -28,9 +29,10 @@ public class DemoController {
      * Dispara fluctuación, resuelve subastas y hace snapshots si toca.
      */
     @PostMapping("/avanzar-dia")
-    public ResponseEntity<String> avanzarDia() {
+    public ResponseEntity<MessageResponse> avanzarDia() {
         if (!clockService.isModoDemoActivo()) {
-            return ResponseEntity.status(403).body("❌ El avance manual solo está permitido en Modo Demo.");
+            return ResponseEntity.status(403)
+                    .body(new MessageResponse("❌ El avance manual solo está permitido en Modo Demo."));
         }
 
         LocalDateTime anterior = clockService.ahora();
@@ -50,7 +52,8 @@ public class DemoController {
         // 3. Refrescar mercado (resuelve expiradas y genera nuevas)
         mercadoService.forzarRefrescoMercado();
 
-        return ResponseEntity.ok("⏰ TIEMPO AVANZADO: De " + anterior + " a " + nuevoTiempo + ". Mercado actualizado.");
+        return ResponseEntity.ok(new MessageResponse(
+                "⏰ TIEMPO AVANZADO: De " + anterior + " a " + nuevoTiempo + ". Mercado actualizado."));
     }
 
     /**
@@ -58,11 +61,12 @@ public class DemoController {
      * Útil para ponerse 1 min antes del cierre de mercado (16:00).
      */
     @PostMapping("/set-hora")
-    public ResponseEntity<String> setHora(@RequestParam int hora, @RequestParam int minuto) {
+    public ResponseEntity<MessageResponse> setHora(@RequestParam int hora, @RequestParam int minuto) {
         if (!clockService.isModoDemoActivo()) {
-            return ResponseEntity.status(403).body("❌ El ajuste de hora solo está permitido en Modo Demo.");
+            return ResponseEntity.status(403)
+                    .body(new MessageResponse("❌ El ajuste de hora solo está permitido en Modo Demo."));
         }
         demoService.establecerHora(hora, minuto);
-        return ResponseEntity.ok("🕒 Hora ajustada a las " + hora + ":" + minuto);
+        return ResponseEntity.ok(new MessageResponse("🕒 Hora ajustada a las " + hora + ":" + minuto));
     }
 }

@@ -69,7 +69,7 @@ export default function MiEquipoScreen() {
                 equipoId: equipo.equipoId,
                 jugadorId
               });
-              showToast(typeof response.data === 'string' ? response.data : 'Venta realizada con éxito', 'success');
+              showToast(response.data.message || 'Venta realizada con éxito', 'success');
               await fetchEquipo(true);
             } catch (error: any) {
               const errorData = error.response?.data;

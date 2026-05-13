@@ -125,7 +125,7 @@ export const useSubastas = () => {
         usuarioId: user?.id,
         cantidad: amount
       });
-      showToast(res.data, "success");
+      showToast(res.data.message || "Puja realizada", "success");
       setPujaModalVisible(false);
       fetchData();
     } catch (error: any) {
@@ -139,7 +139,7 @@ export const useSubastas = () => {
       const res = await api.delete('/mercado/pujar', {
         params: { subastaId: selectedSubasta.id, usuarioId: user?.id }
       });
-      showToast(res.data, "success");
+      showToast(res.data.message || "Puja retirada", "success");
       setDeleteModalVisible(false);
       fetchData();
     } catch (error: any) {

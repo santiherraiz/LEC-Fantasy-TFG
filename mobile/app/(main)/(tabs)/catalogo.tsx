@@ -185,7 +185,7 @@ export default function CatalogoScreen() {
       ) : (
         <FlatList
           data={filteredCatalogo}
-          keyExtractor={(item) => item.jugador.id.toString()}
+          keyExtractor={(item) => item.id.toString()}
           renderItem={renderJugador}
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
