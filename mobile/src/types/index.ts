@@ -24,6 +24,8 @@ export interface JugadorEnPlantillaDTO {
   estado: "TITULAR" | "BANQUILLO";
   imagenUrl: string | null;
   precio: number;
+  equipoLec: string;
+  puntos: number;
 }
 
 export interface EquipoDetalleDTO {

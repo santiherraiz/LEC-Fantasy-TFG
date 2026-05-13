@@ -21,6 +21,9 @@ public interface EstadisticaPartidoRepository extends JpaRepository<EstadisticaP
            "WHERE ep.jugador.id = :jugadorId")
     List<EstadisticaPartido> findByJugadorId(Long jugadorId);
 
+    @Query("SELECT COALESCE(SUM(ep.puntosGenerados), 0.0) FROM EstadisticaPartido ep WHERE ep.jugador.id = :jugadorId")
+    Double sumPuntosByJugadorId(Long jugadorId);
+
     List<EstadisticaPartido> findByPartidoJornada(Jornada jornada);
 
     List<EstadisticaPartido> findByPartidoJornadaNumeroSemana(Integer semana);

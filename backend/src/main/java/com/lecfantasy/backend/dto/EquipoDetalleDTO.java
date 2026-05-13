@@ -21,5 +21,7 @@ public class EquipoDetalleDTO {
         private String estado; // "TITULAR" o "BANQUILLO"
         private String imagenUrl;
         private Double precio;
+        private String equipoLec;
+        private Double puntos;
     }
 }

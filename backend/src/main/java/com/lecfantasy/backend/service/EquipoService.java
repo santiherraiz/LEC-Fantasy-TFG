@@ -13,6 +13,7 @@ import com.lecfantasy.backend.repository.EquipoRepository;
 import com.lecfantasy.backend.repository.PlantillaRepository;
 import com.lecfantasy.backend.repository.JornadaRepository;
 import com.lecfantasy.backend.repository.HistoricoAlineacionRepository;
+import com.lecfantasy.backend.repository.EstadisticaPartidoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +40,9 @@ public class EquipoService {
     @Autowired
     private HistoricoAlineacionRepository historicoAlineacionRepository;
 
+    @Autowired
+    private EstadisticaPartidoRepository estadisticaPartidoRepository;
+
     @Transactional(readOnly = true)
     public EquipoDetalleDTO obtenerDetalleEquipo(Long usuarioId, Long ligaId) {
         log.debug("Obteniendo detalle de equipo para usuarioId: {} y ligaId: {}", usuarioId, ligaId);
@@ -63,6 +67,8 @@ public class EquipoService {
                 dto.setRol(p.getJugador().getRol());
                 dto.setImagenUrl(p.getJugador().getImagenUrl());
                 dto.setPrecio(p.getJugador().getPrecioActual() != null ? p.getJugador().getPrecioActual() : p.getJugador().getPrecioBase());
+                dto.setEquipoLec(p.getJugador().getEquipoLec() != null ? p.getJugador().getEquipoLec().getNombre() : "S/E");
+                dto.setPuntos(estadisticaPartidoRepository.sumPuntosByJugadorId(p.getJugador().getId()));
             }
             dto.setEstado(p.getEstado() != null ? p.getEstado().name() : EstadoAlineacion.BANQUILLO.name());
             return dto;

@@ -9,107 +9,68 @@ import { EquipoDetalleDTO, JugadorEnPlantillaDTO } from '../../../src/types';
 import { User, ArrowRightLeft, Shield, TrendingUp, Wallet, Map as MapIcon, Trash2, CircleDollarSign, Sword, Zap, Flame, Crosshair, LifeBuoy, Eye } from 'lucide-react-native';
 import CustomHeader from '../../../src/components/CustomHeader';
 import RosterRevealModal from '../../../src/components/RosterRevealModal';
+import { PlayerCard } from '../../../src/components/PlayerCard';
 
 import MapaImage from '../../../assets/images/mapa.png';
 
-const ROLE_COORDINATES: Record<string, { top: DimensionValue, left: DimensionValue }> = {
-  'TOP': { top: '18%', left: '10%' },
-  'JUNGLE': { top: '46%', left: '22%' },
-  'MID': { top: '56%', left: '45%' },
-  'BOT': { top: '83%', left: '67%' },
-  'SUPPORT': { top: '88%', left: '82%' },
-};
-
-const ROLES_ORDEN = [
-  { key: 'TOP', label: 'TOP' },
-  { key: 'JUNGLE', label: 'JUNGLE' },
-  { key: 'MID', label: 'MID' },
-  { key: 'BOT', label: 'BOT' },
-  { key: 'SUPPORT', label: 'SUPP' }
-];
+import { useEquipo } from '../../../src/hooks/useEquipo';
+import { ROLE_COORDINATES, ROLES_ORDEN } from '../../../src/constants/layout';
 
 export default function MiEquipoScreen() {
   const router = useRouter();
-  const { user, selectedLigaId, selectedLigaNombre, pendingReveal, setPendingReveal } = useAuthStore();
+  const { selectedLigaNombre, pendingReveal, setPendingReveal } = useAuthStore();
   const { showToast } = useToast();
   const { width } = useWindowDimensions();
-  const [equipo, setEquipo] = useState<EquipoDetalleDTO | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [showReveal, setShowReveal] = useState(false);
 
   const MAP_SIZE = width;
 
-  const fetchEquipo = async () => {
-    if (!user || !selectedLigaId) return;
-    try {
-      const response = await api.get(`/equipos/mi-equipo/${user.id}`, {
-        params: { ligaId: selectedLigaId }
-      });
-      setEquipo(response.data);
-    } catch (error) {
-      console.error("Error al cargar equipo:", error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+  const {
+    equipo,
+    loading,
+    refreshing,
+    onRefresh,
+    fetchEquipo,
+    alinearJugador
+  } = useEquipo();
 
   useFocusEffect(
     useCallback(() => {
-      fetchEquipo();
-    }, [selectedLigaId])
+      fetchEquipo(true);
+    }, [fetchEquipo])
   );
 
-  // Comprobar si hay una revelación pendiente tras cargar el equipo
   useEffect(() => {
-    if (pendingReveal && equipo && equipo.jugadores.length > 0) {
+    if (pendingReveal) {
       setShowReveal(true);
       setPendingReveal(false);
     }
-  }, [pendingReveal, equipo]);
+  }, [pendingReveal]);
 
   const handleAlinear = async (jugadorId: number) => {
     if (!equipo?.equipoId) return;
-
-    try {
-      const response = await api.put('/equipos/alinear', {
-        equipoId: equipo.equipoId,
-        jugadorId
-      });
-      showToast(typeof response.data === 'string' ? response.data : 'Operación realizada', 'success');
-      await fetchEquipo();
-    } catch (error: any) {
-      const errorData = error.response?.data;
-      showToast(errorData?.message || 'Error', 'error');
-    }
+    await alinearJugador(equipo.equipoId, jugadorId);
   };
 
   const handleVender = async (jugadorId: number, nickname: string) => {
     if (!equipo?.equipoId) return;
 
-    const j = equipo?.jugadores.find(p => p.idJugador === jugadorId);
-    if (j?.estado === 'TITULAR') {
-      Alert.alert("Acción no permitida", "Debes mover al jugador al banquillo antes de venderlo.");
-      return;
-    }
-
     Alert.alert(
-      "Vender Jugador",
-      `¿Estás seguro de que quieres vender a ${nickname}? Recuperarás el 100% de su valor actual.`,
+      'Vender Jugador',
+      `¿Estás seguro de que quieres vender a ${nickname}? Recuperarás su valor de mercado actual.`,
       [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Vender",
-          style: "destructive",
+        { text: 'Cancelar', style: 'cancel' },
+        { 
+          text: 'Vender', 
+          style: 'destructive',
           onPress: async () => {
             try {
               const response = await api.post('/mercado/vender', {
                 equipoId: equipo.equipoId,
                 jugadorId
               });
-              showToast(response.data, 'success');
-              await fetchEquipo();
+              showToast(typeof response.data === 'string' ? response.data : 'Venta realizada con éxito', 'success');
+              await fetchEquipo(true);
             } catch (error: any) {
               const errorData = error.response?.data;
               showToast(errorData?.message || 'Error al vender', 'error');
@@ -125,24 +86,23 @@ export default function MiEquipoScreen() {
     const coords = ROLE_COORDINATES[role] || { top: '0%', left: '0%' };
 
     return (
-      <Link href={`/jugador/${jugador.idJugador}`} asChild>
-        <TouchableOpacity
-          style={StyleSheet.flatten([styles.marker, { top: coords.top, left: coords.left }])}
-        >
-          <View className="items-center">
-            <View className="w-12 h-12 rounded-full bg-midnight border-2 border-accent-cyan items-center justify-center shadow-lg shadow-accent-cyan/50 overflow-hidden">
-              {jugador.imagenUrl ? (
-                <Image source={{ uri: jugador.imagenUrl }} className="w-12 h-12" style={{ marginTop: 6 }} resizeMode="contain" />
-              ) : (
-                <User color="#00D1FF" size={20} />
-              )}
-            </View>
-            <View className="bg-midnight/80 px-2 py-0.5 rounded-md mt-1 border border-accent-cyan/30">
-              <Text className="text-white text-[9px] font-bold uppercase">{jugador.nickname}</Text>
-            </View>
+      <TouchableOpacity
+        onPress={() => router.push(`/(main)/jugador/${jugador.idJugador}`)}
+        style={StyleSheet.flatten([styles.marker, { top: coords.top, left: coords.left }])}
+      >
+        <View className="items-center">
+          <View className="w-12 h-12 rounded-full bg-midnight border-2 border-accent-cyan items-center justify-center shadow-lg shadow-accent-cyan/50 overflow-hidden">
+            {jugador.imagenUrl ? (
+              <Image source={{ uri: jugador.imagenUrl }} className="w-12 h-12" style={{ marginTop: 6 }} resizeMode="contain" />
+            ) : (
+              <User color="#00D1FF" size={20} />
+            )}
           </View>
-        </TouchableOpacity>
-      </Link>
+          <View className="bg-midnight/80 px-2 py-0.5 rounded-md mt-1 border border-accent-cyan/30">
+            <Text className="text-white text-[9px] font-bold uppercase">{jugador.nickname}</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
     );
   };
 
@@ -159,7 +119,7 @@ export default function MiEquipoScreen() {
     };
 
     return (
-      <View className="flex-1 bg-surface/30 p-4 rounded-[28px] border border-dashed border-surface-light/20 flex-row items-center">
+      <View className="flex-1 bg-surface/30 p-4 rounded-[28px] border border-dashed border-surface-light/20 flex-row items-center mb-4">
         <View className="w-14 h-14 rounded-2xl bg-midnight/40 items-center justify-center mr-4 border border-surface-light/10">
           {getRoleIcon()}
         </View>
@@ -170,65 +130,6 @@ export default function MiEquipoScreen() {
       </View>
     );
   };
-
-  const JugadorCard = ({ jugador, hideBadge = false, noMargin = false }: { jugador: JugadorEnPlantillaDTO, hideBadge?: boolean, noMargin?: boolean }) => (
-    <Link href={`/jugador/${jugador.idJugador}`} asChild>
-      <TouchableOpacity
-        activeOpacity={0.7}
-        className={`bg-surface p-3.5 rounded-[28px] flex-row items-center border ${noMargin ? '' : 'mb-4'} ${jugador.estado === 'TITULAR' ? 'border-accent-cyan/50 bg-accent-cyan/5 shadow-lg shadow-accent-cyan/20' : 'border-surface-light/30'}`}
-      >
-        <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-4 border overflow-hidden relative ${jugador.estado === 'TITULAR' ? 'bg-accent-cyan/10 border-accent-cyan/30' : 'bg-midnight border-surface-light/30'}`}>
-          {jugador.imagenUrl ? (
-            <Image
-              source={{ uri: jugador.imagenUrl }}
-              className="w-14 h-14"
-              style={{ marginTop: 10 }}
-              resizeMode="contain"
-            />
-          ) : (
-            <Text className={`font-black text-xs ${jugador.estado === 'TITULAR' ? 'text-accent-cyan' : 'text-gray-500'}`}>
-              {jugador.rol.toUpperCase() === 'SUPPORT' ? 'SUPP' : jugador.rol.toUpperCase()}
-            </Text>
-          )}
-        </View>
-        <View className="flex-1">
-          {jugador.nickname && (
-            <View className="flex-row items-center">
-              <Text className="text-white font-bold text-lg flex-1" numberOfLines={1}>{jugador.nickname}</Text>
-            </View>
-          )}
-          {jugador.estado === 'BANQUILLO' && (
-            <View className="flex-row items-center">
-              <Text className="text-gray-400 text-[10px] font-black uppercase tracking-widest">
-                {jugador.rol.toUpperCase() === 'SUPPORT' ? 'SUPPORT' : jugador.rol.toUpperCase()}
-              </Text>
-            </View>
-          )}
-        </View>
-        <View className="flex-row items-center">
-          {jugador.estado === 'BANQUILLO' && (
-            <TouchableOpacity
-              onPress={() => handleVender(jugador.idJugador, jugador.nickname)}
-              className="w-10 h-10 rounded-full items-center justify-center bg-rose-500/10 border border-rose-500/30 mr-3 shadow-sm shadow-rose-500/10"
-            >
-              <CircleDollarSign size={20} color="#FB7185" />
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            onPress={() => handleAlinear(jugador.idJugador)}
-            className={`h-12 px-5 rounded-2xl items-center justify-center flex-row ${jugador.estado === 'TITULAR' ? 'bg-accent-cyan shadow-md shadow-accent-cyan/40' : 'bg-surface-light/50 border border-surface-light'}`}
-          >
-            <ArrowRightLeft size={18} color={jugador.estado === 'TITULAR' ? '#0B0E14' : 'white'} />
-            <Text
-              className={`ml-2 font-black text-[10px] tracking-widest ${jugador.estado === 'TITULAR' ? 'text-midnight' : 'text-white'}`}
-            >
-              {jugador.estado === 'TITULAR' ? 'QUITAR' : 'PONER'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </TouchableOpacity>
-    </Link>
-  );
 
   const titulares = equipo?.jugadores?.filter(j => j.estado === 'TITULAR') || [];
   const suplentes = equipo?.jugadores?.filter(j => j.estado === 'BANQUILLO') || [];
@@ -246,7 +147,7 @@ export default function MiEquipoScreen() {
 
       <ScrollView
         className="flex-1"
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchEquipo(); }} tintColor="#00D1FF" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00D1FF" />}
         showsVerticalScrollIndicator={false}
       >
         {loading && !refreshing ? (
@@ -337,7 +238,7 @@ export default function MiEquipoScreen() {
                 {ROLES_ORDEN.map(rol => {
                   const jugador = titulares.find(j => j.rol.toUpperCase() === rol.key);
                   return (
-                    <View key={rol.key} className="flex-row items-center mb-5">
+                    <View key={rol.key} className="flex-row items-center mb-3">
                       <View className="w-12 items-center justify-center mr-3">
                         <Text className="text-accent-cyan font-black text-[10px] uppercase italic -rotate-90" style={{ width: 60, textAlign: 'center' }}>
                           {rol.label}
@@ -345,7 +246,19 @@ export default function MiEquipoScreen() {
                       </View>
                       <View className="flex-1">
                         {jugador ? (
-                          <JugadorCard jugador={jugador} hideBadge={true} noMargin={true} />
+                          <PlayerCard 
+                            id={jugador.idJugador}
+                            nickname={jugador.nickname}
+                            equipoLec={jugador.equipoLec}
+                            rol={jugador.rol}
+                            imagenUrl={jugador.imagenUrl || undefined}
+                            estado={jugador.estado}
+                            onPressAction={() => handleAlinear(jugador.idJugador)}
+                            actionLabel={jugador.estado === 'TITULAR' ? 'QUITAR' : 'PONER'}
+                            hideBadge={true}
+                            hideRole={true}
+                            noMargin={true}
+                          />
                         ) : (
                           <EmptySlotCard label={rol.label} />
                         )}
@@ -361,7 +274,21 @@ export default function MiEquipoScreen() {
               </View>
 
               {suplentes.length > 0 ? (
-                suplentes.map(j => <JugadorCard key={j.idJugador} jugador={j} />)
+                suplentes.map(j => (
+                  <PlayerCard 
+                    key={j.idJugador}
+                    id={j.idJugador}
+                    nickname={j.nickname}
+                    equipoLec={j.equipoLec}
+                    rol={j.rol}
+                    imagenUrl={j.imagenUrl || undefined}
+                    estado={j.estado}
+                    onPressAction={() => handleAlinear(j.idJugador)}
+                    actionLabel={j.estado === 'TITULAR' ? 'QUITAR' : 'PONER'}
+                    showSellButton={j.estado === 'BANQUILLO'}
+                    onSellPress={() => handleVender(j.idJugador, j.nickname)}
+                  />
+                ))
               ) : (
                 <View className="bg-midnight/30 p-8 rounded-2xl border border-dashed border-surface-light/30 items-center">
                   <Text className="text-gray-500 italic text-center">Tu banquillo está vacío</Text>
