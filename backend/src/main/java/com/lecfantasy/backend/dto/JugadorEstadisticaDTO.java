@@ -5,7 +5,7 @@ import lombok.Data;
 @Data
 public class JugadorEstadisticaDTO {
     private String gameId;
-    private String matchName; // e.g., "G2 vs Fnatic"
+    private String matchName;
     private String team1;
     private String team2;
     private String team1Logo;

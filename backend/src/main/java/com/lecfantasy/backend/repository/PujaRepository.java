@@ -9,5 +9,6 @@ import java.util.Optional;
 @Repository
 public interface PujaRepository extends JpaRepository<Puja, Long> {
     List<Puja> findBySubastaIdOrderByCantidadDescFechaPujaAsc(Long subastaId);
+
     Optional<Puja> findBySubastaIdAndUsuarioId(Long subastaId, Long usuarioId);
 }

@@ -5,8 +5,7 @@ import lombok.Data;
 
 @Entity
 @Table(name = "usuarios")
-@Data // Gracias a la dependencia Lombok se crean automáticamente todos los getters y
-      // setters ocultos
+@Data
 
 public class Usuario {
 

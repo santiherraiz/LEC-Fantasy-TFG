@@ -16,15 +16,14 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    // Maneja todas las excepciones de tipo RuntimeException (nuestros errores de negocio)
+    // Maneja todas las excepciones de tipo RuntimeException
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex, WebRequest request) {
         log.warn("Error de negocio (400): {}", ex.getMessage());
         ErrorResponse errorDetails = new ErrorResponse(
-            LocalDateTime.now(),
-            ex.getMessage(),
-            request.getDescription(false)
-        );
+                LocalDateTime.now(),
+                ex.getMessage(),
+                request.getDescription(false));
         return new ResponseEntity<>(errorDetails, HttpStatus.BAD_REQUEST);
     }
 
@@ -33,10 +32,9 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleGlobalException(Exception ex, WebRequest request) {
         log.error("¡ERROR INTERNO NO CONTROLADO! ", ex);
         ErrorResponse errorDetails = new ErrorResponse(
-            LocalDateTime.now(),
-            "Error interno del servidor",
-            ex.getMessage()
-        );
+                LocalDateTime.now(),
+                "Error interno del servidor",
+                ex.getMessage());
         return new ResponseEntity<>(errorDetails, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

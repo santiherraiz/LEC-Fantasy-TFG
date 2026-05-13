@@ -21,7 +21,7 @@ public class LeaguepediaResponse {
         private String name;
 
         @JsonProperty("ID")
-        private String id; // Este será nuestro Nickname
+        private String id; // Este será el Nickname
 
         @JsonProperty("Role")
         private String role;

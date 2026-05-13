@@ -23,3 +23,7 @@ src/api/config.ts
 
 # Scripts
 simulate_season.sh
+
+# Temporary and backup folders
+assets_backup/
+scratch/

@@ -46,7 +46,7 @@ export const CatalogoCard = React.memo(({ item, isOwnPlayer }: CatalogoCardProps
           <View className="ml-6 flex-1 justify-center">
             <View className="flex-row items-center mb-0.5">
               <Text className="text-white font-black text-xl tracking-tight mr-3">{item.nickname}</Text>
-              
+
               {/* CHIP DE POSICIÓN */}
               <View className="bg-accent-cyan/10 border border-accent-cyan/40 px-2 py-0.5 rounded-md">
                 <Text className="text-accent-cyan font-black text-[9px] uppercase italic">
@@ -101,13 +101,12 @@ export const CatalogoCard = React.memo(({ item, isOwnPlayer }: CatalogoCardProps
             <View className="flex-row items-center mt-0.5">
               {item.tendencia === 'SUBE' && <ChevronUp size={14} color="#10B981" />}
               {item.tendencia === 'BAJA' && <ChevronDown size={14} color="#F43F5E" />}
-              <Text className={`text-[10px] font-black ml-1 ${
-                item.tendencia === 'SUBE' ? 'text-emerald-400' : 
-                item.tendencia === 'BAJA' ? 'text-rose-400' : 'text-gray-500'
-              }`}>
-                {item.tendencia === 'SUBE' ? 'SUBIENDO' : 
-                 item.tendencia === 'BAJA' ? 'BAJANDO' : 
-                 item.tendencia || 'ESTABLE'}
+              <Text className={`text-[10px] font-black ml-1 ${item.tendencia === 'SUBE' ? 'text-emerald-400' :
+                  item.tendencia === 'BAJA' ? 'text-rose-400' : 'text-gray-500'
+                }`}>
+                {item.tendencia === 'SUBE' ? 'SUBIENDO' :
+                  item.tendencia === 'BAJA' ? 'BAJANDO' :
+                    item.tendencia || 'ESTABLE'}
               </Text>
             </View>
           </View>

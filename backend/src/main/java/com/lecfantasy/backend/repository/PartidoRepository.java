@@ -4,6 +4,9 @@ import com.lecfantasy.backend.entity.Jornada;
 import com.lecfantasy.backend.entity.Partido;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -22,13 +25,13 @@ public interface PartidoRepository extends JpaRepository<Partido, String> {
 
     List<Partido> findByEstadisticasImportadasFalse();
 
-    @org.springframework.data.jpa.repository.Modifying
-    @org.springframework.transaction.annotation.Transactional
-    @org.springframework.data.jpa.repository.Query("UPDATE Partido p SET p.puntosCalculados = false")
+    @Modifying
+    @Transactional
+    @Query("UPDATE Partido p SET p.puntosCalculados = false")
     void resetAllPuntosCalculados();
 
-    @org.springframework.data.jpa.repository.Modifying
-    @org.springframework.transaction.annotation.Transactional
-    @org.springframework.data.jpa.repository.Query("UPDATE Partido p SET p.estadisticasImportadas = false")
+    @Modifying
+    @Transactional
+    @Query("UPDATE Partido p SET p.estadisticasImportadas = false")
     void resetAllEstadisticasImportadas();
 }

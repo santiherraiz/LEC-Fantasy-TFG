@@ -26,7 +26,7 @@ public class DemoService {
         mercadoScheduler.recalcularPreciosDiarios();
         mercadoService.forzarRefrescoMercado();
 
-        System.out.println("⏰ Reloj avanzado a: " + siguiente);
+        System.out.println("[DEMO] Reloj avanzado a: " + siguiente);
     }
 
     @Transactional
@@ -34,6 +34,6 @@ public class DemoService {
         LocalDateTime actual = clockService.ahora();
         LocalDateTime nueva = actual.withHour(hora).withMinute(minuto).withSecond(0);
         clockService.establecerFechaSimulada(nueva);
-        System.out.println("🕒 Hora ajustada a: " + nueva);
+        System.out.println("[DEMO] Hora ajustada a: " + nueva);
     }
 }

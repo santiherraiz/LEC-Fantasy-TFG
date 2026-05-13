@@ -11,19 +11,17 @@ import java.util.Optional;
 
 @Repository
 public interface JugadorRepository extends JpaRepository<Jugador, Long> {
+       Optional<Jugador> findByNickname(String nickname);
 
-    // Este método nos servirá para comprobar si un jugador ya existe en nuestra BD
-    // buscando por su nickname (ej. "Caps") antes de guardarlo duplicado.
-    Optional<Jugador> findByNickname(String nickname);
+       @Query("SELECT new com.lecfantasy.backend.dto.JugadorPuntuacionTotalDTO(j, COALESCE(SUM(e.puntosGenerados), 0.0)) "
+                     +
+                     "FROM Jugador j LEFT JOIN EstadisticaPartido e ON e.jugador = j " +
+                     "GROUP BY j " +
+                     "ORDER BY COALESCE(SUM(e.puntosGenerados), 0.0) DESC")
+       List<JugadorPuntuacionTotalDTO> findAllWithTotalPoints();
 
-    @Query("SELECT new com.lecfantasy.backend.dto.JugadorPuntuacionTotalDTO(j, COALESCE(SUM(e.puntosGenerados), 0.0)) " +
-           "FROM Jugador j LEFT JOIN EstadisticaPartido e ON e.jugador = j " +
-           "GROUP BY j " +
-           "ORDER BY COALESCE(SUM(e.puntosGenerados), 0.0) DESC")
-    List<JugadorPuntuacionTotalDTO> findAllWithTotalPoints();
-
-    @Query("SELECT j FROM Jugador j WHERE j.rol = :rol " +
-           "AND j.id NOT IN (SELECT p.jugador.id FROM Plantilla p WHERE p.equipo.liga.id = :ligaId) " +
-           "AND j.id NOT IN (SELECT s.jugador.id FROM Subasta s WHERE s.liga.id = :ligaId AND s.finalizada = false)")
-    List<Jugador> findJugadoresLibresPorRolYLiga(String rol, Long ligaId);
+       @Query("SELECT j FROM Jugador j WHERE j.rol = :rol " +
+                     "AND j.id NOT IN (SELECT p.jugador.id FROM Plantilla p WHERE p.equipo.liga.id = :ligaId) " +
+                     "AND j.id NOT IN (SELECT s.jugador.id FROM Subasta s WHERE s.liga.id = :ligaId AND s.finalizada = false)")
+       List<Jugador> findJugadoresLibresPorRolYLiga(String rol, Long ligaId);
 }

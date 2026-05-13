@@ -10,23 +10,17 @@ import java.util.Optional;
 
 @Repository
 public interface PlantillaRepository extends JpaRepository<Plantilla, Long> {
-    // Comprueba si un equipo ya tiene a un jugador específico (para evitar trampas)
     boolean existsByEquipoIdAndJugadorId(Long equipoId, Long jugadorId);
 
-    // Buscar a todos los jugadores de un equipo concreto
     List<Plantilla> findByEquipoId(Long equipoId);
 
-    // Buscar un registro específico
     Optional<Plantilla> findByEquipoIdAndJugadorId(Long equipoId, Long jugadorId);
 
-    // Nos devuelve la lista entera de jugadores que están en un estado concreto (ej. TITULAR)
     List<Plantilla> findByEquipoIdAndEstado(Long equipoId, EstadoAlineacion estado);
 
     List<Plantilla> findByJugadorNicknameAndEstado(String nickname, EstadoAlineacion estado);
 
-    // Buscar todos los jugadores que ya pertenecen a algún equipo de una liga específica
     List<Plantilla> findByEquipoLigaId(Long ligaId);
 
-    // Buscar todos los equipos que tienen a este jugador (uno por liga)
     List<Plantilla> findByJugadorId(Long jugadorId);
 }

@@ -11,7 +11,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class BackendApplication {
 
 	public static void main(String[] args) {
-	    java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Europe/Madrid"));
-	    SpringApplication.run(BackendApplication.class, args);
+		java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Europe/Madrid"));
+		SpringApplication.run(BackendApplication.class, args);
 	}
 }

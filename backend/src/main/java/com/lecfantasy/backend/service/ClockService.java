@@ -51,7 +51,7 @@ public class ClockService {
                     });
         }
         
-        // En cualquier otro perfil (dev, prod, etc), hora real
+        // En cualquier otro perfil, hora real
         return LocalDateTime.now();
     }
 

@@ -29,9 +29,9 @@ export default function CatalogoScreen() {
   } = useCatalogo();
 
   const renderJugador = useCallback(({ item }: { item: CatalogoJugador }) => (
-    <CatalogoCard 
-      item={item} 
-      isOwnPlayer={item.propietarioNickname === user?.nickname} 
+    <CatalogoCard
+      item={item}
+      isOwnPlayer={item.propietarioNickname === user?.nickname}
     />
   ), [user?.nickname]);
 

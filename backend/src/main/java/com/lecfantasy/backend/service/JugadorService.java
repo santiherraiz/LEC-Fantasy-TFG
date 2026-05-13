@@ -65,7 +65,7 @@ public class JugadorService {
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
         try {
-            System.out.println("🛰️ [JUGADOR] Conectando con Leaguepedia (Identity Verified)...");
+            System.out.println("[JUGADOR] Conectando con Leaguepedia (Identity Verified)...");
             ResponseEntity<LeaguepediaResponse> response = restTemplate.exchange(url, HttpMethod.GET, entity,
                     LeaguepediaResponse.class);
             LeaguepediaResponse responseBody = response.getBody();
@@ -73,7 +73,7 @@ public class JugadorService {
             if (responseBody != null && responseBody.getCargoquery() != null
                     && !responseBody.getCargoquery().isEmpty()) {
                 System.out.println(
-                        "✅ [JUGADOR] API respondió con " + responseBody.getCargoquery().size() + " jugadores.");
+                        "[JUGADOR] API respondió con " + responseBody.getCargoquery().size() + " jugadores.");
                 for (LeaguepediaResponse.CargoItem item : responseBody.getCargoquery()) {
                     LeaguepediaResponse.PlayerTitle title = item.getTitle();
                     String rawNickname = title.getId();
@@ -91,7 +91,7 @@ public class JugadorService {
                         nuevoJugador.setNickname(nickname);
                         nuevoJugador.setNombreReal(nombreReal != null && !nombreReal.isEmpty() ? nombreReal : nickname);
                         nuevoJugador.setRol(rol);
-                        
+
                         // FASE 1: Configuración Inicial (Asimetría de Mercado)
                         // Tier S (Estrellas): ~35.000 € (G2, FNC, VIT)
                         // Tier A/B (Medios): ~15.000 €
@@ -101,15 +101,16 @@ public class JugadorService {
                         if (team != null) {
                             if (team.contains("G2") || team.contains("Fnatic") || team.contains("Vitality")) {
                                 precioBase = 35000.0; // Tier S
-                            } else if (team.contains("Karmine") || team.contains("Heretics") || team.contains("KOI") || team.contains("MAD")) {
+                            } else if (team.contains("Corp") || team.contains("Heretics") || team.contains("KOI")
+                                    || team.contains("GIANTX")) {
                                 precioBase = 15000.0; // Tier A/B
                             }
                         }
-                        
+
                         nuevoJugador.setPrecioBase(precioBase);
                         nuevoJugador.setPrecioActual(precioBase);
 
-                        // Usamos el método centralizado de PuntuacionService que ya tiene la lógica HD
+                        // se usa el método centralizado de PuntuacionService que ya tiene la lógica HD
                         EquipoLec el = puntuacionService.getOrCreateEquipo(title.getTeam());
                         nuevoJugador.setEquipoLec(el);
 
@@ -118,13 +119,13 @@ public class JugadorService {
                                 + (el != null ? el.getAbreviatura() : "???") + "]");
                     }
                 }
-                System.out.println("🏁 [JUGADOR] Importación de 2026 completada.");
+                System.out.println("[JUGADOR] Importación de 2026 completada.");
                 forzarActualizacionImagenes();
             } else {
-                System.out.println("⚠️ [JUGADOR] La respuesta de la API está vacía.");
+                System.out.println("[JUGADOR] La respuesta de la API está vacía.");
             }
         } catch (Exception e) {
-            System.err.println("❌ [JUGADOR] Error crítico: " + e.getMessage());
+            System.err.println("[JUGADOR] Error crítico: " + e.getMessage());
         }
     }
 
@@ -145,16 +146,18 @@ public class JugadorService {
             dto.setMatchName(e.getPartido().getTeam1() + " vs " + e.getPartido().getTeam2());
             dto.setTeam1(e.getPartido().getTeam1());
             dto.setTeam2(e.getPartido().getTeam2());
-            dto.setTeam1Logo(e.getPartido().getTeam1Entity() != null ? e.getPartido().getTeam1Entity().getLogoUrl() : null);
-            dto.setTeam2Logo(e.getPartido().getTeam2Entity() != null ? e.getPartido().getTeam2Entity().getLogoUrl() : null);
+            dto.setTeam1Logo(
+                    e.getPartido().getTeam1Entity() != null ? e.getPartido().getTeam1Entity().getLogoUrl() : null);
+            dto.setTeam2Logo(
+                    e.getPartido().getTeam2Entity() != null ? e.getPartido().getTeam2Entity().getLogoUrl() : null);
             dto.setJugadorEquipo(e.getEquipoNombre());
             dto.setFecha(e.getPartido().getFechaUtc() != null ? e.getPartido().getFechaUtc().toString() : null);
             dto.setSemana(e.getPartido().getJornada() != null ? e.getPartido().getJornada().getNumeroSemana() : null);
             dto.setSerieId(e.getPartido().getSerieId());
 
-            // Usamos el equipo que tenía el jugador en ese momento (si lo tenemos), si no usamos el actual
-            String equipoDelJugador = (e.getEquipoNombre() != null) ? e.getEquipoNombre() : 
-                (e.getJugador().getEquipoLec() != null ? e.getJugador().getEquipoLec().getNombre() : null);
+            // se usa el equipo que tenía el jugador en ese momento, si no se usa el actual
+            String equipoDelJugador = (e.getEquipoNombre() != null) ? e.getEquipoNombre()
+                    : (e.getJugador().getEquipoLec() != null ? e.getJugador().getEquipoLec().getNombre() : null);
 
             if (equipoDelJugador != null && e.getPartido().getWinTeam() != null) {
                 dto.setResultado(
@@ -186,7 +189,7 @@ public class JugadorService {
         dto.setPrecioActual(j.getPrecioActual());
         dto.setTendencia(j.getTendencia());
         dto.setImagenUrl(j.getImagenUrl());
-        
+
         if (j.getEquipoLec() != null) {
             dto.setEquipoLecNombre(j.getEquipoLec().getNombre());
             dto.setEquipoLecLogo(j.getEquipoLec().getLogoUrl());
@@ -212,7 +215,7 @@ public class JugadorService {
     }
 
     public void forzarActualizacionImagenes() {
-        System.out.println("📸 [JUGADOR] Iniciando actualización de fotos y logos desde SQL...");
+        System.out.println("[JUGADOR] Iniciando actualización de fotos y logos desde SQL...");
         try {
             String sqlPath = "../scratch/update_images_2026.sql";
             java.util.List<String> lines = java.nio.file.Files.readAllLines(java.nio.file.Paths.get(sqlPath));
@@ -233,9 +236,9 @@ public class JugadorService {
                     currentStatement.setLength(0);
                 }
             }
-            System.out.println("✅ [JUGADOR] Imágenes y logos actualizados correctamente.");
+            System.out.println("[JUGADOR] Imágenes y logos actualizados correctamente.");
         } catch (Exception e) {
-            System.err.println("❌ [JUGADOR] Error al aplicar el script de imágenes: " + e.getMessage());
+            System.err.println("[JUGADOR] Error al aplicar el script de imágenes: " + e.getMessage());
         }
     }
 }

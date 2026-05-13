@@ -47,4 +47,4 @@ public class Partido {
 
     @Column(name = "estadisticas_importadas", nullable = false)
     private boolean estadisticasImportadas = false;
-    }
+}

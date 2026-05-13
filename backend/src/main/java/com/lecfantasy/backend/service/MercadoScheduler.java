@@ -41,14 +41,14 @@ public class MercadoScheduler {
     @Scheduled(cron = "0 0 4 * * ?")
     @Transactional
     public void recalcularPreciosDiarios() {
-        System.out.println("📈 [MERCADO] Iniciando motor de fluctuación (FASE 2 & 3)...");
+        System.out.println("[MERCADO] Iniciando motor de fluctuación (FASE 2 & 3)...");
 
         List<Jugador> todosLosJugadores = jugadorRepository.findAll();
         int semanaActual = puntuacionService.obtenerSemanaActual();
 
         // 1. Calcular media de puntos de todos los jugadores en la jornada actual
         double mediaPuntosGlobal = obtenerMediaPuntosJornada(semanaActual);
-        System.out.println("📊 [MERCADO] Media de puntos en semana " + semanaActual + ": " + mediaPuntosGlobal);
+        System.out.println("[MERCADO] Media de puntos en semana " + semanaActual + ": " + mediaPuntosGlobal);
 
         for (Jugador jugador : todosLosJugadores) {
             try {
@@ -123,7 +123,7 @@ public class MercadoScheduler {
                 System.err.println("Error en motor económico para " + jugador.getNickname() + ": " + e.getMessage());
             }
         }
-        System.out.println("✅ [MERCADO] Recalibración económica completada.");
+        System.out.println("[MERCADO] Recalibración económica completada.");
     }
 
     private double obtenerMediaPuntosJornada(int semana) {

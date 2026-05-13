@@ -26,8 +26,8 @@ public class HistoricoAlineacion {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private EstadoAlineacion estado; // TITULAR o BANQUILLO
+    private EstadoAlineacion estado;
 
     @Column(name = "puntos_semanales", nullable = false)
     private Double puntosSemanales = 0.0;
-    }
+}

@@ -22,7 +22,7 @@ public class MatchScheduleResponse {
         @JsonProperty("DateTime UTC")
         private String dateTimeUtc;
         @JsonProperty("GameId")
-        private String gameId; // Usamos GameId para extraer la semana en ScoreboardGames
+        private String gameId; // Se usa el GameId para extraer la semana en ScoreboardGames
         @JsonProperty("MatchId")
         private String matchId;
     }
