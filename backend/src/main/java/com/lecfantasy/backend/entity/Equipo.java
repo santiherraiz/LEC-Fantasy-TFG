@@ -23,11 +23,11 @@ public class Equipo {
     @Column(name = "puntuacion_total", nullable = false)
     private Double puntuacionTotal = 0.0; // Empiezan con 0 puntos
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", referencedColumnName = "id", nullable = false)
     private Usuario usuario;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "liga_id", nullable = false)
     private Liga liga;
 

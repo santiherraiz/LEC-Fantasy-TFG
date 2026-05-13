@@ -21,7 +21,7 @@ public class PartidoService {
         List<Partido> partidos = partidoRepository.findAll();
         
         List<Partido> partidosFiltrados = partidos.stream()
-                .filter(p -> p.getJornada() != null)
+                .filter(p -> p.getJornada() != null && p.getFechaUtc() != null)
                 .collect(Collectors.toList());
 
         Map<Integer, List<Partido>> porSemana = partidosFiltrados.stream()

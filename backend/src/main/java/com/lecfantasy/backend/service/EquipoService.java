@@ -15,6 +15,7 @@ import com.lecfantasy.backend.repository.JornadaRepository;
 import com.lecfantasy.backend.repository.HistoricoAlineacionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +39,7 @@ public class EquipoService {
     @Autowired
     private HistoricoAlineacionRepository historicoAlineacionRepository;
 
+    @Transactional(readOnly = true)
     public EquipoDetalleDTO obtenerDetalleEquipo(Long usuarioId, Long ligaId) {
         log.debug("Obteniendo detalle de equipo para usuarioId: {} y ligaId: {}", usuarioId, ligaId);
         
@@ -70,6 +72,7 @@ public class EquipoService {
         return respuesta;
     }
 
+    @Transactional(readOnly = true)
     public EquipoRivalDTO obtenerEquipoRival(Long equipoId) {
         Equipo equipo = equipoRepository.findById(equipoId)
                 .orElseThrow(() -> new RuntimeException("Equipo no encontrado"));
@@ -100,6 +103,7 @@ public class EquipoService {
         return dto;
     }
 
+    @Transactional(readOnly = true)
     public EquipoJornadaDTO obtenerDetalleEquipoJornada(Long equipoId, Long jornadaId) {
         Equipo equipo = equipoRepository.findById(equipoId)
                 .orElseThrow(() -> new RuntimeException("Equipo no encontrado"));
@@ -133,6 +137,7 @@ public class EquipoService {
         return dto;
     }
 
+    @Transactional(readOnly = true)
     public List<RankingDTO> obtenerRanking(Long ligaId, Long jornadaId) {
         if (jornadaId != null) {
             List<Object[]> resultados = historicoAlineacionRepository.findRankingByJornada(ligaId, jornadaId);

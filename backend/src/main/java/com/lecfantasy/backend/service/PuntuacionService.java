@@ -138,7 +138,7 @@ public class PuntuacionService {
     @Transactional
     public void resetTotal() {
         // Borramos todo lo relacionado con puntos y stats para empezar de cero
-        historicoAlineacionRepository.findAll().forEach(h -> { h.setPuntosSemanales(0.0); historicoAlineacionRepository.save(h); });
+        historicoAlineacionRepository.findAllWithEntities().forEach(h -> { h.setPuntosSemanales(0.0); historicoAlineacionRepository.save(h); });
         equipoRepository.findAll().forEach(e -> { e.setPuntuacionTotal(0.0); equipoRepository.save(e); });
         estadisticaPartidoRepository.deleteAllInBatch();
         partidoRepository.resetAllEstadisticasImportadas();
@@ -150,7 +150,7 @@ public class PuntuacionService {
         // 1. Identificar todas las series que tienen al menos un mapa nuevo
         List<String> seriesPendientes = partidoRepository.findByPuntosCalculadosFalse().stream()
                 .filter(p -> p.isEstadisticasImportadas() && p.getJornada() != null)
-                .map(Partido::getSerieId)
+                .map(p -> p.getSerieId() != null ? p.getSerieId() : p.getGameId())
                 .distinct()
                 .collect(Collectors.toList());
 
@@ -158,7 +158,10 @@ public class PuntuacionService {
 
         int seriesProcesadas = 0;
         for (String serieId : seriesPendientes) {
-            List<Partido> mapasSerie = partidoRepository.findBySerieId(serieId);
+            List<Partido> mapasSerie = new ArrayList<>(partidoRepository.findBySerieId(serieId));
+            if (mapasSerie.isEmpty()) {
+                partidoRepository.findById(serieId).ifPresent(mapasSerie::add);
+            }
             
             boolean todosImportados = mapasSerie.stream().allMatch(Partido::isEstadisticasImportadas);
             if (!todosImportados) continue;
@@ -170,7 +173,9 @@ public class PuntuacionService {
             boolean terminada = victorias.values().stream().anyMatch(v -> v >= 2) || mapasSerie.size() == 1;
             if (!terminada && mapasSerie.size() < 3) continue;
 
-            List<EstadisticaPartido> allStatsSerie = estadisticaPartidoRepository.findByPartidoSerieId(serieId);
+            List<EstadisticaPartido> allStatsSerie = mapasSerie.stream()
+                    .flatMap(m -> estadisticaPartidoRepository.findByPartidoGameId(m.getGameId()).stream())
+                    .collect(Collectors.toList());
             Map<Long, List<EstadisticaPartido>> porJugador = allStatsSerie.stream()
                     .collect(Collectors.groupingBy(s -> s.getJugador().getId()));
 
@@ -219,7 +224,7 @@ public class PuntuacionService {
 
     @Transactional
     public void actualizarRankingGlobal() {
-        List<HistoricoAlineacion> todosLosHistoricos = historicoAlineacionRepository.findAll();
+        List<HistoricoAlineacion> todosLosHistoricos = historicoAlineacionRepository.findAllWithEntities();
         
         Map<Equipo, Double> nuevosTotales = new HashMap<>();
 
@@ -245,7 +250,8 @@ public class PuntuacionService {
                 .collect(Collectors.toList());
         if (stats.isEmpty()) return 0.0;
         
-        Map<String, List<EstadisticaPartido>> porSerie = stats.stream().collect(Collectors.groupingBy(s -> s.getPartido().getSerieId()));
+        Map<String, List<EstadisticaPartido>> porSerie = stats.stream()
+                .collect(Collectors.groupingBy(s -> s.getPartido().getSerieId() != null ? s.getPartido().getSerieId() : s.getPartido().getGameId()));
         double sumaSeries = 0;
         for (List<EstadisticaPartido> mapas : porSerie.values()) {
             sumaSeries += mapas.stream().mapToDouble(EstadisticaPartido::getPuntosGenerados).sum();
@@ -268,7 +274,7 @@ public class PuntuacionService {
     public void resetCalculos() {
         partidoRepository.resetAllPuntosCalculados();
         equipoRepository.findAll().forEach(e -> { e.setPuntuacionTotal(0.0); equipoRepository.save(e); });
-        historicoAlineacionRepository.findAll().forEach(h -> { h.setPuntosSemanales(0.0); historicoAlineacionRepository.save(h); });
+        historicoAlineacionRepository.findAllWithEntities().forEach(h -> { h.setPuntosSemanales(0.0); historicoAlineacionRepository.save(h); });
     }
 
     @Transactional

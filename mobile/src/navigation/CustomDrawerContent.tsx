@@ -29,8 +29,8 @@ export default function CustomDrawerContent(props: DrawerContentComponentProps) 
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: insets.top + 20 }]}>
         <View style={{ width: '100%', height: 50, marginBottom: 20, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
-          <Image 
-            source={require('../../assets/logos/LOGOTIPO-bg.png')} 
+          <Image
+            source={require('../../assets/logos/LOGOTIPO-bg.png')}
             style={{ width: 220, height: 100 }}
             resizeMode="contain"
           />
@@ -44,7 +44,7 @@ export default function CustomDrawerContent(props: DrawerContentComponentProps) 
             <Text style={styles.userEmail}>{user?.email}</Text>
           </View>
         </View>
-        
+
         {selectedLigaNombre && (
           <View style={styles.ligaBadge}>
             <Trophy color="#00D1FF" size={14} />
@@ -55,49 +55,49 @@ export default function CustomDrawerContent(props: DrawerContentComponentProps) 
 
       <ScrollView style={styles.menuItems} showsVerticalScrollIndicator={false}>
         <Text style={styles.sectionTitle}>Competición</Text>
-        
-        <DrawerItem 
-          label="Mi Equipo" 
-          icon={<Shield size={22} />} 
-          active={isActive('/equipo')} 
-          onPress={() => router.push('/equipo')} 
-        />
-        
-        <DrawerItem 
-          label="Mercado" 
-          icon={<ShoppingBag size={22} />} 
-          active={isActive('/mercado')} 
-          onPress={() => router.push('/mercado')} 
+
+        <DrawerItem
+          label="Mi Equipo"
+          icon={<Shield size={22} />}
+          active={isActive('/equipo')}
+          onPress={() => router.push('/equipo')}
         />
 
-        <DrawerItem 
-          label="Jugadores" 
-          icon={<Users size={22} />} 
-          active={isActive('/jugadores')} 
-          onPress={() => router.push('/jugadores')} 
+        <DrawerItem
+          label="Catálogo"
+          icon={<ShoppingBag size={22} />}
+          active={isActive('/catalogo')}
+          onPress={() => router.push('/catalogo')}
         />
 
-        <DrawerItem 
-          label="Ranking" 
-          icon={<Trophy size={22} />} 
-          active={isActive('/ranking')} 
-          onPress={() => router.push('/ranking')} 
+        <DrawerItem
+          label="Jugadores"
+          icon={<Users size={22} />}
+          active={isActive('/jugadores')}
+          onPress={() => router.push('/jugadores')}
         />
 
-        <DrawerItem 
-          label="Calendario" 
-          icon={<Calendar size={22} />} 
-          active={isActive('/calendario')} 
-          onPress={() => router.push('/calendario')} 
+        <DrawerItem
+          label="Ranking"
+          icon={<Trophy size={22} />}
+          active={isActive('/ranking')}
+          onPress={() => router.push('/ranking')}
+        />
+
+        <DrawerItem
+          label="Calendario"
+          icon={<Calendar size={22} />}
+          active={isActive('/calendario')}
+          onPress={() => router.push('/calendario')}
         />
 
         <Text style={styles.sectionTitle}>Ajustes</Text>
 
-        <DrawerItem 
-          label="Cambiar de Liga" 
-          icon={<LayoutGrid size={22} />} 
-          active={false} 
-          onPress={handleOtrasLigas} 
+        <DrawerItem
+          label="Cambiar de Liga"
+          icon={<LayoutGrid size={22} />}
+          active={false}
+          onPress={handleOtrasLigas}
         />
       </ScrollView>
 
@@ -115,8 +115,8 @@ export default function CustomDrawerContent(props: DrawerContentComponentProps) 
 
 function DrawerItem({ label, icon, active, onPress }: { label: string, icon: any, active: boolean, onPress: () => void }) {
   return (
-    <TouchableOpacity 
-      style={[styles.menuItem, active && styles.menuItemActive]} 
+    <TouchableOpacity
+      style={[styles.menuItem, active && styles.menuItemActive]}
       onPress={onPress}
     >
       {React.cloneElement(icon, { color: active ? '#00D1FF' : '#9CA3AF' })}

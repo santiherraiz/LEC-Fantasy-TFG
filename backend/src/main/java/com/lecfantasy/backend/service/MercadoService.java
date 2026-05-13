@@ -51,6 +51,7 @@ public class MercadoService {
     @org.springframework.context.annotation.Lazy
     private MercadoService self;
 
+    @Transactional(readOnly = true)
     public List<SubastaDTO> obtenerSubastasActivas(Long ligaId, Long usuarioId) {
         List<Subasta> subastas = subastaRepository.findByLigaIdAndFinalizadaFalse(ligaId);
 
@@ -67,6 +68,7 @@ public class MercadoService {
         }).collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<CatalogoJugadorDTO> obtenerCatalogo(Long ligaId) {
         List<Jugador> todos = jugadorRepository.findAll();
         List<Plantilla> ocupados = plantillaRepository.findByEquipoLigaId(ligaId);

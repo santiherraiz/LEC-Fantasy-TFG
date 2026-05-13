@@ -176,6 +176,7 @@ public class LigaService {
         }
     }
 
+    @Transactional(readOnly = true)
     public List<Liga> obtenerLigasDeUsuario(Long usuarioId) {
         return ligaRepository.findLigasByUsuarioId(usuarioId);
     }

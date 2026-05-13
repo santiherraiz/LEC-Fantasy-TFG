@@ -26,6 +26,7 @@ public class UsuarioService {
         return usuarioRepository.save(nuevoUsuario);
     }
 
+    @Transactional(readOnly = true)
     public Usuario login(String email, String password) {
         Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(email);
 
@@ -43,6 +44,7 @@ public class UsuarioService {
         return usuario;
     }
 
+    @Transactional(readOnly = true)
     public Usuario obtenerPerfil(Long id) {
         return usuarioRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado con ID: " + id));

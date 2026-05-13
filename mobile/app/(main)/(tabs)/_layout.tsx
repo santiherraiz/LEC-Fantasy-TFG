@@ -56,7 +56,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="catalogo"
         options={{
-          tabBarLabel: 'Mercado',
+          tabBarLabel: 'Catálogo',
           tabBarIcon: ({ color, focused }) => (
             <View className={`p-2 rounded-2xl ${focused ? 'bg-accent-cyan/10' : ''}`}>
               <ShoppingBag color={color} size={22} strokeWidth={focused ? 2.5 : 2} />

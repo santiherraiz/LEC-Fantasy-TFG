@@ -173,10 +173,19 @@ export default function RankingScreen() {
                   <TouchableOpacity 
                     key={`rank-item-${entry.equipoId || index}`} 
                     onPress={() => {
-                      if (isOwnTeam) {
-                        router.push(`/(main)/equipo-jornada/${entry.equipoId}`);
+                      if (activeId !== null) {
+                        // En ranking semanal, siempre vamos al detalle de esa jornada (sea propio o rival)
+                        router.push({
+                          pathname: `/(main)/equipo-jornada/${entry.equipoId}` as any,
+                          params: { jornadaId: activeId.toString() }
+                        });
                       } else {
-                        router.push(`/(main)/rival/${entry.equipoId}`);
+                        // En ranking global, diferenciamos
+                        if (isOwnTeam) {
+                          router.push(`/(main)/equipo-jornada/${entry.equipoId}`);
+                        } else {
+                          router.push(`/(main)/rival/${entry.equipoId}`);
+                        }
                       }
                     }}
                     activeOpacity={0.7}

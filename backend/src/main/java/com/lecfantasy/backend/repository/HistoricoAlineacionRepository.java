@@ -18,4 +18,7 @@ public interface HistoricoAlineacionRepository extends JpaRepository<HistoricoAl
            "GROUP BY h.equipo.id, h.equipo.usuario.nickname " +
            "ORDER BY total DESC")
     List<Object[]> findRankingByJornada(@Param("ligaId") Long ligaId, @Param("jornadaId") Long jornadaId);
+
+    @Query("SELECT h FROM HistoricoAlineacion h JOIN FETCH h.jornada JOIN FETCH h.jugador JOIN FETCH h.equipo")
+    List<HistoricoAlineacion> findAllWithEntities();
 }

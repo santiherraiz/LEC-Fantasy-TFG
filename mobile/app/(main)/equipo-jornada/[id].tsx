@@ -175,7 +175,7 @@ export default function EquipoJornadaScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchInitialData(); }} tintColor="#00D1FF" />}
       >
-        {equipo ? (
+        {equipo && equipo.jugadores.length > 0 ? (
           <>
             {/* Team Header */}
             <Animated.View entering={FadeInDown.duration(600)} className="px-6 py-8">
@@ -270,23 +270,26 @@ export default function EquipoJornadaScreen() {
             </View>
           </>
         ) : (
-          <View className="flex-1 items-center justify-center py-20 px-10">
-            <View className="w-20 h-20 bg-surface rounded-full items-center justify-center mb-6 border border-surface-light/20">
-              <TrendingUp color="#334155" size={40} />
+          <Animated.View entering={FadeIn.duration(400)} className="flex-1 items-center justify-center py-20 px-10">
+            <View className="w-24 h-24 bg-surface rounded-[32px] items-center justify-center mb-6 border border-surface-light/20 shadow-2xl">
+              <ShieldCheck color="#475569" size={48} />
             </View>
-            <Text className="text-white font-black text-xl italic uppercase text-center mb-2">Sin datos de alineación</Text>
-            <Text className="text-gray-500 text-center text-sm">
-              Parece que aún no se ha realizado el snapshot para esta jornada o el equipo no tenía jugadores alineados.
+            <Text className="text-white font-black text-xl italic uppercase text-center mb-2 tracking-tighter">Sin equipo registrado</Text>
+            <Text className="text-gray-500 text-center text-sm leading-relaxed mb-8">
+              {selectedJornada?.estado === 'PROGRAMADA'
+                ? "Esta jornada aún no ha comenzado. Tu alineación se guardará automáticamente 15 minutos antes del inicio."
+                : "No tenías jugadores titulares registrados en esta jornada."}
             </Text>
 
             {selectedJornada?.estado === 'PROGRAMADA' && (
-              <View className="mt-8 bg-accent-cyan/10 p-5 rounded-3xl border border-accent-cyan/20">
-                <Text className="text-accent-cyan font-bold text-center text-xs uppercase tracking-widest leading-relaxed">
-                  Esta jornada aún no ha comenzado. El equipo se bloqueará 15 minutos antes del primer partido.
-                </Text>
-              </View>
+              <TouchableOpacity
+                onPress={() => router.push('/(main)/equipo')}
+                className="bg-accent-cyan py-4 px-8 rounded-full shadow-lg shadow-accent-cyan/40"
+              >
+                <Text className="text-midnight font-black uppercase tracking-widest text-xs">Gestionar mi equipo</Text>
+              </TouchableOpacity>
             )}
-          </View>
+          </Animated.View>
         )}
       </ScrollView>
     </View>
