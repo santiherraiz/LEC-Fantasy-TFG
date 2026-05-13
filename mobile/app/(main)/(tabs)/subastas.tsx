@@ -1,147 +1,35 @@
-import React, { useEffect, useState } from 'react';
-import { Text, View, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Image, TextInput, Modal, Keyboard, TouchableWithoutFeedback, Platform } from 'react-native';
+import React from 'react';
+import { Text, View, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Image, TextInput, Modal, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { Link } from 'expo-router';
+import { useSubastas } from '../../../src/hooks/useSubastas';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAuthStore } from '../../../src/store/authStore';
-import { useToast } from '../../../src/context/ToastContext';
-import api from '../../../src/api/api';
 import { Subasta } from '../../../src/types';
 import { Gavel, Clock, X, Info, Trash2, Wallet, User as UserIcon } from 'lucide-react-native';
 import CustomHeader from '../../../src/components/CustomHeader';
 
 export default function SubastasScreen() {
-  const { user, selectedLigaId } = useAuthStore();
-  const { showToast } = useToast();
   const insets = useSafeAreaInsets();
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
-
-  useEffect(() => {
-    const showSubscription = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-      (e) => setKeyboardHeight(e.endCoordinates.height)
-    );
-    const hideSubscription = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-      () => setKeyboardHeight(0)
-    );
-
-    return () => {
-      showSubscription.remove();
-      hideSubscription.remove();
-    };
-  }, []);
-
-  const [subastas, setSubastas] = useState<Subasta[]>([]);
-  const [selectedSubasta, setSelectedSubasta] = useState<Subasta | null>(null);
-  const [pujaAmount, setPujaAmount] = useState('');
-  const [presupuesto, setPresupuesto] = useState<number | null>(null);
-  const [pujaModalVisible, setPujaModalVisible] = useState(false);
-  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [serverTimeOffset, setServerTimeOffset] = useState(0);
-
-  // Timer to update UI every minute
-  const [tick, setTick] = useState(0);
-  useEffect(() => {
-    const timer = setInterval(() => setTick(t => t + 1), 60000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const fetchData = async () => {
-    if (!user?.id || !selectedLigaId) return;
-    setLoading(true);
-    try {
-      const [subastasRes, equipoRes, timeRes] = await Promise.all([
-        api.get('/mercado/subastas', {
-          params: { ligaId: selectedLigaId, usuarioId: user.id }
-        }),
-        api.get(`/equipos/mi-equipo/${user.id}`, {
-          params: { ligaId: selectedLigaId }
-        }),
-        api.get('/public/time')
-      ]);
-
-      const serverDate = new Date(timeRes.data.serverTime);
-      setServerTimeOffset(serverDate.getTime() - Date.now());
-
-      setSubastas(subastasRes.data);
-      setPresupuesto(equipoRes.data.presupuestoDisponible);
-    } catch (error) {
-      console.error("Error cargando subastas o presupuesto:", error);
-      showToast("Error al cargar datos", "error");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, [selectedLigaId]);
-
-  const handlePujar = async () => {
-    if (!selectedSubasta || !pujaAmount) return;
-    const amount = parseFloat(pujaAmount);
-    
-    if (isNaN(amount) || amount <= 0) {
-      showToast("Introduce una cantidad válida", "error");
-      return;
-    }
-
-    const minPrice = selectedSubasta.jugador.precioActual || selectedSubasta.jugador.precioBase;
-
-    if (amount < minPrice) {
-      showToast(`La puja mínima es de ${minPrice.toLocaleString()} €`, "error");
-      return;
-    }
-
-    if (presupuesto !== null && amount > presupuesto + (selectedSubasta.miPuja || 0)) {
-      showToast("No tienes suficiente presupuesto", "error");
-      return;
-    }
-
-    try {
-      const res = await api.post('/mercado/pujar', {
-        subastaId: selectedSubasta.id,
-        usuarioId: user?.id,
-        cantidad: amount
-      });
-      showToast(res.data, "success");
-      setPujaModalVisible(false);
-      fetchData();
-    } catch (error: any) {
-      showToast(error.response?.data?.message || "Error al pujar", "error");
-    }
-  };
-
-  const handleEliminarPuja = async () => {
-    if (!selectedSubasta) return;
-    try {
-      const res = await api.delete('/mercado/pujar', {
-        params: { subastaId: selectedSubasta.id, usuarioId: user?.id }
-      });
-      showToast(res.data, "success");
-      setDeleteModalVisible(false);
-      fetchData();
-    } catch (error: any) {
-      showToast(error.response?.data?.message || "Error al retirar puja", "error");
-    }
-  };
-
-  const getTimeRemaining = (endTime: string) => {
-    const simulatedNow = Date.now() + serverTimeOffset;
-    const total = Date.parse(endTime) - simulatedNow;
-    if (total <= 0) return "Finalizado";
-    
-    const hours = Math.floor((total / (1000 * 60 * 60)) % 24);
-    const minutes = Math.floor((total / 1000 / 60) % 60);
-    const days = Math.floor(total / (1000 * 60 * 60 * 24));
-    
-    if (days > 0) return `${days}d ${hours}h`;
-    return `${hours}h ${minutes}m`;
-  };
+  const {
+    loading,
+    refreshing,
+    subastas,
+    selectedSubasta,
+    pujaAmount,
+    setPujaAmount,
+    presupuesto,
+    pujaModalVisible,
+    setPujaModalVisible,
+    deleteModalVisible,
+    setDeleteModalVisible,
+    keyboardHeight,
+    handleRefresh,
+    handlePujar,
+    handleEliminarPuja,
+    getTimeRemaining,
+    openPujaModal,
+    openDeleteModal,
+    tick
+  } = useSubastas();
 
   const SubastaCard = ({ subasta }: { subasta: Subasta }) => (
     <View className="bg-surface rounded-3xl mb-4 border border-surface-light/30 overflow-hidden">
@@ -195,27 +83,20 @@ export default function SubastasScreen() {
       <View className="bg-midnight/50 px-5 py-4 flex-row items-center justify-between border-t border-surface-light/10">
         <View className="flex-row items-center">
           <Clock size={14} color="#9CA3AF" />
-          <Text className="text-gray-400 text-xs font-bold ml-2">Finaliza en {getTimeRemaining(subasta.fechaFin)}</Text>
+          <Text className="text-gray-400 text-xs font-bold ml-2">Finaliza en {getTimeRemaining(subasta)}</Text>
         </View>
         
         <View className="flex-row items-center">
           {subasta.miPuja && (
             <TouchableOpacity 
-              onPress={() => {
-                setSelectedSubasta(subasta);
-                setDeleteModalVisible(true);
-              }}
+              onPress={() => openDeleteModal(subasta)}
               className="w-10 h-10 bg-crimson/10 rounded-xl items-center justify-center border border-crimson/40 mr-2 shadow-sm shadow-crimson/20"
             >
               <Trash2 size={18} color="#FF003F" />
             </TouchableOpacity>
           )}
           <TouchableOpacity 
-            onPress={() => {
-              setSelectedSubasta(subasta);
-              setPujaAmount(subasta.miPuja?.toString() || '');
-              setPujaModalVisible(true);
-            }}
+            onPress={() => openPujaModal(subasta)}
             className={`px-6 py-2 rounded-xl flex-row items-center ${subasta.miPuja ? 'bg-accent-cyan' : 'bg-surface-light/50'}`}
           >
             <Gavel size={16} color={subasta.miPuja ? '#0B0E14' : 'white'} />
@@ -239,7 +120,7 @@ export default function SubastasScreen() {
         className="flex-1 px-4"
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => {setRefreshing(true); fetchData();}} tintColor="#00D1FF" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#00D1FF" />}
       >
         <View>
           <View className="flex-row items-center mb-6 bg-accent-cyan/5 p-4 rounded-2xl border border-dashed border-accent-cyan/20">

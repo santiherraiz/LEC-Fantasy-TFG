@@ -105,7 +105,7 @@ export default function JugadorDetailScreen() {
   };
 
   // Memoizamos todos los cálculos pesados para evitar lag al cambiar de pestaña
-  const { groupedStats, weeklyData, statsSummary, allWeeksAsc, allWeeks } = useMemo(() => {
+  const { groupedStats, weeklyData, statsSummary, allWeeksAsc, allWeeks, radarData } = useMemo(() => {
     const grouped: Record<number, Record<string, JugadorEstadistica[]>> = {};
 
     estadisticas.forEach(stat => {
@@ -148,12 +148,32 @@ export default function JugadorDetailScreen() {
       kda: (estadisticas.reduce((acc, s) => acc + (s.kills + s.assists) / (s.deaths || 1), 0) / (estadisticas.length || 1)).toFixed(2),
       csMin: (estadisticas.reduce((acc, s) => acc + s.cs, 0) / (estadisticas.length * 30 || 1)).toFixed(1),
       avgPoints: avgPointsPerWeek,
-      damage: 18500,
-      mitigated: 12200,
-      vision: 1.4
+      damage: 18500, // Placeholder
+      mitigated: 12200, // Placeholder
+      vision: 1.4 // Placeholder
     };
 
-    return { groupedStats: grouped, weeklyData: wData, statsSummary: summary, allWeeksAsc: wAsc, allWeeks: wDesc };
+    // RADAR DATA: normalize real stats to a 0-100 scale for the radar chart
+    // We break KDA into Kills, Deaths, Assists to make it a pentagon
+    // Order: KILLS, DEATHS, ASSISTS, CS/M, PTS
+    const avgKills = (estadisticas.reduce((acc, s) => acc + s.kills, 0) / (estadisticas.length || 1));
+    const avgDeaths = (estadisticas.reduce((acc, s) => acc + s.deaths, 0) / (estadisticas.length || 1));
+    const avgAssists = (estadisticas.reduce((acc, s) => acc + s.assists, 0) / (estadisticas.length || 1));
+
+    const killsVal = Math.min(avgKills * 10, 100);
+    const deathsVal = Math.max(0, 100 - (avgDeaths * 15)); // More deaths = lower score
+    const assistsVal = Math.min(avgAssists * 8, 100);
+    const csmVal = Math.min(parseFloat(summary.csMin) * 10, 100);
+    const ptsVal = Math.min(parseFloat(summary.avgPoints) * 2, 100);
+
+    return { 
+      groupedStats: grouped, 
+      weeklyData: wData, 
+      statsSummary: summary, 
+      allWeeksAsc: wAsc, 
+      allWeeks: wDesc,
+      radarData: [killsVal, deathsVal, assistsVal, csmVal, ptsVal]
+    };
   }, [estadisticas]);
 
   if (loading) {
@@ -166,8 +186,8 @@ export default function JugadorDetailScreen() {
 
   if (!jugador) return null;
 
-  const radarPoints = [85, 70, 90, 65, 55, 75];
-  const avgRadarPoints = [60, 65, 50, 55, 60, 50];
+  // Average radar points for comparison (placeholders for now)
+  const avgRadarPoints = [50, 60, 50, 65, 50];
 
   const esPropietario = jugador.propietarioNickname === user?.nickname;
 
@@ -179,11 +199,6 @@ export default function JugadorDetailScreen() {
           <ChevronLeft color="white" size={24} />
         </TouchableOpacity>
         <View className="flex-1 ml-4 flex-row items-center">
-          {jugador.equipoLecLogo && (
-            <View className="w-10 h-10 bg-surface rounded-lg items-center justify-center mr-3 border border-surface-light/20">
-              <Image source={{ uri: jugador.equipoLecLogo }} className="w-7 h-7" resizeMode="contain" />
-            </View>
-          )}
           <View>
             <Text className="text-white text-lg font-black italic uppercase">{jugador.nickname}</Text>
             <Text className="text-gray-500 text-[10px] font-bold tracking-widest uppercase">
@@ -226,20 +241,12 @@ export default function JugadorDetailScreen() {
               <View className="flex-row px-6 items-center pt-4">
                 <View className="w-32 h-32 bg-midnight/50 rounded-[32px] items-center justify-center border border-surface-light/40 overflow-hidden relative">
                   {jugador.imagenUrl ? (
-                    <>
-                      <Image
-                        source={{ uri: jugador.imagenUrl }}
-                        className="w-32 h-32"
-                        style={{ marginTop: 16 }}
-                        resizeMode="contain"
-                      />
-                      {/* Logo de equipo superpuesto */}
-                      {jugador.equipoLecLogo && (
-                        <View className="absolute bottom-2 right-2 bg-midnight/90 p-1.5 rounded-xl border border-surface-light/30 shadow-2xl">
-                          <Image source={{ uri: jugador.equipoLecLogo }} className="w-6 h-6" resizeMode="contain" />
-                        </View>
-                      )}
-                    </>
+                    <Image
+                      source={{ uri: jugador.imagenUrl }}
+                      className="w-32 h-32"
+                      style={{ marginTop: 16 }}
+                      resizeMode="contain"
+                    />
                   ) : jugador.equipoLecLogo ? (
                     <Image source={{ uri: jugador.equipoLecLogo }} className="w-20 h-20 opacity-90" resizeMode="contain" />
                   ) : (
@@ -422,44 +429,61 @@ export default function JugadorDetailScreen() {
               </View>
 
               <View className="bg-surface rounded-3xl p-6 border border-surface-light/20 items-center">
-                <Svg height="220" width={width - 72} viewBox="0 0 200 200">
-                  {[0.2, 0.4, 0.6, 0.8, 1].map((r, i) => (
+                <Svg height="240" width={width - 72} viewBox="0 0 200 220">
+                  <G transform="translate(0, 15)">
+                    {[0.2, 0.4, 0.6, 0.8, 1].map((r, i) => (
+                      <Polygon
+                        key={i}
+                        points={radarData.map((_, idx) => {
+                          const angle = (idx * 2 * Math.PI) / radarData.length - Math.PI / 2;
+                          return `${100 + 80 * r * Math.cos(angle)},${100 + 80 * r * Math.sin(angle)}`;
+                        }).join(' ')}
+                        fill="none" stroke="#374151" strokeWidth="1"
+                      />
+                    ))}
+                    {radarData.map((_, idx) => {
+                      const angle = (idx * 2 * Math.PI) / radarData.length - Math.PI / 2;
+                      return <Line key={idx} x1="100" y1="100" x2={100 + 80 * Math.cos(angle)} y2={100 + 80 * Math.sin(angle)} stroke="#374151" strokeWidth="1" />;
+                    })}
+
+                    {/* Media de liga */}
                     <Polygon
-                      key={i}
-                      points={radarPoints.map((_, idx) => {
-                        const angle = (idx * 2 * Math.PI) / radarPoints.length - Math.PI / 2;
-                        return `${100 + 80 * r * Math.cos(angle)},${100 + 80 * r * Math.sin(angle)}`;
+                      points={avgRadarPoints.map((p, idx) => {
+                        const angle = (idx * 2 * Math.PI) / radarData.length - Math.PI / 2;
+                        return `${100 + 0.8 * p * Math.cos(angle)},${100 + 0.8 * p * Math.sin(angle)}`;
                       }).join(' ')}
-                      fill="none" stroke="#374151" strokeWidth="1"
+                      fill="#4B556330" stroke="#6B7280" strokeWidth="1.5"
                     />
-                  ))}
-                  {radarPoints.map((_, idx) => {
-                    const angle = (idx * 2 * Math.PI) / radarPoints.length - Math.PI / 2;
-                    return <Line key={idx} x1="100" y1="100" x2={100 + 80 * Math.cos(angle)} y2={100 + 80 * Math.sin(angle)} stroke="#374151" strokeWidth="1" />;
-                  })}
 
-                  {/* Media de liga */}
-                  <Polygon
-                    points={avgRadarPoints.map((p, idx) => {
-                      const angle = (idx * 2 * Math.PI) / radarPoints.length - Math.PI / 2;
-                      return `${100 + 0.8 * p * Math.cos(angle)},${100 + 0.8 * p * Math.sin(angle)}`;
-                    }).join(' ')}
-                    fill="#4B556330" stroke="#6B7280" strokeWidth="1.5"
-                  />
+                    {/* Stats Jugador */}
+                    <Polygon
+                      points={radarData.map((p, idx) => {
+                        const angle = (idx * 2 * Math.PI) / radarData.length - Math.PI / 2;
+                        return `${100 + 0.8 * p * Math.cos(angle)},${100 + 0.8 * p * Math.sin(angle)}`;
+                      }).join(' ')}
+                      fill="#00D1FF20" stroke="#00D1FF" strokeWidth="2.5"
+                    />
 
-                  {/* Stats Jugador */}
-                  <Polygon
-                    points={radarPoints.map((p, idx) => {
-                      const angle = (idx * 2 * Math.PI) / radarPoints.length - Math.PI / 2;
-                      return `${100 + 0.8 * p * Math.cos(angle)},${100 + 0.8 * p * Math.sin(angle)}`;
-                    }).join(' ')}
-                    fill="#00D1FF20" stroke="#00D1FF" strokeWidth="2.5"
-                  />
-
-                  {['KDA', 'CS/M', 'PTS', 'DMG', 'MIT', 'VIS'].map((label, idx) => {
-                    const angle = (idx * 2 * Math.PI) / radarPoints.length - Math.PI / 2;
-                    return <SvgText key={idx} x={100 + 95 * Math.cos(angle)} y={100 + 95 * Math.sin(angle)} fill="#9CA3AF" fontSize="11" fontWeight="bold" textAnchor="middle">{label}</SvgText>;
-                  })}
+                    {['KILLS', 'DEATHS', 'ASSISTS', 'CS/M', 'PTS'].map((label, idx) => {
+                      const angle = (idx * 2 * Math.PI) / radarData.length - Math.PI / 2;
+                      const x = 100 + 95 * Math.cos(angle);
+                      const y = 100 + 95 * Math.sin(angle);
+                      return (
+                        <SvgText 
+                          key={idx} 
+                          x={x} 
+                          y={y} 
+                          fill="#9CA3AF" 
+                          fontSize="10" 
+                          fontWeight="bold" 
+                          textAnchor="middle"
+                          alignmentBaseline="middle"
+                        >
+                          {label}
+                        </SvgText>
+                      );
+                    })}
+                  </G>
                 </Svg>
 
                 <View className="flex-row mt-6">

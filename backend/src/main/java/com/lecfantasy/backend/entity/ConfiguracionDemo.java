@@ -16,4 +16,7 @@ public class ConfiguracionDemo {
 
     @Column(name = "fecha_simulada")
     private LocalDateTime fechaSimulada;
+
+    @Column(name = "ultima_actualizacion_real")
+    private LocalDateTime ultimaActualizacionReal;
 }

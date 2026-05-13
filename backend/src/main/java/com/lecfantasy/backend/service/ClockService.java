@@ -15,7 +15,18 @@ public class ClockService {
     public LocalDateTime ahora() {
         return configRepo.findById(1L)
                 .filter(ConfiguracionDemo::isModoDemoActivo)
-                .map(ConfiguracionDemo::getFechaSimulada)
+                .map(config -> {
+                    if (config.getUltimaActualizacionReal() == null) {
+                        config.setUltimaActualizacionReal(LocalDateTime.now());
+                        configRepo.save(config);
+                        return config.getFechaSimulada();
+                    }
+                    long secondsPassed = java.time.Duration.between(
+                            config.getUltimaActualizacionReal(), 
+                            LocalDateTime.now()
+                    ).getSeconds();
+                    return config.getFechaSimulada().plusSeconds(secondsPassed);
+                })
                 .orElseGet(LocalDateTime::now);
     }
 
@@ -29,6 +40,7 @@ public class ClockService {
         ConfiguracionDemo config = configRepo.findById(1L).orElse(new ConfiguracionDemo());
         config.setModoDemoActivo(true);
         config.setFechaSimulada(fechaInicial);
+        config.setUltimaActualizacionReal(LocalDateTime.now());
         configRepo.save(config);
     }
 
@@ -39,9 +51,9 @@ public class ClockService {
     }
 
     public void establecerFechaSimulada(LocalDateTime nuevaFecha) {
-        configRepo.findById(1L).ifPresent(config -> {
-            config.setFechaSimulada(nuevaFecha);
-            configRepo.save(config);
-        });
+        ConfiguracionDemo config = configRepo.findById(1L).orElse(new ConfiguracionDemo());
+        config.setFechaSimulada(nuevaFecha);
+        config.setUltimaActualizacionReal(LocalDateTime.now());
+        configRepo.save(config);
     }
 }

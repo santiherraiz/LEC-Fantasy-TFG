@@ -70,7 +70,7 @@ export interface JugadorEstadistica {
 export interface Subasta {
   id: number;
   jugador: Jugador;
-  fechaFin: string;
+  fechaFin: any;
   miPuja: number | null;
 }
 

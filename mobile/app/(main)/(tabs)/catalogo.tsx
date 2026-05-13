@@ -1,211 +1,39 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { Text, View, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Image, TextInput, FlatList } from 'react-native';
-import { useRouter, Link } from 'expo-router';
-import { useAuthStore } from '../../../src/store/authStore';
-import { useToast } from '../../../src/context/ToastContext';
-import api from '../../../src/api/api';
-import { CatalogoJugador } from '../../../src/types';
-import { Search, TrendingUp, User as UserIcon, Shield, ChevronDown, ChevronUp, X, Zap } from 'lucide-react-native';
+import React, { useCallback } from 'react';
+import { Text, View, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, TextInput, FlatList } from 'react-native';
+import { Search, TrendingUp, ChevronDown, ChevronUp, X } from 'lucide-react-native';
 import CustomHeader from '../../../src/components/CustomHeader';
+import { CatalogoCard } from '../../../src/components/CatalogoCard';
+import { useCatalogo } from '../../../src/hooks/useCatalogo';
+import { CatalogoJugador } from '../../../src/types';
 
 export default function CatalogoScreen() {
-  const router = useRouter();
-  const { user, selectedLigaId } = useAuthStore();
-  const { showToast } = useToast();
+  const {
+    user,
+    loading,
+    refreshing,
+    searchQuery,
+    setSearchQuery,
+    activeTab,
+    filterPos,
+    filterTeam,
+    sortType,
+    sortOrder,
+    availableTeams,
+    availablePositions,
+    filteredCatalogo,
+    handleRefresh,
+    toggleSort,
+    toggleFilterTab,
+    setPosition,
+    setTeam
+  } = useCatalogo();
 
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-
-  // Data State
-  const [catalogo, setCatalogo] = useState<CatalogoJugador[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  // UI States
-  const [activeTab, setActiveTab] = useState<'PUNTOS' | 'PRECIO' | 'POSICION' | 'EQUIPO' | null>(null);
-  const [filterPos, setFilterPos] = useState<string | null>(null);
-  const [filterTeam, setFilterTeam] = useState<string | null>(null);
-  const [sortType, setSortType] = useState<'PUNTOS' | 'PRECIO'>('PUNTOS');
-  const [sortOrder, setSortOrder] = useState<'MAYOR' | 'MENOR'>('MAYOR');
-
-  // Extract unique teams and positions from data dynamically
-  const availableTeams = useMemo(() => {
-    const teams = catalogo.map(item => item.jugador.equipoLec?.nombre).filter(Boolean);
-    return Array.from(new Set(teams)).sort();
-  }, [catalogo]);
-
-  const availablePositions = useMemo(() => {
-    const positions = catalogo.map(item => item.jugador.rol).filter(Boolean);
-    return Array.from(new Set(positions)).sort();
-  }, [catalogo]);
-
-  const fetchData = async () => {
-    if (!user?.id || !selectedLigaId) return;
-    setLoading(true);
-    try {
-      const res = await api.get('/mercado/catalogo', { params: { ligaId: selectedLigaId } });
-      setCatalogo(res.data);
-    } catch (error) {
-      console.error("Error cargando catálogo:", error);
-      showToast("Error al cargar catálogo", "error");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, [selectedLigaId]);
-
-  // Derived filtered data
-  const filteredCatalogo = useMemo(() => {
-    let result = [...catalogo];
-
-    // 1. Search Filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(item =>
-        item.jugador.nickname.toLowerCase().includes(query)
-      );
-    }
-
-    // 2. Position Filter
-    if (filterPos) {
-      result = result.filter(item => item.jugador.rol === filterPos);
-    }
-
-    // 3. Team Filter
-    if (filterTeam) {
-      result = result.filter(item => item.jugador.equipoLec?.nombre === filterTeam);
-    }
-
-    // 4. Sorting
-    result.sort((a, b) => {
-      const valA = sortType === 'PUNTOS'
-        ? (a.puntosTotales || 0)
-        : (a.jugador.precioActual || a.jugador.precioBase || 0);
-      const valB = sortType === 'PUNTOS'
-        ? (b.puntosTotales || 0)
-        : (b.jugador.precioActual || b.jugador.precioBase || 0);
-
-      return sortOrder === 'MAYOR'
-        ? valB - valA
-        : valA - valB;
-    });
-
-    return result;
-  }, [catalogo, searchQuery, filterPos, filterTeam, sortType, sortOrder]);
-
-  // Renderizado optimizado para el FlatList
   const renderJugador = useCallback(({ item }: { item: CatalogoJugador }) => (
-    <Link href={`/jugador/${item.jugador.id}`} asChild>
-      <TouchableOpacity className="bg-surface rounded-2xl mb-4 border border-surface-light/20 overflow-hidden shadow-sm">
-        <View className="p-4 flex-row items-center">
-
-          {/* Avatar y Posición */}
-          <View className="relative">
-            <View className="w-24 h-24 bg-midnight/50 rounded-3xl items-center justify-center border border-surface-light/20 overflow-hidden shadow-inner">
-
-              {item.jugador.imagenUrl ? (
-                <Image
-                  source={{ uri: item.jugador.imagenUrl }}
-                  className="w-24 h-24"
-                  style={{ marginTop: 12 }}
-                  resizeMode="contain"
-                />
-              ) : (
-                <UserIcon size={32} color="#00D1FF" />
-              )}
-            </View>
-
-            {/* ESCUDO FLOTANTE: Logo limpio sin fondo circular */}
-            {item.jugador.equipoLec?.logoUrl && (
-              <View className="absolute top-1 left-1">
-                <Image
-                  source={{ uri: item.jugador.equipoLec.logoUrl }}
-                  className="w-7 h-7"
-                  resizeMode="contain"
-                />
-              </View>
-            )}
-          </View>
-
-          {/* Info principal */}
-          <View className="ml-6 flex-1 justify-center">
-            <View className="flex-row items-center mb-0.5">
-              <Text className="text-white font-black text-xl tracking-tight mr-3">{item.jugador.nickname}</Text>
-
-              {/* CHIP DE POSICIÓN: Ahora junto al nombre, más elegante */}
-              <View className="bg-accent-cyan/10 border border-accent-cyan/40 px-2 py-0.5 rounded-md">
-                <Text className="text-accent-cyan font-black text-[9px] uppercase italic">
-                  {item.jugador.rol.toUpperCase() === 'SUPPORT' ? 'SUPP' : item.jugador.rol}
-                </Text>
-              </View>
-            </View>
-
-            <Text className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-3">
-              {item.jugador.equipoLec?.nombre || 'Sin equipo'}
-            </Text>
-
-            <View className="flex-row items-center">
-              {item.propietarioNickname ? (
-                item.propietarioNickname === user?.nickname ? (
-                  <View className="flex-row items-center bg-indigo-500/10 px-2 py-1 rounded-md border border-indigo-500/20">
-                    <View className="w-1.5 h-1.5 rounded-full bg-indigo-400 mr-1.5" />
-                    <Text className="text-indigo-400 text-[10px] font-black uppercase tracking-wide">MÍO</Text>
-                  </View>
-                ) : (
-                  <View className="flex-row items-center bg-rose-500/10 px-2 py-1 rounded-md border border-rose-500/20">
-                    <View className="w-1.5 h-1.5 rounded-full bg-rose-400 mr-1.5" />
-                    <Text className="text-rose-400 text-[10px] font-black uppercase tracking-wide">{item.propietarioNickname}</Text>
-                  </View>
-                )
-              ) : (
-                <View className="flex-row items-center bg-emerald-500/10 px-2 py-1 rounded-md border border-emerald-500/20">
-                  <View className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5" />
-                  <Text className="text-emerald-400 text-[10px] font-black uppercase tracking-wide">LIBRE</Text>
-                </View>
-              )}
-            </View>
-          </View>
-
-          {/* Puntos: Diseño puramente tipográfico y elegante */}
-          <View className="items-end justify-center">
-            <View className="bg-accent-cyan/5 px-3 py-2 rounded-2xl border border-accent-cyan/10 items-center">
-              <Text className="text-accent-cyan font-black text-2xl tracking-tighter">
-                {Math.round(item.puntosTotales)}
-              </Text>
-              <Text className="text-accent-cyan/60 text-[8px] font-black uppercase tracking-[2px] -mt-1">
-                PTS
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Footer: Valor de mercado */}
-        <View className="bg-midnight/60 px-4 py-3 flex-row items-center justify-between border-t border-surface-light/10">
-          <View>
-            <Text className="text-gray-400 text-xs font-bold uppercase tracking-wider">Valor de mercado</Text>
-            <View className="flex-row items-center mt-0.5">
-              {item.jugador.tendencia === 'SUBE' && <ChevronUp size={14} color="#10B981" />}
-              {item.jugador.tendencia === 'BAJA' && <ChevronDown size={14} color="#F43F5E" />}
-              <Text className={`text-[10px] font-black ml-1 ${
-                item.jugador.tendencia === 'SUBE' ? 'text-emerald-400' : 
-                item.jugador.tendencia === 'BAJA' ? 'text-rose-400' : 'text-gray-500'
-              }`}>
-                {item.jugador.tendencia === 'SUBE' ? 'SUBIENDO' : 
-                 item.jugador.tendencia === 'BAJA' ? 'BAJANDO' : 
-                 item.jugador.tendencia || 'ESTABLE'}
-              </Text>
-            </View>
-          </View>
-          <Text className="text-emerald-400 font-black text-base">
-            {(item.jugador.precioActual || item.jugador.precioBase).toLocaleString()} €
-          </Text>
-        </View>
-      </TouchableOpacity>
-    </Link>
-  ), []);
+    <CatalogoCard 
+      item={item} 
+      isOwnPlayer={item.propietarioNickname === user?.nickname} 
+    />
+  ), [user?.nickname]);
 
   return (
     <View className="flex-1 bg-midnight">
@@ -243,15 +71,7 @@ export default function CatalogoScreen() {
 
           <View className="flex-row mb-3">
             <TouchableOpacity
-              onPress={() => {
-                if (sortType === 'PUNTOS') {
-                  setSortOrder(sortOrder === 'MAYOR' ? 'MENOR' : 'MAYOR');
-                } else {
-                  setSortType('PUNTOS');
-                  setSortOrder('MAYOR');
-                }
-                setActiveTab(null);
-              }}
+              onPress={() => toggleSort('PUNTOS')}
               className={`flex-1 py-2 rounded-xl mr-2 flex-row items-center justify-center border ${sortType === 'PUNTOS' ? 'bg-indigo-500/20 border-indigo-500' : 'bg-surface border-surface-light/30'}`}
             >
               <Text className={`font-black text-xs ${sortType === 'PUNTOS' ? 'text-indigo-400' : 'text-gray-400'}`}>
@@ -265,15 +85,7 @@ export default function CatalogoScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={() => {
-                if (sortType === 'PRECIO') {
-                  setSortOrder(sortOrder === 'MAYOR' ? 'MENOR' : 'MAYOR');
-                } else {
-                  setSortType('PRECIO');
-                  setSortOrder('MAYOR');
-                }
-                setActiveTab(null);
-              }}
+              onPress={() => toggleSort('PRECIO')}
               className={`flex-1 py-2 rounded-xl flex-row items-center justify-center border ${sortType === 'PRECIO' ? 'bg-indigo-500/20 border-indigo-500' : 'bg-surface border-surface-light/30'}`}
             >
               <Text className={`font-black text-xs ${sortType === 'PRECIO' ? 'text-indigo-400' : 'text-gray-400'}`}>
@@ -296,7 +108,7 @@ export default function CatalogoScreen() {
 
           <View className="flex-row mb-2">
             <TouchableOpacity
-              onPress={() => setActiveTab(activeTab === 'POSICION' ? null : 'POSICION')}
+              onPress={() => toggleFilterTab('POSICION')}
               className={`flex-1 py-2 rounded-xl mr-2 flex-row items-center justify-center border ${activeTab === 'POSICION' ? 'bg-accent-cyan/10 border-accent-cyan' : filterPos ? 'bg-accent-cyan/5 border-accent-cyan/30' : 'bg-surface border-surface-light/30'}`}
             >
               <Text className={`font-black text-[11px] ${activeTab === 'POSICION' || filterPos ? 'text-accent-cyan' : 'text-gray-400'}`}>
@@ -305,7 +117,7 @@ export default function CatalogoScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={() => setActiveTab(activeTab === 'EQUIPO' ? null : 'EQUIPO')}
+              onPress={() => toggleFilterTab('EQUIPO')}
               className={`flex-1 py-2 rounded-xl flex-row items-center justify-center border ${activeTab === 'EQUIPO' ? 'bg-accent-cyan/10 border-accent-cyan' : filterTeam ? 'bg-accent-cyan/5 border-accent-cyan/30' : 'bg-surface border-surface-light/30'}`}
             >
               <Text className={`font-black text-[11px] ${activeTab === 'EQUIPO' || filterTeam ? 'text-accent-cyan' : 'text-gray-400'}`}>
@@ -318,12 +130,10 @@ export default function CatalogoScreen() {
           {activeTab && (
             <View className="bg-surface/50 p-2 rounded-2xl border border-surface-light/10 mb-4 mx-1">
               <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
-                {(activeTab === 'PUNTOS' || activeTab === 'PRECIO') && null}
-
                 {activeTab === 'POSICION' && (
                   <>
                     <TouchableOpacity
-                      onPress={() => { setFilterPos(null); setActiveTab(null); }}
+                      onPress={() => setPosition(null)}
                       className={`px-4 py-2 rounded-lg mr-2 border ${filterPos === null ? 'bg-accent-cyan/10 border-accent-cyan/50' : 'border-surface-light/20'}`}
                     >
                       <Text className={`font-bold text-xs ${filterPos === null ? 'text-accent-cyan' : 'text-gray-400'}`}>TODAS</Text>
@@ -331,7 +141,7 @@ export default function CatalogoScreen() {
                     {availablePositions.map(pos => (
                       <TouchableOpacity
                         key={pos}
-                        onPress={() => { setFilterPos(pos); setActiveTab(null); }}
+                        onPress={() => setPosition(pos)}
                         className={`px-4 py-2 rounded-lg mr-2 border ${filterPos === pos ? 'bg-accent-cyan/10 border-accent-cyan/50' : 'border-surface-light/20'}`}
                       >
                         <Text className={`font-bold text-xs ${filterPos === pos ? 'text-accent-cyan' : 'text-gray-400'}`}>
@@ -345,7 +155,7 @@ export default function CatalogoScreen() {
                 {activeTab === 'EQUIPO' && (
                   <>
                     <TouchableOpacity
-                      onPress={() => { setFilterTeam(null); setActiveTab(null); }}
+                      onPress={() => setTeam(null)}
                       className={`px-4 py-2 rounded-lg mr-2 border ${filterTeam === null ? 'bg-accent-cyan/10 border-accent-cyan/50' : 'border-surface-light/20'}`}
                     >
                       <Text className={`font-bold text-xs ${filterTeam === null ? 'text-accent-cyan' : 'text-gray-400'}`}>TODOS</Text>
@@ -353,7 +163,7 @@ export default function CatalogoScreen() {
                     {availableTeams.map(team => (
                       <TouchableOpacity
                         key={team}
-                        onPress={() => { setFilterTeam(team); setActiveTab(null); }}
+                        onPress={() => setTeam(team)}
                         className={`px-4 py-2 rounded-lg mr-2 border ${filterTeam === team ? 'bg-accent-cyan/10 border-accent-cyan/50' : 'border-surface-light/20'}`}
                       >
                         <Text className={`font-bold text-xs ${filterTeam === team ? 'text-accent-cyan' : 'text-gray-400'}`}>{team.toUpperCase()}</Text>
@@ -367,7 +177,7 @@ export default function CatalogoScreen() {
         </View>
       </View>
 
-      {/* Uso de FlatList en lugar de ScrollView + Map para rendimiento drástico */}
+      {/* List content */}
       {loading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#00D1FF" />
@@ -386,7 +196,7 @@ export default function CatalogoScreen() {
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
-              onRefresh={() => { setRefreshing(true); fetchData(); }}
+              onRefresh={handleRefresh}
               tintColor="#00D1FF"
             />
           }

@@ -172,6 +172,7 @@ public class JugadorService {
         }).collect(Collectors.toList());
     }
 
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public JugadorDetalleDTO obtenerDetalleJugador(Long id, Long ligaId) {
         Jugador j = jugadorRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Jugador no encontrado"));

@@ -61,6 +61,15 @@ public class MercadoService {
             dto.setJugador(s.getJugador());
             dto.setFechaFin(s.getFechaFin());
 
+            // Calcular segundos restantes respecto al reloj del servidor
+            LocalDateTime ahora = clockService.ahora();
+            if (s.getFechaFin().isAfter(ahora)) {
+                long diff = java.time.Duration.between(ahora, s.getFechaFin()).getSeconds();
+                dto.setSegundosRestantes(diff);
+            } else {
+                dto.setSegundosRestantes(0L);
+            }
+
             Optional<Puja> miPuja = pujaRepository.findBySubastaIdAndUsuarioId(s.getId(), usuarioId);
             miPuja.ifPresent(puja -> dto.setMiPuja(puja.getCantidad()));
 
