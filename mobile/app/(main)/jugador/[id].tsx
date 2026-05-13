@@ -1,180 +1,47 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { Text, View, ScrollView, TouchableOpacity, ActivityIndicator, Dimensions, Image, Alert } from 'react-native';
+import React from 'react';
+import { Text, View, ScrollView, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Svg, Polyline, Circle, Line, Polygon, G, Text as SvgText, Path, Defs, LinearGradient, Stop } from 'react-native-svg';
-import api from '../../../src/api/api';
-import { JugadorDetalleDTO, JugadorEstadistica } from '../../../src/types';
-import { useAuthStore } from '../../../src/store/authStore';
 import {
   ChevronLeft,
   ChevronDown,
   ChevronRight,
   ChevronUp,
-  Swords,
   TrendingUp,
   Activity,
-  Skull,
-  Users,
-  Wheat,
-  Zap,
   Shield,
+  Zap,
 } from 'lucide-react-native';
 
-const { width } = Dimensions.get('window');
+import { useJugadorDetalle } from '../../../src/hooks/useJugadorDetalle';
+import { PlayerRadarChart } from '../../../src/components/PlayerRadarChart';
+import { PlayerPointsEvolution } from '../../../src/components/PlayerPointsEvolution';
+import { PlayerMatchCard } from '../../../src/components/PlayerMatchCard';
+import { PlayerSeasonStats } from '../../../src/components/PlayerSeasonStats';
 
 export default function JugadorDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { selectedLigaId, user } = useAuthStore();
 
-  const [jugador, setJugador] = useState<JugadorDetalleDTO | null>(null);
-  const [estadisticas, setEstadisticas] = useState<JugadorEstadistica[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [maxWeek, setMaxWeek] = useState(1);
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  const [activeTab, setActiveTab] = useState<'RESUMEN' | 'PARTIDOS' | 'STATS'>('RESUMEN');
-  const [selectedMapIndex, setSelectedMapIndex] = useState<Record<string, number>>({});
-  const [expandedSeries, setExpandedSeries] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    const fetchDetail = async () => {
-      if (!id) return;
-      try {
-        const [jugadorRes, statsRes, semanaRes] = await Promise.all([
-          api.get(`/jugadores/${id}`, { params: { ligaId: selectedLigaId } }),
-          api.get(`/jugadores/${id}/estadisticas`),
-          api.get('/liga/semana-actual')
-        ]);
-        setJugador(jugadorRes.data);
-        setEstadisticas(statsRes.data);
-        const currentWeek = semanaRes.data || 1;
-        setMaxWeek(currentWeek > 90 ? currentWeek - 90 : currentWeek);
-      } catch (error) {
-        console.error("Error cargando detalle:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchDetail();
-  }, [id, selectedLigaId]);
-
-  const handleClausulazo = async () => {
-    if (!jugador || isProcessing) return;
-
-    const precio = Math.round((jugador.precioActual || jugador.precioBase) * 1.5);
-
-    Alert.alert(
-      "💣 CLAUSULAZO",
-      `¿Quieres robar a ${jugador.nickname} pagando su cláusula de ${precio.toLocaleString()} €?\n\n(150% de su valor actual)`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "¡ROBAR!",
-          style: "destructive",
-          onPress: async () => {
-            setIsProcessing(true);
-            try {
-              await api.post('/mercado/clausulazo', {
-                ligaId: selectedLigaId,
-                jugadorId: jugador.id
-              });
-
-              Alert.alert("✅ ÉXITO", `${jugador.nickname} ahora forma parte de tu equipo.`);
-
-              // Recargar datos
-              const jugadorRes = await api.get(`/jugadores/${id}`, { params: { ligaId: selectedLigaId } });
-              setJugador(jugadorRes.data);
-            } catch (error: any) {
-              Alert.alert("❌ ERROR", error.response?.data || "No se pudo ejecutar el clausulazo");
-            } finally {
-              setIsProcessing(false);
-            }
-          }
-        }
-      ]
-    );
-  };
-
-  const selectMap = (serieId: string, index: number) => {
-    setSelectedMapIndex(prev => ({ ...prev, [serieId]: index }));
-  };
-
-  const toggleSerie = (serieId: string) => {
-    setExpandedSeries(prev => ({ ...prev, [serieId]: !prev[serieId] }));
-  };
-
-  // Memoizamos todos los cálculos pesados para evitar lag al cambiar de pestaña
-  const { groupedStats, weeklyData, statsSummary, allWeeksAsc, allWeeks, radarData } = useMemo(() => {
-    const grouped: Record<number, Record<string, JugadorEstadistica[]>> = {};
-
-    estadisticas.forEach(stat => {
-      let w = stat.semana || 1;
-      if (w > 90) w -= 90;
-      const s = stat.serieId || `GAME_${stat.gameId}`;
-      if (!grouped[w]) grouped[w] = {};
-      if (!grouped[w][s]) grouped[w][s] = [];
-      grouped[w][s].push(stat);
-    });
-
-    // Ordenar los mapas dentro de cada serie por fecha (Ascendente: Mapa 1, Mapa 2...)
-    Object.values(grouped).forEach(week => {
-      Object.values(week).forEach(maps => {
-        maps.sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime());
-      });
-    });
-
-    const statsWeeks = Object.keys(grouped).map(Number).sort((a, b) => a - b);
-    const wAsc = statsWeeks;
-    const wDesc = statsWeeks.slice().sort((a, b) => b - a);
-
-    const wData = wAsc.map(w => {
-      const weekMatches = grouped[w];
-      if (!weekMatches) return { value: 0, played: false };
-
-      const seriesSums = Object.values(weekMatches).map(maps => {
-        return maps.reduce((acc, m) => acc + m.puntosGenerados, 0);
-      });
-      const totalWeek = seriesSums.reduce((acc, p) => acc + p, 0) / (seriesSums.length || 1);
-      return { value: Math.round(totalWeek), played: true };
-    });
-
-    const playedWeeksData = wData.filter(d => d.played);
-    const avgPointsPerWeek = playedWeeksData.length > 0
-      ? (playedWeeksData.reduce((acc, d) => acc + d.value, 0) / playedWeeksData.length).toFixed(0)
-      : "0";
-
-    const summary = {
-      kda: (estadisticas.reduce((acc, s) => acc + (s.kills + s.assists) / (s.deaths || 1), 0) / (estadisticas.length || 1)).toFixed(2),
-      csMin: (estadisticas.reduce((acc, s) => acc + s.cs, 0) / (estadisticas.length * 30 || 1)).toFixed(1),
-      avgPoints: avgPointsPerWeek,
-      damage: 18500, // Placeholder
-      mitigated: 12200, // Placeholder
-      vision: 1.4 // Placeholder
-    };
-
-    // RADAR DATA: normalize real stats to a 0-100 scale for the radar chart
-    // We break KDA into Kills, Deaths, Assists to make it a pentagon
-    // Order: KILLS, DEATHS, ASSISTS, CS/M, PTS
-    const avgKills = (estadisticas.reduce((acc, s) => acc + s.kills, 0) / (estadisticas.length || 1));
-    const avgDeaths = (estadisticas.reduce((acc, s) => acc + s.deaths, 0) / (estadisticas.length || 1));
-    const avgAssists = (estadisticas.reduce((acc, s) => acc + s.assists, 0) / (estadisticas.length || 1));
-
-    const killsVal = Math.min(avgKills * 10, 100);
-    const deathsVal = Math.max(0, 100 - (avgDeaths * 15)); // More deaths = lower score
-    const assistsVal = Math.min(avgAssists * 8, 100);
-    const csmVal = Math.min(parseFloat(summary.csMin) * 10, 100);
-    const ptsVal = Math.min(parseFloat(summary.avgPoints) * 2, 100);
-
-    return { 
-      groupedStats: grouped, 
-      weeklyData: wData, 
-      statsSummary: summary, 
-      allWeeksAsc: wAsc, 
-      allWeeks: wDesc,
-      radarData: [killsVal, deathsVal, assistsVal, csmVal, ptsVal]
-    };
-  }, [estadisticas]);
+  const {
+    user,
+    jugador,
+    estadisticas,
+    loading,
+    activeTab,
+    setActiveTab,
+    selectedMapIndex,
+    expandedSeries,
+    groupedStats,
+    weeklyData,
+    statsSummary,
+    allWeeksAsc,
+    allWeeks,
+    radarData,
+    handleClausulazo,
+    selectMap,
+    toggleSerie,
+    isProcessing
+  } = useJugadorDetalle(id);
 
   if (loading) {
     return (
@@ -185,9 +52,6 @@ export default function JugadorDetailScreen() {
   }
 
   if (!jugador) return null;
-
-  // Average radar points for comparison (placeholders for now)
-  const avgRadarPoints = [50, 60, 50, 65, 50];
 
   const esPropietario = jugador.propietarioNickname === user?.nickname;
 
@@ -229,7 +93,6 @@ export default function JugadorDetailScreen() {
           <View className="p-4">
             {/* Tarjeta Principal */}
             <View className="py-8 bg-surface rounded-[32px] border border-surface-light/30 shadow-sm mt-2 overflow-hidden relative">
-              {/* Logo de equipo de fondo - Watermark */}
               {jugador.equipoLecLogo && (
                 <Image
                   source={{ uri: jugador.equipoLecLogo }}
@@ -328,97 +191,11 @@ export default function JugadorDetailScreen() {
                 <TrendingUp size={18} color="#00D1FF" />
                 <Text className="text-gray-400 text-xs font-black uppercase tracking-widest ml-2">Evolución Puntos</Text>
               </View>
-
-              <View className="bg-surface rounded-3xl p-6 border border-surface-light/20">
-                <View className="h-40 items-center justify-center">
-                  {weeklyData.length > 0 ? (
-                    <Svg height="140" width={width - 72}>
-                      <Defs>
-                        <LinearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-                          <Stop offset="0" stopColor="#00D1FF" stopOpacity="0.3" />
-                          <Stop offset="1" stopColor="#00D1FF" stopOpacity="0" />
-                        </LinearGradient>
-                      </Defs>
-
-                      {[0, 25, 50, 75, 100].map((tick) => (
-                        <Line
-                          key={tick}
-                          x1="0"
-                          y1={110 - tick}
-                          x2={width - 72}
-                          y2={110 - tick}
-                          stroke="#374151"
-                          strokeWidth="1"
-                          strokeDasharray="4, 4"
-                        />
-                      ))}
-
-                      {(() => {
-                        const chartW = width - 72;
-                        const padX = 30;
-                        const chartH = 110;
-                        const maxVal = Math.max(...weeklyData.map(d => d.value), 50);
-
-                        const points = weeklyData.map((d, i) => {
-                          const x = padX + (i / (weeklyData.length - 1 || 1)) * (chartW - padX * 2);
-                          const y = chartH - (d.value / maxVal) * 80;
-                          return { x, y, val: d.value, played: d.played, week: allWeeksAsc[i] };
-                        });
-
-                        const pathData = points.reduce((acc, p, i) => acc + `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`, "");
-                        const areaData = `${pathData} L ${points[points.length - 1].x} ${chartH} L ${points[0].x} ${chartH} Z`;
-
-                        return (
-                          <G>
-                            <Path d={areaData} fill="url(#grad)" />
-                            <Path d={pathData} fill="none" stroke="#00D1FF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                            {points.map((p, i) => (
-                              <G key={i}>
-                                <Circle
-                                  cx={p.x} cy={p.y}
-                                  r={p.played ? 5 : 4}
-                                  fill={p.played ? "#0B0E14" : "#1F2937"}
-                                  stroke={p.played ? "#00D1FF" : "#4B5563"}
-                                  strokeWidth="2"
-                                />
-                                <SvgText
-                                  x={p.x} y={p.y - 14}
-                                  fill={p.played ? "white" : "#6B7280"}
-                                  fontSize="12" fontWeight="bold" textAnchor="middle"
-                                >
-                                  {p.played ? p.val : "NP"}
-                                </SvgText>
-                                <SvgText
-                                  x={p.x} y={chartH + 20}
-                                  fill="#6B7280"
-                                  fontSize="10" fontWeight="bold" textAnchor="middle"
-                                >
-                                  W{p.week}
-                                </SvgText>
-                              </G>
-                            ))}
-                          </G>
-                        );
-                      })()}
-                    </Svg>
-                  ) : (
-                    <Text className="text-gray-500 italic">Sin datos disponibles</Text>
-                  )}
-                </View>
-
-                <View className="flex-row justify-between mt-6 pt-6 border-t border-surface-light/20">
-                  <View className="items-center">
-                    <Text className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-1.5">MEDIA</Text>
-                    <Text className="text-white text-xl font-black uppercase">{statsSummary.avgPoints} PTS</Text>
-                  </View>
-                  <View className="items-center">
-                    <Text className="text-gray-500 text-[10px] font-black uppercase tracking-widest mb-1.5">TOTAL TEMP.</Text>
-                    <Text className="text-accent-cyan text-xl font-black uppercase">
-                      {Math.round(weeklyData.reduce((acc, d) => acc + d.value, 0))} PTS
-                    </Text>
-                  </View>
-                </View>
-              </View>
+              <PlayerPointsEvolution
+                weeklyData={weeklyData}
+                allWeeksAsc={allWeeksAsc}
+                avgPoints={statsSummary.avgPoints}
+              />
             </View>
 
             {/* Radar Técnico */}
@@ -427,76 +204,7 @@ export default function JugadorDetailScreen() {
                 <Activity size={18} color="#00D1FF" />
                 <Text className="text-gray-400 text-xs font-black uppercase tracking-widest ml-2">Comparativa Técnica</Text>
               </View>
-
-              <View className="bg-surface rounded-3xl p-6 border border-surface-light/20 items-center">
-                <Svg height="240" width={width - 72} viewBox="0 0 200 220">
-                  <G transform="translate(0, 15)">
-                    {[0.2, 0.4, 0.6, 0.8, 1].map((r, i) => (
-                      <Polygon
-                        key={i}
-                        points={radarData.map((_, idx) => {
-                          const angle = (idx * 2 * Math.PI) / radarData.length - Math.PI / 2;
-                          return `${100 + 80 * r * Math.cos(angle)},${100 + 80 * r * Math.sin(angle)}`;
-                        }).join(' ')}
-                        fill="none" stroke="#374151" strokeWidth="1"
-                      />
-                    ))}
-                    {radarData.map((_, idx) => {
-                      const angle = (idx * 2 * Math.PI) / radarData.length - Math.PI / 2;
-                      return <Line key={idx} x1="100" y1="100" x2={100 + 80 * Math.cos(angle)} y2={100 + 80 * Math.sin(angle)} stroke="#374151" strokeWidth="1" />;
-                    })}
-
-                    {/* Media de liga */}
-                    <Polygon
-                      points={avgRadarPoints.map((p, idx) => {
-                        const angle = (idx * 2 * Math.PI) / radarData.length - Math.PI / 2;
-                        return `${100 + 0.8 * p * Math.cos(angle)},${100 + 0.8 * p * Math.sin(angle)}`;
-                      }).join(' ')}
-                      fill="#4B556330" stroke="#6B7280" strokeWidth="1.5"
-                    />
-
-                    {/* Stats Jugador */}
-                    <Polygon
-                      points={radarData.map((p, idx) => {
-                        const angle = (idx * 2 * Math.PI) / radarData.length - Math.PI / 2;
-                        return `${100 + 0.8 * p * Math.cos(angle)},${100 + 0.8 * p * Math.sin(angle)}`;
-                      }).join(' ')}
-                      fill="#00D1FF20" stroke="#00D1FF" strokeWidth="2.5"
-                    />
-
-                    {['KILLS', 'DEATHS', 'ASSISTS', 'CS/M', 'PTS'].map((label, idx) => {
-                      const angle = (idx * 2 * Math.PI) / radarData.length - Math.PI / 2;
-                      const x = 100 + 95 * Math.cos(angle);
-                      const y = 100 + 95 * Math.sin(angle);
-                      return (
-                        <SvgText 
-                          key={idx} 
-                          x={x} 
-                          y={y} 
-                          fill="#9CA3AF" 
-                          fontSize="10" 
-                          fontWeight="bold" 
-                          textAnchor="middle"
-                          alignmentBaseline="middle"
-                        >
-                          {label}
-                        </SvgText>
-                      );
-                    })}
-                  </G>
-                </Svg>
-
-                <View className="flex-row mt-6">
-                  <View className="flex-row items-center mx-4">
-                    <View className="w-2.5 h-2.5 rounded-full bg-accent-cyan mr-2" />
-                    <Text className="text-gray-300 text-xs font-bold">{jugador.nickname}</Text>
-                  </View>
-                  <View className="flex-row items-center mx-4">
-                    <View className="w-2.5 h-2.5 rounded-full bg-gray-500 mr-2" />
-                    <Text className="text-gray-300 text-xs font-bold">Media Liga</Text>
-                  </View>
-                </View>
-              </View>
+              <PlayerRadarChart radarData={radarData} playerNickname={jugador.nickname} />
             </View>
           </View>
         )}
@@ -510,7 +218,6 @@ export default function JugadorDetailScreen() {
 
             {allWeeks.map(week => {
               const weekStats = groupedStats[week];
-
               if (!weekStats) {
                 return (
                   <View key={week} className="mb-8">
@@ -525,183 +232,23 @@ export default function JugadorDetailScreen() {
               return (
                 <View key={week} className="mb-8">
                   <Text className="text-white text-lg font-black mb-3 uppercase italic tracking-wider">SEMANA {week}</Text>
-
                   {Object.keys(weekStats).sort((a, b) => {
-                    const dateA = new Date(weekStats[a][0].fecha).getTime();
-                    const dateB = new Date(weekStats[b][0].fecha).getTime();
-                    return dateB - dateA; // Más reciente arriba
-                  }).map(serieId => {
-                    const maps = weekStats[serieId];
-                    const isExpanded = expandedSeries[serieId];
-                    const currentMapIdx = selectedMapIndex[serieId] || 0;
-                    const map = maps[currentMapIdx];
-                    if (!map) return null;
-
-                    const totalSeriePoints = Math.round(maps.reduce((acc, m) => acc + (m.puntosGenerados || 0), 0));
-                    const wins = maps.filter(m => m.resultado === 'WIN').length;
-                    const losses = maps.length - wins;
-                    const isAce = maps.length === 2 && wins === 2;
-                    const globalResult = wins > losses ? 'WIN' : 'LOSS';
-                    const displayResult = isExpanded ? (map.resultado || 'LOSS') : globalResult;
-
-                    // Usamos el equipo que tenía el jugador en ese partido para calcular el rival correctamente
-                    const equipoEnEsePartido = map.jugadorEquipo || jugador.equipoLecNombre;
-                    const isTeam1 = map.team1?.toLowerCase() === equipoEnEsePartido?.toLowerCase();
-                    const rival = isTeam1 ? (map.team2 || 'Rival') : (map.team1 || 'Rival');
-                    const rivalLogo = isTeam1 ? map.team2Logo : map.team1Logo;
-
-                    return (
-                      <View key={serieId} className="bg-surface rounded-2xl p-5 mb-4 border border-surface-light/20 shadow-sm">
-                        <TouchableOpacity onPress={() => toggleSerie(serieId)} className="flex-row justify-between items-center">
-                          <View className="flex-1 mr-4">
-                            <View className="flex-row items-center">
-                              <Text className="text-gray-400 text-xs font-bold uppercase tracking-widest mr-2">vs</Text>
-                              <View className="w-8 h-8 bg-surface-light/10 rounded-lg items-center justify-center mr-1 border border-surface-light/10">
-                                {rivalLogo ? (
-                                  <Image
-                                    key={rivalLogo}
-                                    source={{ uri: rivalLogo }}
-                                    style={{ width: 24, height: 24 }}
-                                    resizeMode="contain"
-                                  />
-                                ) : (
-                                  <Text className="text-[8px] text-gray-500 font-black">{rival.substring(0, 2)}</Text>
-                                )}
-                              </View>
-                              <Text className="text-white text-xl font-black flex-shrink" numberOfLines={1}>{rival}</Text>
-                              {isAce && (
-                                <View className="bg-accent-cyan/20 px-2 py-0.5 rounded-lg ml-2 border border-accent-cyan/30">
-                                  <Text className="text-accent-cyan text-[9px] font-black tracking-widest uppercase">ACE</Text>
-                                </View>
-                              )}
-                            </View>
-                            <View className="flex-row items-center mt-1">
-                              <Text className="text-accent-cyan text-base font-black">{totalSeriePoints}</Text>
-                              <Text className="text-gray-500 text-[9px] font-bold ml-2 uppercase tracking-widest">Pts Fantasy</Text>
-                            </View>
-                          </View>
-
-                          <View className="flex-row items-center">
-                            <View className={`px-3 py-1.5 rounded-lg mr-4 ${displayResult === 'WIN' ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-rose-500/10 border border-rose-500/20'}`}>
-                              <Text className={`text-[10px] font-black tracking-widest ${displayResult === 'WIN' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                {displayResult === 'WIN' ? 'VICTORIA' : 'DERROTA'}
-                              </Text>
-                            </View>
-                            {isExpanded ? <ChevronDown color="#9CA3AF" size={20} /> : <ChevronRight color="#9CA3AF" size={20} />}
-                          </View>
-                        </TouchableOpacity>
-
-                        {isExpanded && (
-                          <View className="mt-5 pt-5 border-t border-surface-light/10">
-                            {/* Selector de Mapas */}
-                            <View className="flex-row mb-5 bg-midnight rounded-xl p-1.5 border border-surface-light/20">
-                              {maps.map((_, idx) => (
-                                <TouchableOpacity
-                                  key={idx}
-                                  onPress={() => selectMap(serieId, idx)}
-                                  className={`flex-1 py-2.5 items-center rounded-lg ${currentMapIdx === idx ? 'bg-accent-cyan/10 border border-accent-cyan/30' : ''}`}
-                                >
-                                  <Text className={`text-xs font-black tracking-widest ${currentMapIdx === idx ? 'text-accent-cyan' : 'text-gray-500'}`}>MAPA {idx + 1}</Text>
-                                </TouchableOpacity>
-                              ))}
-                            </View>
-
-                            {/* Detalles del Mapa Seleccionado */}
-                            <View className="bg-midnight rounded-2xl p-5 border border-surface-light/20">
-                              <View className="flex-row flex-wrap justify-between">
-                                {(() => {
-                                  const stats = [
-                                    { icon: <Swords size={18} color="#00D1FF" />, label: 'KILLS', val: map.kills, pts: map.kills * 3 },
-                                    { icon: <Skull size={18} color="#FB7185" />, label: 'DEATHS', val: map.deaths, pts: map.deaths * -1 },
-                                    { icon: <Users size={18} color="#00D1FF" />, label: 'ASSISTS', val: map.assists, pts: Math.round(map.assists * 1.5 * 10) / 10 },
-                                    { icon: <Wheat size={18} color="#FBBF24" />, label: 'FARM', val: map.cs, pts: Math.round(map.cs * 0.02 * 100) / 100 },
-                                  ];
-
-                                  return stats.map((s, i) => (
-                                    <View key={i} className="w-[48%] bg-surface rounded-xl p-4 items-center mb-3 border border-surface-light/10">
-                                      <View className="w-10 h-10 rounded-xl bg-midnight items-center justify-center mb-2 border border-surface-light/20">
-                                        {s.icon}
-                                      </View>
-                                      <Text className="text-gray-500 text-[10px] font-black mb-1.5 tracking-widest">{s.label}</Text>
-                                      <Text className="text-white text-xl font-bold mb-2">{s.val}</Text>
-
-                                      <View className={`px-2.5 py-1 rounded-md ${s.pts === 0 ? 'bg-gray-800' : s.pts > 0 ? 'bg-emerald-500/10' : 'bg-rose-500/10'}`}>
-                                        <Text className={`text-[10px] font-black ${s.pts === 0 ? 'text-gray-400' : s.pts > 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                          {s.pts > 0 ? `+${s.pts}` : s.pts}
-                                        </Text>
-                                      </View>
-                                    </View>
-                                  ));
-                                })()}
-                              </View>
-
-                              {map.resultado === 'WIN' && (
-                                <View className="flex-row justify-between items-center bg-emerald-500/10 p-3.5 rounded-xl mb-4 mt-2 border border-dashed border-emerald-500/30">
-                                  <Text className="text-emerald-400 text-xs font-black tracking-widest">BONUS VICTORIA</Text>
-                                  <Text className="text-emerald-400 text-sm font-bold">+5 PTS</Text>
-                                </View>
-                              )}
-
-                              {/* Nuevo Desglose de Puntos - Orientado al mapa y transparencia */}
-                              <View className="bg-midnight/60 p-6 rounded-[32px] border border-surface-light/20 mt-4">
-                                {/* GRANDE Y BLANCO: Puntos de este mapa */}
-                                <View className="items-center mb-6">
-                                  <Text className="text-gray-500 text-[10px] font-black uppercase tracking-[0.3em] mb-2">Rendimiento Mapa {currentMapIdx + 1}</Text>
-                                  <View className="flex-row items-baseline">
-                                    <Text className="text-white text-6xl font-black tracking-tighter">{Math.round(map.puntosReales || 0)}</Text>
-                                    <Text className="text-gray-400 text-lg font-black ml-2 uppercase">Pts</Text>
-                                  </View>
-                                </View>
-
-                                <View className="h-[1px] bg-white/5 mb-6" />
-
-                                {/* SECCIÓN CÁLCULO: Pequeño y detallado */}
-                                <View>
-                                  <Text className="text-gray-500 text-[9px] font-black uppercase tracking-widest mb-4">Cálculo de la Serie</Text>
-
-                                  {/* Lista de mapas de la serie */}
-                                  <View className="mb-4">
-                                    {maps.map((m, i) => (
-                                      <View key={i} className="flex-row justify-between items-center opacity-60 mb-1">
-                                        <Text className="text-gray-400 text-xs font-bold">Puntos Mapa {i + 1}</Text>
-                                        <Text className="text-white text-xs font-black">{Math.round(m.puntosReales || 0)}</Text>
-                                      </View>
-                                    ))}
-                                  </View>
-
-                                  {/* La Fórmula */}
-                                  <View className="bg-white/5 rounded-2xl p-4 mb-5 border border-white/5">
-                                    <View className="flex-row justify-between items-center mb-2">
-                                      <Text className="text-gray-400 text-[10px] font-medium italic">Promedio ({maps.map(m => Math.round(m.puntosReales)).join(' + ')}) / {maps.length}</Text>
-                                      <Text className="text-white text-sm font-black">{Math.round(maps.reduce((acc, m) => acc + (m.puntosReales || 0), 0) / maps.length)}</Text>
-                                    </View>
-                                    {isAce && (
-                                      <View className="flex-row justify-between items-center">
-                                        <Text className="text-accent-cyan text-[10px] font-black uppercase tracking-tighter italic">Bono ACE (Victoria 2-0)</Text>
-                                        <Text className="text-accent-cyan text-sm font-black">+5</Text>
-                                      </View>
-                                    )}
-                                  </View>
-
-                                  {/* Resultado Final Ranking (Cian y elegante) */}
-                                  <View className="flex-row justify-between items-end">
-                                    <View>
-                                      <Text className="text-accent-cyan text-[10px] font-black uppercase italic tracking-wider">Total para Ranking</Text>
-                                      <Text className="text-gray-600 text-[8px] font-bold uppercase">Suma final de la serie</Text>
-                                    </View>
-                                    <View className="items-end">
-                                      <Text className="text-accent-cyan text-3xl font-black leading-none">{totalSeriePoints}</Text>
-                                      <Text className="text-accent-cyan/60 text-[8px] font-black uppercase tracking-tighter mt-1">Pts Fantasy</Text>
-                                    </View>
-                                  </View>
-                                </View>
-                              </View>
-                            </View>
-                          </View>
-                        )}
-                      </View>
-                    );
-                  })}
+                    const dateA = new Date(weekStats[a]?.[0]?.fecha || 0).getTime();
+                    const dateB = new Date(weekStats[b]?.[0]?.fecha || 0).getTime();
+                    return dateB - dateA;
+                  }).map(serieId => (
+                    <PlayerMatchCard
+                      key={serieId}
+                      serieId={serieId}
+                      maps={weekStats[serieId]}
+                      isExpanded={expandedSeries[serieId]}
+                      onToggle={toggleSerie}
+                      currentMapIdx={selectedMapIndex[serieId] || 0}
+                      onSelectMap={selectMap}
+                      playerNickname={jugador.nickname}
+                      playerEquipoLecNombre={jugador.equipoLecNombre || 'AGENTE LIBRE'}
+                    />
+                  ))}
                 </View>
               );
             })}
@@ -710,26 +257,7 @@ export default function JugadorDetailScreen() {
 
         {/* TAB: STATS */}
         {activeTab === 'STATS' && (
-          <View className="p-4 mt-2 mb-8">
-            <Text className="text-gray-400 text-xs font-black uppercase tracking-widest ml-1 mb-4">Promedios de Temporada</Text>
-            <View className="bg-surface rounded-2xl overflow-hidden border border-surface-light/20">
-              {[
-                { label: 'Asesinatos', val: (estadisticas.reduce((acc, s) => acc + s.kills, 0) / (estadisticas.length || 1)).toFixed(1) },
-                { label: 'Muertes', val: (estadisticas.reduce((acc, s) => acc + s.deaths, 0) / (estadisticas.length || 1)).toFixed(1) },
-                { label: 'Asistencias', val: (estadisticas.reduce((acc, s) => acc + s.assists, 0) / (estadisticas.length || 1)).toFixed(1) },
-                { label: 'KDA Ratio', val: statsSummary.kda },
-                { label: 'CS por Minuto', val: statsSummary.csMin },
-                { label: 'Visión / Minuto', val: statsSummary.vision },
-                { label: 'Daño Infligido', val: '18.5k' },
-                { label: 'Victorias Totales', val: estadisticas.filter(s => s.resultado === 'WIN').length, isLast: true },
-              ].map((item, i) => (
-                <View key={i} className={`flex-row justify-between p-5 ${!item.isLast ? 'border-b border-surface-light/10' : ''}`}>
-                  <Text className="text-gray-300 text-sm font-bold tracking-wide">{item.label}</Text>
-                  <Text className="text-accent-cyan text-sm font-black">{item.val}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
+          <PlayerSeasonStats estadisticas={estadisticas} statsSummary={statsSummary} />
         )}
 
         <View className="h-10" />
