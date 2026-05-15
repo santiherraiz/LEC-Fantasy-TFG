@@ -81,7 +81,7 @@ public class MercadoService {
     public List<CatalogoJugadorDTO> obtenerCatalogo(Long ligaId) {
         List<Jugador> todos = jugadorRepository.findAll();
         List<Plantilla> ocupados = plantillaRepository.findByEquipoLigaId(ligaId);
-        
+
         // Traemos todas las estadísticas para calcular puntos y media
         List<EstadisticaPartido> todasLasStats = estadisticaPartidoRepository.findAll();
         java.util.Map<Long, List<EstadisticaPartido>> statsPorJugador = todasLasStats.stream()
@@ -101,7 +101,7 @@ public class MercadoService {
             dto.setPrecioActual(j.getPrecioActual());
             dto.setTendencia(j.getTendencia());
             dto.setImagenUrl(j.getImagenUrl());
-            
+
             if (j.getEquipoLec() != null) {
                 dto.setEquipoLecNombre(j.getEquipoLec().getNombre());
                 dto.setEquipoLecLogo(j.getEquipoLec().getLogoUrl());
@@ -111,17 +111,17 @@ public class MercadoService {
 
             List<EstadisticaPartido> stats = statsPorJugador.getOrDefault(j.getId(), Collections.emptyList());
             double total = stats.stream().mapToDouble(EstadisticaPartido::getPuntosGenerados).sum();
-            
+
             long numSeries = stats.stream()
                     .map(s -> s.getPartido().getSerieId())
                     .distinct()
                     .count();
-            
+
             double media = numSeries == 0 ? 0.0 : total / numSeries;
-            
+
             dto.setPuntosTotales(total);
             dto.setPuntosMedia(Math.round(media * 10.0) / 10.0);
-            
+
             return dto;
         }).collect(Collectors.toList());
     }
@@ -203,7 +203,7 @@ public class MercadoService {
 
     @Transactional
     public void generarSubastasConFechaFin(Liga liga, LocalDateTime fechaFin) {
-        // 1. Obtener IDs de jugadores ocupados (en equipos o en subastas activas)
+        // Obtener IDs de jugadores ocupados (en equipos o en subastas activas)
         List<Long> ocupadosIds = plantillaRepository.findByEquipoLigaId(liga.getId())
                 .stream()
                 .map(p -> p.getJugador().getId())
@@ -216,38 +216,39 @@ public class MercadoService {
 
         ocupadosIds.addAll(enSubastaIds);
 
-        // 2. Obtener lista de todos los jugadores disponibles
+        // Obtener lista de todos los jugadores disponibles
         List<Jugador> disponibles = jugadorRepository.findAll().stream()
                 .filter(j -> !ocupadosIds.contains(j.getId()))
                 .collect(Collectors.toCollection(ArrayList::new));
 
         List<Jugador> seleccionados = new ArrayList<>();
-        String[] roles = {"TOP", "JUNGLE", "MID", "BOT", "SUPPORT"};
+        String[] roles = { "TOP", "JUNGLE", "MID", "BOT", "SUPPORT" };
         LocalDateTime ahora = clockService.ahora();
 
-        // 3. Intentar elegir uno de cada rol
+        // Intentar elegir uno de cada rol
         for (String rol : roles) {
             String dbRol = rol.equals("ADC") ? "BOT" : rol;
             List<Jugador> jugadoresDelRol = disponibles.stream()
                     .filter(j -> j.getRol().equalsIgnoreCase(dbRol))
                     .collect(Collectors.toList());
-            
+
             if (!jugadoresDelRol.isEmpty()) {
                 Collections.shuffle(jugadoresDelRol);
                 Jugador elegido = jugadoresDelRol.get(0);
-                
+
                 // Normalizamos el rol a BOT antes de guardar si es un tirador
                 if (elegido.getRol().equalsIgnoreCase("Bot")) {
                     elegido.setRol("BOT");
                     jugadorRepository.save(elegido);
                 }
-                
+
                 seleccionados.add(elegido);
                 disponibles.remove(elegido);
             }
         }
 
-        // 4. Si faltan huecos (porque no había jugadores de un rol), rellenar con cualquiera
+        // Si faltan huecos (porque no había jugadores de un rol), rellenar con
+        // cualquiera
         if (seleccionados.size() < 5 && !disponibles.isEmpty()) {
             Collections.shuffle(disponibles);
             int faltantes = 5 - seleccionados.size();
@@ -256,7 +257,7 @@ public class MercadoService {
             }
         }
 
-        // 5. Crear las subastas finales
+        // Crear las subastas finales
         for (Jugador j : seleccionados) {
             Subasta s = new Subasta();
             s.setLiga(liga);
@@ -266,14 +267,13 @@ public class MercadoService {
             subastaRepository.save(s);
         }
 
-        // 6. Notificar a todos los usuarios de la liga
+        // Notificar a todos los usuarios de la liga
         List<Equipo> equipos = equipoRepository.findAllByLigaIdOrderByPuntuacionTotalDesc(liga.getId());
         for (Equipo e : equipos) {
             notificationService.enviarNotificacion(
-                e.getUsuario().getPushToken(),
-                "¡Mercado Renovado!",
-                "Nuevos jugadores han aparecido en subasta. ¡No pierdas tu oportunidad!"
-            );
+                    e.getUsuario().getPushToken(),
+                    "¡Mercado Renovado!",
+                    "Nuevos jugadores han aparecido en subasta. ¡No pierdas tu oportunidad!");
         }
     }
 
@@ -284,7 +284,8 @@ public class MercadoService {
 
         for (Subasta s : expiradas) {
             try {
-                // Usamos 'self' para que la anotación @Transactional(propagation = Propagation.REQUIRES_NEW) funcione
+                // "self" para que la anotación @Transactional(propagation =
+                // Propagation.REQUIRES_NEW) funcione
                 self.resolverSubastaIndividual(s.getId());
             } catch (Exception e) {
                 log.error("Error crítico resolviendo subasta {}: {}", s.getId(), e.getMessage());
@@ -295,16 +296,19 @@ public class MercadoService {
     @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public void resolverSubastaIndividual(Long subastaId) {
         Subasta s = subastaRepository.findById(subastaId).orElseThrow();
-        log.info("Resolviendo subasta ID: {} - Jugador: {} - Fecha Fin: {}", s.getId(), s.getJugador().getNickname(), s.getFechaFin());
-        
+        log.info("Resolviendo subasta ID: {} - Jugador: {} - Fecha Fin: {}", s.getId(), s.getJugador().getNickname(),
+                s.getFechaFin());
+
         List<Puja> pujas = pujaRepository.findBySubastaIdOrderByCantidadDescFechaPujaAsc(s.getId());
 
         if (!pujas.isEmpty()) {
             Puja ganadora = pujas.get(0);
             log.info("GANADOR: {} con puja de {}", ganadora.getUsuario().getNickname(), ganadora.getCantidad());
 
-            Equipo equipoGanador = equipoRepository.findByUsuarioIdAndLigaId(ganadora.getUsuario().getId(), s.getLiga().getId())
-                .orElseThrow(() -> new RuntimeException("Equipo ganador no encontrado para usuario " + ganadora.getUsuario().getId()));
+            Equipo equipoGanador = equipoRepository
+                    .findByUsuarioIdAndLigaId(ganadora.getUsuario().getId(), s.getLiga().getId())
+                    .orElseThrow(() -> new RuntimeException(
+                            "Equipo ganador no encontrado para usuario " + ganadora.getUsuario().getId()));
 
             // Evitar duplicados si por algún motivo ya lo tiene
             if (!plantillaRepository.existsByEquipoIdAndJugadorId(equipoGanador.getId(), s.getJugador().getId())) {
@@ -313,7 +317,8 @@ public class MercadoService {
                 p.setJugador(s.getJugador());
                 p.setEstado(EstadoAlineacion.BANQUILLO);
                 plantillaRepository.save(p);
-                log.info("Jugador {} añadido a la plantilla de {}", s.getJugador().getNickname(), equipoGanador.getNombreEquipo());
+                log.info("Jugador {} añadido a la plantilla de {}", s.getJugador().getNickname(),
+                        equipoGanador.getNombreEquipo());
 
                 // Incrementar comprasHoy
                 Jugador j = s.getJugador();
@@ -323,25 +328,24 @@ public class MercadoService {
 
                 // Noticia de subasta ganada
                 noticiaService.crearNoticia(
-                    s.getLiga().getId(),
-                    TipoNoticia.SUBASTA_GANADA,
-                    String.format("¡%s ha ganado la subasta por %s por %.0f €!", 
-                        ganadora.getUsuario().getNickname(), 
-                        s.getJugador().getNickname(), 
-                        ganadora.getCantidad()),
-                    s.getJugador().getId(),
-                    equipoGanador.getId(),
-                    s.getJugador().getImagenUrl()
-                );
+                        s.getLiga().getId(),
+                        TipoNoticia.SUBASTA_GANADA,
+                        String.format("¡%s ha ganado la subasta por %s por %.0f €!",
+                                ganadora.getUsuario().getNickname(),
+                                s.getJugador().getNickname(),
+                                ganadora.getCantidad()),
+                        s.getJugador().getId(),
+                        equipoGanador.getId(),
+                        s.getJugador().getImagenUrl());
             }
 
             // Notificar al ganador
             try {
                 notificationService.enviarNotificacion(
-                    ganadora.getUsuario().getPushToken(),
-                    "¡Fichaje completado!",
-                    "¡Enhorabuena! Has fichado a " + s.getJugador().getNickname() + " por " + ganadora.getCantidad() + " €."
-                );
+                        ganadora.getUsuario().getPushToken(),
+                        "¡Fichaje completado!",
+                        "¡Enhorabuena! Has fichado a " + s.getJugador().getNickname() + " por " + ganadora.getCantidad()
+                                + " €.");
             } catch (Exception e) {
                 log.warn("Error enviando notificación al ganador: {}", e.getMessage());
             }
@@ -349,20 +353,22 @@ public class MercadoService {
             // Devolver dinero a los perdedores y notificarles
             for (int i = 1; i < pujas.size(); i++) {
                 Puja perdedora = pujas.get(i);
-                Optional<Equipo> equipoPerdedorOpt = equipoRepository.findByUsuarioIdAndLigaId(perdedora.getUsuario().getId(), s.getLiga().getId());
-                
+                Optional<Equipo> equipoPerdedorOpt = equipoRepository
+                        .findByUsuarioIdAndLigaId(perdedora.getUsuario().getId(), s.getLiga().getId());
+
                 if (equipoPerdedorOpt.isPresent()) {
                     Equipo equipoPerdedor = equipoPerdedorOpt.get();
-                    equipoPerdedor.setPresupuestoDisponible(equipoPerdedor.getPresupuestoDisponible() + perdedora.getCantidad());
+                    equipoPerdedor.setPresupuestoDisponible(
+                            equipoPerdedor.getPresupuestoDisponible() + perdedora.getCantidad());
                     equipoRepository.save(equipoPerdedor);
                     log.info("Devueltos {} € a {}", perdedora.getCantidad(), equipoPerdedor.getNombreEquipo());
 
                     try {
                         notificationService.enviarNotificacion(
-                            perdedora.getUsuario().getPushToken(),
-                            "Subasta finalizada",
-                            "Has perdido la subasta por " + s.getJugador().getNickname() + ". Se han devuelto " + perdedora.getCantidad() + " € a tu presupuesto."
-                        );
+                                perdedora.getUsuario().getPushToken(),
+                                "Subasta finalizada",
+                                "Has perdido la subasta por " + s.getJugador().getNickname() + ". Se han devuelto "
+                                        + perdedora.getCantidad() + " € a tu presupuesto.");
                     } catch (Exception e) {
                         log.warn("Error enviando notificación al perdedor: {}", e.getMessage());
                     }
@@ -379,21 +385,23 @@ public class MercadoService {
     @Transactional
     public void forzarRefrescoMercado() {
         log.info("FORZANDO refresco manual del mercado...");
-        
-        // 1. Resolvemos TODAS las subastas que no estén finalizadas (incluidas las del futuro lejano)
+
+        // Resolvemos TODAS las subastas que no estén finalizadas
         List<Subasta> activas = subastaRepository.findByFinalizadaFalse();
         log.info("Cerrando {} subastas activas para limpiar el mercado...", activas.size());
-        
+
         for (Subasta s : activas) {
             try {
-                // Forzamos el cierre resolviéndolas (el que haya pujado más se lo lleva, el resto recupera dinero)
+                // Forzamos el cierre resolviéndolas (el que haya pujado más se lo lleva, el
+                // resto recupera dinero)
                 self.resolverSubastaIndividual(s.getId());
             } catch (Exception e) {
                 log.error("Error limpiando subasta {}: {}", s.getId(), e.getMessage());
             }
         }
 
-        // 2. Para cada liga, generamos subastas nuevas sincronizadas con el reloj actual
+        // Para cada liga, generamos subastas nuevas sincronizadas con el reloj
+        // actual
         List<Liga> ligas = ligaRepository.findAll();
         for (Liga liga : ligas) {
             log.info("Liga {} - Generando nuevas subastas sincronizadas...", liga.getNombre());
@@ -404,10 +412,10 @@ public class MercadoService {
     @Transactional
     public void initMercadoParaLiga(Liga liga) {
         LocalDateTime ahora = clockService.ahora();
-        // El reset es a la hora en que se creó la liga (o ahora si es nueva y aún no se ha guardado el createdAt)
-        java.time.LocalTime horaReset = (liga.getCreatedAt() != null) 
-            ? liga.getCreatedAt().toLocalTime() 
-            : ahora.toLocalTime();
+        // El reset es a la hora en que se creó la liga
+        java.time.LocalTime horaReset = (liga.getCreatedAt() != null)
+                ? liga.getCreatedAt().toLocalTime()
+                : ahora.toLocalTime();
 
         LocalDateTime proximoFin = ahora.toLocalDate().atTime(horaReset);
         // Si la hora de reset ya pasó o es justo ahora, el próximo fin es mañana
@@ -422,26 +430,26 @@ public class MercadoService {
     @Transactional
     public String ficharJugador(Long usuarioId, Long jugadorId) {
 
-        // 1. Buscamos el equipo del usuario
+        // Buscamos el equipo del usuario
         Equipo equipo = equipoRepository.findByUsuarioId(usuarioId)
                 .orElseThrow(() -> new RuntimeException("El usuario no tiene un equipo creado."));
 
-        // 2. Buscamos al jugador en el mercado
+        // Buscamos al jugador en el mercado
         Jugador jugador = jugadorRepository.findById(jugadorId)
                 .orElseThrow(() -> new RuntimeException("El jugador no existe en la base de datos."));
 
-        // 3. Validamos que no lo tenga ya fichado
+        // Validamos que no lo tenga ya fichado
         if (plantillaRepository.existsByEquipoIdAndJugadorId(equipo.getId(), jugador.getId())) {
             throw new RuntimeException("¡Ya tienes a este jugador en tu plantilla!");
         }
 
-        // 4. Comprobamos la cartera (saldo)
+        // Comprobamos la cartera (saldo)
         if (equipo.getPresupuestoDisponible() < jugador.getPrecioActual()) {
             throw new RuntimeException("Presupuesto insuficiente. Tienes " + equipo.getPresupuestoDisponible()
                     + " y cuesta " + jugador.getPrecioActual());
         }
 
-        // 5. ¡Ejecutamos la compra! Restamos el dinero
+        // Ejecutamos la compra y restamos el dinero
         equipo.setPresupuestoDisponible(equipo.getPresupuestoDisponible() - jugador.getPrecioActual());
         equipoRepository.save(equipo);
 
@@ -450,32 +458,30 @@ public class MercadoService {
         jugador.setComprasHoy(actualesC + 1);
         jugadorRepository.save(jugador);
 
-        // 6. Añadimos el jugador a la plantilla (por defecto al banquillo)
+        // Añadimos el jugador a la plantilla
         Plantilla nuevoFichaje = new Plantilla();
         nuevoFichaje.setEquipo(equipo);
         nuevoFichaje.setJugador(jugador);
         nuevoFichaje.setEstado(EstadoAlineacion.BANQUILLO);
         plantillaRepository.save(nuevoFichaje);
 
-        // 7. Notificar al usuario
+        // Notificar al usuario
         notificationService.enviarNotificacion(
-            equipo.getUsuario().getPushToken(),
-            "¡Fichaje Confirmado!",
-            "Has fichado a " + jugador.getNickname() + " por " + jugador.getPrecioActual() + " €."
-        );
+                equipo.getUsuario().getPushToken(),
+                "¡Fichaje Confirmado!",
+                "Has fichado a " + jugador.getNickname() + " por " + jugador.getPrecioActual() + " €.");
 
-        // 8. Crear noticia en el muro
+        // Crear noticia en el muro
         noticiaService.crearNoticia(
-            equipo.getLiga().getId(),
-            TipoNoticia.FICHAJE,
-            String.format("¡%s ha fichado a %s por %.0f €!", 
-                equipo.getUsuario().getNickname(), 
-                jugador.getNickname(), 
-                jugador.getPrecioActual()),
-            jugador.getId(),
-            equipo.getId(),
-            jugador.getImagenUrl()
-        );
+                equipo.getLiga().getId(),
+                TipoNoticia.FICHAJE,
+                String.format("¡%s ha fichado a %s por %.0f €!",
+                        equipo.getUsuario().getNickname(),
+                        jugador.getNickname(),
+                        jugador.getPrecioActual()),
+                jugador.getId(),
+                equipo.getId(),
+                jugador.getImagenUrl());
 
         return "¡Fichaje exitoso! Has fichado a " + jugador.getNickname() +
                 ". Saldo restante: " + equipo.getPresupuestoDisponible();
@@ -483,11 +489,11 @@ public class MercadoService {
 
     @Transactional
     public String ejecutarClausulazo(Long compradorUsuarioId, Long jugadorId, Long ligaId) {
-        // 1. Buscamos el equipo del comprador
+        // Buscamos el equipo del comprador
         Equipo equipoComprador = equipoRepository.findByUsuarioIdAndLigaId(compradorUsuarioId, ligaId)
                 .orElseThrow(() -> new RuntimeException("No tienes un equipo en esta liga."));
 
-        // 2. Buscamos al jugador y su relación actual en la plantilla
+        // Buscamos al jugador y su relación actual en la plantilla
         Plantilla relacionActual = plantillaRepository.findAll().stream()
                 .filter(p -> p.getJugador().getId().equals(jugadorId) && p.getEquipo().getLiga().getId().equals(ligaId))
                 .findFirst()
@@ -500,16 +506,16 @@ public class MercadoService {
             throw new RuntimeException("No puedes robarte a ti mismo... aunque sería divertido.");
         }
 
-        // 3. Calculamos la cláusula (150% del valor de mercado - Redondeado)
+        // Calculamos la cláusula (150% del valor de mercado)
         double precioClausula = Math.round(jugador.getPrecioActual() * 1.5);
 
-        // 4. Validamos presupuesto
+        // Validamos presupuesto
         if (equipoComprador.getPresupuestoDisponible() < precioClausula) {
-            throw new RuntimeException("Presupuesto insuficiente. La cláusula de " + jugador.getNickname() + 
-                " es de " + String.format("%.0f", precioClausula) + " €.");
+            throw new RuntimeException("Presupuesto insuficiente. La cláusula de " + jugador.getNickname() +
+                    " es de " + String.format("%.0f", precioClausula) + " €.");
         }
 
-        // 5. Transferencia de dinero
+        // Transferencia de dinero
         equipoComprador.setPresupuestoDisponible(equipoComprador.getPresupuestoDisponible() - precioClausula);
         equipoVictima.setPresupuestoDisponible(equipoVictima.getPresupuestoDisponible() + precioClausula);
 
@@ -518,9 +524,9 @@ public class MercadoService {
         jugador.setComprasHoy(actualesC + 1);
         jugadorRepository.save(jugador);
 
-        // 6. Transferencia de jugador
+        // Transferencia de jugador
         plantillaRepository.delete(relacionActual);
-        
+
         Plantilla nuevaRelacion = new Plantilla();
         nuevaRelacion.setEquipo(equipoComprador);
         nuevaRelacion.setJugador(jugador);
@@ -530,35 +536,33 @@ public class MercadoService {
         equipoRepository.save(equipoComprador);
         equipoRepository.save(equipoVictima);
 
-        // 7. Notificaciones
+        // Notificaciones
         // Al comprador
         notificationService.enviarNotificacion(
-            equipoComprador.getUsuario().getPushToken(),
-            "¡CLAUSULAZO EJECUTADO!",
-            "Has pagado la cláusula de " + jugador.getNickname() + " por " + String.format("%.0f", precioClausula) + " €."
-        );
+                equipoComprador.getUsuario().getPushToken(),
+                "¡CLAUSULAZO EJECUTADO!",
+                "Has pagado la cláusula de " + jugador.getNickname() + " por " + String.format("%.0f", precioClausula)
+                        + " €.");
 
-        // Al "robado" (pánico)
+        // Al robado
         notificationService.enviarNotificacion(
-            equipoVictima.getUsuario().getPushToken(),
-            "¡TE HAN ROBADO UN JUGADOR!",
-            equipoComprador.getUsuario().getNickname() + " ha pagado la cláusula de " + jugador.getNickname() + 
-            ". Has recibido " + String.format("%.0f", precioClausula) + " €."
-        );
+                equipoVictima.getUsuario().getPushToken(),
+                "¡TE HAN ROBADO UN JUGADOR!",
+                equipoComprador.getUsuario().getNickname() + " ha pagado la cláusula de " + jugador.getNickname() +
+                        ". Has recibido " + String.format("%.0f", precioClausula) + " €.");
 
-        // 8. Crear noticia en el muro
+        // Crear noticia en el muro
         noticiaService.crearNoticia(
-            ligaId,
-            TipoNoticia.CLAUSULAZO,
-            String.format("¡ROBO! %s ha pagado la cláusula de %s (%.0f €) al equipo de %s.", 
-                equipoComprador.getUsuario().getNickname(), 
-                jugador.getNickname(), 
-                precioClausula,
-                equipoVictima.getUsuario().getNickname()),
-            jugador.getId(),
-            equipoComprador.getId(),
-            jugador.getImagenUrl()
-        );
+                ligaId,
+                TipoNoticia.CLAUSULAZO,
+                String.format("¡ROBO! %s ha pagado la cláusula de %s (%.0f €) al equipo de %s.",
+                        equipoComprador.getUsuario().getNickname(),
+                        jugador.getNickname(),
+                        precioClausula,
+                        equipoVictima.getUsuario().getNickname()),
+                jugador.getId(),
+                equipoComprador.getId(),
+                jugador.getImagenUrl());
 
         return "Has pagado la cláusula de " + jugador.getNickname() + " con éxito.";
     }
@@ -571,25 +575,26 @@ public class MercadoService {
 
         if (registro.getEstado() == EstadoAlineacion.BANQUILLO) {
 
-            // 1. Nos traemos a todos los titulares actuales
+            // Nos traemos a todos los titulares actuales
             List<Plantilla> titularesActuales = plantillaRepository.findByEquipoIdAndEstado(equipoId,
                     EstadoAlineacion.TITULAR);
 
-            // 2. Comprobamos el límite de 5 por si acaso
             if (titularesActuales.size() >= 5) {
                 throw new RuntimeException("Ya tienes 5 titulares. Debes sentar a alguien primero.");
             }
 
-            // 3. LA MAGIA: Comprobamos si ya hay alguien jugando en ese rol
+            // Comprobamos si ya hay alguien jugando en ese rol
             String rolDelNuevo = registro.getJugador().getRol().toUpperCase();
-            if (rolDelNuevo.equals("ADC")) rolDelNuevo = "BOT";
+            if (rolDelNuevo.equals("ADC"))
+                rolDelNuevo = "BOT";
 
             final String rolFinal = rolDelNuevo;
 
             boolean posicionOcupada = titularesActuales.stream()
                     .anyMatch(titular -> {
                         String rolTitular = titular.getJugador().getRol().toUpperCase();
-                        if (rolTitular.equals("ADC")) rolTitular = "BOT";
+                        if (rolTitular.equals("ADC"))
+                            rolTitular = "BOT";
                         return rolTitular.equals(rolFinal);
                     });
 
@@ -598,7 +603,7 @@ public class MercadoService {
                         "Operación denegada: Ya tienes a un jugador titular en la posición de " + rolFinal + ".");
             }
 
-            // 4. Si pasa todas las aduanas, lo hacemos titular
+            // Lo hacemos titular
             registro.setEstado(EstadoAlineacion.TITULAR);
             plantillaRepository.save(registro);
             return "¡" + registro.getJugador().getNickname() + " ahora es titular en la posición de " + rolFinal
@@ -615,7 +620,7 @@ public class MercadoService {
     @Transactional
     public String venderJugador(Long equipoId, Long jugadorId) {
 
-        // 1. Buscamos el registro en la plantilla
+        // Buscamos el registro en la plantilla
         Plantilla registro = plantillaRepository.findByEquipoIdAndJugadorId(equipoId, jugadorId)
                 .orElseThrow(() -> new RuntimeException("No puedes vender a un jugador que no está en tu equipo."));
 
@@ -623,7 +628,7 @@ public class MercadoService {
         Equipo equipo = registro.getEquipo();
         Jugador jugador = registro.getJugador();
 
-        // 2. Ingresamos el dinero en la cuenta del equipo
+        // Ingresamos el dinero en la cuenta del equipo
         double nuevoSaldo = equipo.getPresupuestoDisponible() + jugador.getPrecioActual();
         equipo.setPresupuestoDisponible(nuevoSaldo);
         equipoRepository.save(equipo);
@@ -633,21 +638,20 @@ public class MercadoService {
         jugador.setVentasHoy(actualesV + 1);
         jugadorRepository.save(jugador);
 
-        // 3. Borramos la fila de la tabla intermedia
+        // Borramos la fila de la tabla intermedia
         plantillaRepository.delete(registro);
 
-        // 4. Crear noticia en el muro
+        // Crear noticia en el muro
         noticiaService.crearNoticia(
-            equipo.getLiga().getId(),
-            TipoNoticia.VENTA,
-            String.format("%s ha vendido a %s al mercado por %.0f €.", 
-                equipo.getUsuario().getNickname(), 
-                jugador.getNickname(), 
-                jugador.getPrecioActual()),
-            jugador.getId(),
-            equipo.getId(),
-            jugador.getImagenUrl()
-        );
+                equipo.getLiga().getId(),
+                TipoNoticia.VENTA,
+                String.format("%s ha vendido a %s al mercado por %.0f €.",
+                        equipo.getUsuario().getNickname(),
+                        jugador.getNickname(),
+                        jugador.getPrecioActual()),
+                jugador.getId(),
+                equipo.getId(),
+                jugador.getImagenUrl());
 
         return "Has vendido a " + jugador.getNickname() + " por " + jugador.getPrecioActual()
                 + " monedas. Tu nuevo saldo es: " + nuevoSaldo;

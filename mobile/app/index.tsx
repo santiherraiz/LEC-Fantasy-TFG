@@ -5,9 +5,8 @@ export default function Index() {
   const { isAuthenticated, selectedLigaId } = useAuthStore();
 
   // Esta página sirve como punto de entrada raíz para evitar el error "Unmatched Route"
-  // El _layout.tsx ya tiene lógica de redirección, pero tener un punto de entrada 
-  // es fundamental para la estabilidad de Expo Router.
-  
+  // aunque el _layout.tsx ya tiene lógica de redirección, tener un punto de entrada siempre está bien
+
   if (!isAuthenticated) {
     return <Redirect href="/login" />;
   }

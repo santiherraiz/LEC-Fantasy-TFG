@@ -58,7 +58,6 @@ public class LigaService {
         // Inicializar el mercado para la nueva liga inmediatamente
         mercadoService.initMercadoParaLiga(ligaGuardada);
 
-        // Noticia de bienvenida
         noticiaService.crearNoticia(
                 ligaGuardada.getId(),
                 TipoNoticia.NUEVA_LIGA,
@@ -76,14 +75,12 @@ public class LigaService {
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        // Verificar si ya tiene equipo en esta liga
         if (equipoRepository.findByUsuarioIdAndLigaId(usuarioId, liga.getId()).isPresent()) {
             throw new RuntimeException("Ya eres parte de esta liga");
         }
 
         crearEquipoEnLiga(usuario, liga);
 
-        // Noticia de nuevo usuario
         noticiaService.crearNoticia(
                 liga.getId(),
                 TipoNoticia.NUEVA_LIGA,
@@ -157,7 +154,6 @@ public class LigaService {
             log.error("No se pudo generar una selección final de 5 jugadores para el equipo {}", equipo.getId());
         }
 
-        // Guardar la plantilla
         for (Jugador j : seleccionFinal) {
             Plantilla p = new Plantilla();
             p.setEquipo(equipo);

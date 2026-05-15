@@ -16,10 +16,10 @@ public class JwtUtils {
 
     @Value("${jwt.secret}")
     private String secret;
-    
+
     private Key key;
-    
-    // El token caducará en 24 horas (en milisegundos)
+
+    // El token caduca en 24 horas
     private final long JWT_EXPIRATION = 86400000;
 
     @PostConstruct

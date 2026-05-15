@@ -18,9 +18,9 @@ public class EquipoController {
     private EquipoService equipoService;
 
     @Autowired
-    private MercadoService mercadoService; // Inyectamos el servicio para usar la lógica de alinear
+    private MercadoService mercadoService; // Se inyecta el servicio para usar la lógica de alinear
 
-    // Usamos {usuarioId} en la URL para saber de quién es el equipo
+    // Se usa {usuarioId} en la URL para saber de quién es el equipo
     @GetMapping("/mi-equipo/{usuarioId}")
     public ResponseEntity<?> obtenerMiEquipo(@PathVariable Long usuarioId, @RequestParam Long ligaId) {
         return ResponseEntity.ok(equipoService.obtenerDetalleEquipo(usuarioId, ligaId));
@@ -38,7 +38,6 @@ public class EquipoController {
         return ResponseEntity.ok(equipoService.obtenerRanking(ligaId, jornadaId));
     }
 
-    // Nuevo endpoint para ver el equipo de un rival
     @GetMapping("/rival/{equipoId}")
     public ResponseEntity<?> obtenerEquipoRival(@PathVariable Long equipoId) {
         return ResponseEntity.ok(equipoService.obtenerEquipoRival(equipoId));

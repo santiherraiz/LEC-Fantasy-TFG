@@ -25,9 +25,9 @@ export default function JugadoresListScreen() {
 
   return (
     <View className="flex-1 bg-midnight">
-      <CustomHeader 
-        showBackButton={true} 
-        onBackPress={() => router.push('/equipo')} 
+      <CustomHeader
+        showBackButton={true}
+        onBackPress={() => router.push('/equipo')}
       />
       <FlatList
         data={ranking}

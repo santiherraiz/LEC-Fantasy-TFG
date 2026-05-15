@@ -38,14 +38,14 @@ public class DatabaseInitializer implements CommandLineRunner {
     private void prepararEscenarioDemo() {
         System.out.println("[DEMO] Preparando escenario de demostración...");
 
-        // 1. Configurar Reloj Virtual: Miércoles 14 de Enero 2026
+        // Se configura el reloj virtual: Miércoles 14 de Enero 2026
         if (!clockService.isModoDemoActivo()) {
             LocalDateTime inicioDemo = LocalDateTime.of(2026, 1, 14, 10, 0);
             clockService.activarModoDemo(inicioDemo);
             System.out.println("[DEMO] Reloj virtual establecido en: " + inicioDemo);
         }
 
-        // 2. Crear Usuarios de Demo
+        // Se crean usuarios de demo
         String pass = passwordEncoder.encode("admin123");
         jdbcTemplate.execute(
                 "INSERT IGNORE INTO usuarios (id, email, password, nombre, nickname, created_at, updated_at) VALUES " +
@@ -53,12 +53,12 @@ public class DatabaseInitializer implements CommandLineRunner {
                         +
                         "(101, 'profe2@universidad.edu', '" + pass + "', 'Profesor Beta', 'ProfeBeta', NOW(), NOW())");
 
-        // 3. Crear Liga de Demo
+        // Se crea liga de demo
         jdbcTemplate.execute(
                 "INSERT IGNORE INTO ligas (id, nombre, codigo_acceso, admin_id, created_at, updated_at) VALUES " +
                         "(100, 'Liga de Evaluación TFG', 'DEMO2026', 100, NOW(), NOW())");
 
-        // 4. Crear Equipos (Presupuesto 40k según FASE 1)
+        // Se crean equipos (Presupuesto 40k según FASE 1)
         jdbcTemplate.execute(
                 "INSERT IGNORE INTO equipos_usuarios (id, nombre_equipo, presupuesto_disponible, puntuacion_total, liga_id, usuario_id, created_at, updated_at) VALUES "
                         +

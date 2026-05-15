@@ -38,7 +38,7 @@ export default function EquipoJornadaScreen() {
     <View className="flex-1 bg-midnight">
       <CustomHeader title="Histórico de Puntos" showBackButton />
 
-      <JornadaSelector 
+      <JornadaSelector
         selectedJornada={selectedJornada}
         currentIndex={currentIndex}
         totalJornadas={jornadas.length}
@@ -53,7 +53,6 @@ export default function EquipoJornadaScreen() {
       >
         {equipo && equipo.jugadores.length > 0 ? (
           <>
-            {/* Team Header */}
             <Animated.View entering={FadeInDown.duration(600)} className="px-6 py-8">
               <View className="flex-row items-center justify-between mb-6">
                 <View className="flex-1 mr-4">
@@ -71,7 +70,6 @@ export default function EquipoJornadaScreen() {
                 </View>
               </View>
 
-              {/* Tactic Map */}
               <View className="relative items-center mt-4">
                 <View className="absolute -top-4 left-0 right-0 flex-row items-center justify-center z-10">
                   <View className="bg-midnight/80 px-4 py-1.5 rounded-full border border-accent-cyan/30 flex-row items-center">
@@ -83,7 +81,6 @@ export default function EquipoJornadaScreen() {
               </View>
             </Animated.View>
 
-            {/* Starters List */}
             <View className="bg-surface/50 rounded-t-[48px] px-6 pt-10 pb-32 border-t border-surface-light/20">
               <View className="flex-row items-center justify-between mb-8">
                 <View className="flex-row items-center">
@@ -98,10 +95,10 @@ export default function EquipoJornadaScreen() {
               {[...equipo.jugadores]
                 .sort((a, b) => b.puntosSemanales - a.puntosSemanales)
                 .map((j, idx) => (
-                  <PlayerPointsCard 
-                    key={j.idJugador} 
-                    jugador={j} 
-                    isMVP={idx === 0} 
+                  <PlayerPointsCard
+                    key={j.idJugador}
+                    jugador={j}
+                    isMVP={idx === 0}
                   />
                 ))}
             </View>

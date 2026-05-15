@@ -68,7 +68,7 @@ public class MercadoController {
         List<Jugador> todos = jugadorService.obtenerTodosLosJugadores();
 
         Map<String, List<Jugador>> agrupadosPorEquipo = todos.stream()
-                .filter(j -> j.getEquipoLec() != null) // Filtro de seguridad
+                .filter(j -> j.getEquipoLec() != null)
                 .collect(Collectors.groupingBy(j -> j.getEquipoLec().getNombre()));
 
         return ResponseEntity.ok(agrupadosPorEquipo);

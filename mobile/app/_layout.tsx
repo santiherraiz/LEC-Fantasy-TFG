@@ -41,10 +41,10 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (!hasHydrated) return; // Esperar a que los datos se lean del disco
+    if (!hasHydrated) return;
 
     const inAuthGroup = segments[0] === '(auth)';
-    
+
     if (!isAuthenticated && !inAuthGroup) {
       router.replace('/login');
     } else if (isAuthenticated && inAuthGroup) {
@@ -54,9 +54,9 @@ export default function RootLayout() {
         router.replace('/equipo');
       }
     } else if (isAuthenticated && !selectedLigaId && segments[0] !== 'league-selection') {
-       router.replace('/league-selection');
+      router.replace('/league-selection');
     } else if (isAuthenticated && selectedLigaId && (segments[0] === 'league-selection' || inAuthGroup)) {
-       router.replace('/equipo');
+      router.replace('/equipo');
     }
   }, [isAuthenticated, selectedLigaId, segments, hasHydrated]);
 

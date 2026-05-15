@@ -36,25 +36,24 @@ export default function SubastasScreen() {
       <Link href={`/jugador/${subasta.jugador.id}`} asChild>
         <TouchableOpacity className="p-5 flex-row items-center">
           <View className="w-24 h-24 bg-midnight/50 rounded-3xl items-center justify-center border border-surface-light/30 overflow-hidden relative shadow-inner">
-            
+
             {subasta.jugador.imagenUrl ? (
-              <Image 
-                source={{ uri: subasta.jugador.imagenUrl }} 
-                className="w-24 h-24" 
+              <Image
+                source={{ uri: subasta.jugador.imagenUrl }}
+                className="w-24 h-24"
                 style={{ marginTop: 12 }}
-                resizeMode="contain" 
+                resizeMode="contain"
               />
             ) : (
               <UserIcon size={32} color="#00D1FF" />
             )}
 
-            {/* ESCUDO FLOTANTE: Logo limpio sin fondo circular */}
             {subasta.jugador.equipoLec?.logoUrl && (
               <View className="absolute top-1 left-1">
-                <Image 
-                  source={{ uri: subasta.jugador.equipoLec.logoUrl }} 
-                  className="w-7 h-7" 
-                  resizeMode="contain" 
+                <Image
+                  source={{ uri: subasta.jugador.equipoLec.logoUrl }}
+                  className="w-7 h-7"
+                  resizeMode="contain"
                 />
               </View>
             )}
@@ -62,7 +61,7 @@ export default function SubastasScreen() {
           <View className="ml-5 flex-1">
             <View className="flex-row items-center">
               <Text className="text-white font-black text-xl tracking-tight mr-3">{subasta.jugador.nickname}</Text>
-              {/* CHIP DE POSICIÓN */}
+
               <View className="bg-accent-cyan/10 border border-accent-cyan/40 px-2 py-0.5 rounded-md">
                 <Text className="text-accent-cyan font-black text-[9px] uppercase italic">
                   {subasta.jugador.rol.toUpperCase() === 'SUPPORT' ? 'SUPP' : subasta.jugador.rol}
@@ -74,8 +73,8 @@ export default function SubastasScreen() {
             </Text>
           </View>
           <View className="items-end">
-             <Text className="text-neon-green font-black text-lg">{(subasta.jugador.precioActual || subasta.jugador.precioBase).toLocaleString()} €</Text>
-             <Text className="text-gray-500 text-[10px] font-bold uppercase">VALOR MERCADO</Text>
+            <Text className="text-neon-green font-black text-lg">{(subasta.jugador.precioActual || subasta.jugador.precioBase).toLocaleString()} €</Text>
+            <Text className="text-gray-500 text-[10px] font-bold uppercase">VALOR MERCADO</Text>
           </View>
         </TouchableOpacity>
       </Link>
@@ -85,17 +84,17 @@ export default function SubastasScreen() {
           <Clock size={14} color="#9CA3AF" />
           <Text className="text-gray-400 text-xs font-bold ml-2">Finaliza en {getTimeRemaining(subasta)}</Text>
         </View>
-        
+
         <View className="flex-row items-center">
           {subasta.miPuja && (
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => openDeleteModal(subasta)}
               className="w-10 h-10 bg-crimson/10 rounded-xl items-center justify-center border border-crimson/40 mr-2 shadow-sm shadow-crimson/20"
             >
               <Trash2 size={18} color="#FF003F" />
             </TouchableOpacity>
           )}
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => openPujaModal(subasta)}
             className={`px-6 py-2 rounded-xl flex-row items-center ${subasta.miPuja ? 'bg-accent-cyan' : 'bg-surface-light/50'}`}
           >
@@ -116,7 +115,7 @@ export default function SubastasScreen() {
         <Text className="text-white text-3xl font-black tracking-tighter mb-6 italic">SUBASTAS</Text>
       </View>
 
-      <ScrollView 
+      <ScrollView
         className="flex-1 px-4"
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
@@ -124,12 +123,12 @@ export default function SubastasScreen() {
       >
         <View>
           <View className="flex-row items-center mb-6 bg-accent-cyan/5 p-4 rounded-2xl border border-dashed border-accent-cyan/20">
-             <Info size={20} color="#00D1FF" />
-             <Text className="text-gray-400 text-[11px] leading-4 font-medium flex-1 ml-3">
-               5 jugadores aleatorios cada 24 horas. Las pujas son <Text className="text-accent-cyan font-bold">anónimas</Text>. ¡Gana el que más dinero ponga!
-             </Text>
+            <Info size={20} color="#00D1FF" />
+            <Text className="text-gray-400 text-[11px] leading-4 font-medium flex-1 ml-3">
+              5 jugadores aleatorios cada 24 horas. Las pujas son <Text className="text-accent-cyan font-bold">anónimas</Text>. ¡Gana el que más dinero ponga!
+            </Text>
           </View>
-          
+
           {loading ? (
             <ActivityIndicator size="large" color="#00D1FF" className="mt-10" />
           ) : subastas.length > 0 ? (
@@ -142,7 +141,6 @@ export default function SubastasScreen() {
         </View>
       </ScrollView>
 
-      {/* Puja Modal */}
       <Modal
         visible={pujaModalVisible}
         transparent={true}
@@ -152,8 +150,8 @@ export default function SubastasScreen() {
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View className="flex-1 bg-midnight/80 justify-end">
-            <View 
-              style={{ 
+            <View
+              style={{
                 paddingBottom: keyboardHeight > 0 ? keyboardHeight : insets.bottom + 24,
                 transform: [{ translateY: keyboardHeight > 0 ? -10 : 0 }]
               }}
@@ -183,7 +181,7 @@ export default function SubastasScreen() {
 
               <View className="bg-midnight rounded-3xl p-6 border border-surface-light/30 mb-8">
                 <Text className="text-gray-500 text-[10px] font-black uppercase text-center mb-2 tracking-widest">TU OFERTA (€)</Text>
-                <TextInput 
+                <TextInput
                   className="text-white text-4xl font-black text-center"
                   keyboardType="numeric"
                   placeholder="0"
@@ -194,7 +192,7 @@ export default function SubastasScreen() {
                 />
               </View>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={handlePujar}
                 disabled={!pujaAmount || isNaN(parseFloat(pujaAmount))}
                 className={`p-5 rounded-2xl items-center shadow-2xl ${(!pujaAmount || isNaN(parseFloat(pujaAmount))) ? 'bg-gray-700' : 'bg-accent-cyan shadow-accent-cyan/50'}`}
@@ -211,7 +209,7 @@ export default function SubastasScreen() {
                   </Text>
                 </Text>
               )}
-              
+
               <Text className="text-gray-500 text-[10px] text-center mt-6 font-bold leading-4">
                 El dinero será bloqueado de tu presupuesto.{'\n'}Se devolverá si no ganas o si retiras la puja.
               </Text>
@@ -220,7 +218,6 @@ export default function SubastasScreen() {
         </TouchableWithoutFeedback>
       </Modal>
 
-      {/* Delete Confirmation Modal */}
       <Modal
         visible={deleteModalVisible}
         transparent={true}
@@ -232,20 +229,20 @@ export default function SubastasScreen() {
             <View className="w-20 h-20 bg-crimson/10 rounded-full items-center justify-center mb-6 border border-crimson/20">
               <Trash2 size={40} color="#FF003F" />
             </View>
-            
+
             <Text className="text-white text-2xl font-black text-center mb-2 italic">¿RETIRAR PUJA?</Text>
             <Text className="text-gray-400 text-center font-medium leading-5 mb-8">
               Si retiras tu puja por <Text className="text-white font-bold">{selectedSubasta?.jugador.nickname}</Text>, el dinero se devolverá inmediatamente a tu presupuesto.
             </Text>
 
             <View className="flex-row w-full">
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => setDeleteModalVisible(false)}
                 className="flex-1 bg-surface-light/50 py-4 rounded-2xl mr-3 border border-surface-light/30"
               >
                 <Text className="text-white font-bold text-center">CANCELAR</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={handleEliminarPuja}
                 className="flex-1 bg-crimson py-4 rounded-2xl shadow-lg shadow-crimson/30"
               >

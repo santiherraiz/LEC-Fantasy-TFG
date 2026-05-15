@@ -23,7 +23,6 @@ export default function LoginScreen() {
       const response = await api.post('/usuarios/login', { email, password });
       const { token, usuario } = response.data;
       setAuth(usuario, token);
-      // Autorefresh should handle redirection via RootLayout
     } catch (error: any) {
       showToast(error.message, 'error');
     } finally {
@@ -35,43 +34,43 @@ export default function LoginScreen() {
     <View className="flex-1 bg-midnight items-center justify-center p-8">
       <View className="mb-10 items-center w-full">
         <View className="w-full h-48 items-center justify-center">
-          <Image 
-            source={require('../../assets/logos/IMAGOTIPO-bg.png')} 
+          <Image
+            source={require('../../assets/logos/IMAGOTIPO-bg.png')}
             className="w-full h-full"
             resizeMode="contain"
           />
         </View>
         <Text className="text-gray-500 font-black uppercase tracking-[6px] mt-2 text-[12px]">Tu liga, tus reglas</Text>
       </View>
-      
+
       <View className="w-full">
-        <TextInput 
+        <TextInput
           className="bg-surface p-5 rounded-2xl border border-surface-light/30 mb-4 text-white text-base"
-          placeholder="Email" 
+          placeholder="Email"
           placeholderTextColor="#4A5568"
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
           keyboardType="email-address"
         />
-        <TextInput 
+        <TextInput
           className="bg-surface p-5 rounded-2xl border border-surface-light/30 mb-6 text-white text-base"
-          placeholder="Contraseña" 
+          placeholder="Contraseña"
           placeholderTextColor="#4A5568"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
         />
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           onPress={handleLogin}
           disabled={loading}
           className={`bg-accent-cyan p-5 rounded-2xl items-center shadow-lg shadow-accent-cyan/20 ${loading ? 'opacity-70' : ''}`}
         >
           {loading ? <ActivityIndicator color="#0B0E14" /> : <Text className="text-midnight font-black text-lg uppercase tracking-widest">Entrar</Text>}
         </TouchableOpacity>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           onPress={() => router.push('/register')}
           className="mt-8 items-center"
         >

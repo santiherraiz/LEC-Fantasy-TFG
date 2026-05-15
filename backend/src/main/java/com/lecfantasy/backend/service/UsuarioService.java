@@ -20,7 +20,7 @@ public class UsuarioService {
 
     @Transactional
     public Usuario registrarNuevoUsuario(Usuario nuevoUsuario) {
-        // Encriptamos la contraseña antes de guardar
+        // Se encripta la contraseña antes de guardar
         nuevoUsuario.setPassword(passwordEncoder.encode(nuevoUsuario.getPassword()));
 
         return usuarioRepository.save(nuevoUsuario);
@@ -36,7 +36,7 @@ public class UsuarioService {
 
         Usuario usuario = usuarioOpt.get();
 
-        // Comprobamos la contraseña usando el encoder
+        // Se comprueba la contraseña usando el encoder
         if (!passwordEncoder.matches(password, usuario.getPassword())) {
             throw new RuntimeException("Contraseña incorrecta.");
         }

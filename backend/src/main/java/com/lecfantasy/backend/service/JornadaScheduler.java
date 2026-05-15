@@ -46,13 +46,13 @@ public class JornadaScheduler {
         System.out.println("[SISTEMA] Auto-sincronización completada.");
     }
 
-    // Bajamos a 1 minuto (60,000 ms) para máxima respuesta
+    // Se baja a 1 minuto (60,000 ms) para máxima respuesta
     @Scheduled(fixedDelay = 60000)
     public void monitorizarJornadas() {
         java.time.LocalDateTime ahora = clockService.ahora();
         System.out.println("[SCHEDULER] " + ahora);
 
-        // 1. Snapshot automático
+        // Se hace snapshot automático
         jornadaService.obtenerJornadaSiguiente().ifPresent(jornada -> {
             if (ahora.isAfter(jornada.getFechaInicio().minusMinutes(15))) {
                 System.out.println("[SCHEDULER] Snapshot automático: Semana " + jornada.getNumeroSemana());
@@ -62,7 +62,7 @@ public class JornadaScheduler {
             }
         });
 
-        // 2. Transición a PROCESANDO
+        // Se hace la transición a PROCESANDO
         List<Jornada> bloqueadas = jornadaRepository.findAllByEstado(JornadaEstado.BLOQUEADA);
         for (Jornada j : bloqueadas) {
             if (ahora.isAfter(j.getFechaFin())) {
@@ -72,17 +72,17 @@ public class JornadaScheduler {
             }
         }
 
-        // 3. Procesamiento Live
+        // Procesamiento Live
         if (Arrays.asList(env.getActiveProfiles()).contains("demo")) {
-            // En demo, necesitamos re-importar el calendario a menudo para que los partidos
-            // "descubran" su ganador a medida que el reloj avanza.
+            // En demo, se re-importa el calendario a menudo para que los partidos
+            // descubran su ganador a medida que avanza el reloj virtual
             puntuacionService.importarPartidosDeLeaguepedia();
         }
 
         puntuacionService.importarEstadisticasDeLeaguepedia();
         puntuacionService.calcularPuntos();
 
-        // 4. Cierre de jornadas
+        // Se hace el cierre de jornadas
         List<Jornada> procesando = jornadaRepository.findAllByEstado(JornadaEstado.PROCESANDO);
         for (Jornada j : procesando) {
             long pendientes = puntuacionService.contarPartidosPendientes(j);
@@ -92,16 +92,16 @@ public class JornadaScheduler {
                 System.out.println("[SCHEDULER] Semana " + j.getNumeroSemana() + " FINALIZADA.");
 
                 // Noticia de fin de jornada
-                // Como las noticias son por liga, tenemos que iterar o buscar una forma de
+                // Como las noticias son por liga, se debe iterar o buscar una forma de
                 // llegar a todas las ligas
-                // Por simplicidad en este proyecto, solemos tener una o pocas ligas.
+                // Por simplicidad en este proyecto, se suele tener una o pocas ligas.
                 noticiaService.crearNoticiaParaTodasLasLigas(
                         TipoNoticia.RESULTADO_JORNADA,
                         String.format("¡La Jornada %d ha finalizado! Revisa el ranking para ver tu posición.",
                                 j.getNumeroSemana()),
                         null, null, null);
             } else {
-                // Solo logueamos si han pasado más de 2 horas del fin para no saturar la
+                // Se loguea solo si han pasado más de 2 horas del fin para no saturar la
                 // consola cada minuto
                 if (ahora.isAfter(j.getFechaFin().plusHours(2))) {
                     System.out.println(

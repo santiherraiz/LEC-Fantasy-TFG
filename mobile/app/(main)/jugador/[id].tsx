@@ -57,7 +57,6 @@ export default function JugadorDetailScreen() {
 
   return (
     <View className="flex-1 bg-midnight">
-      {/* Header Fijo */}
       <View className="px-4 pt-14 pb-4 flex-row items-center border-b border-surface-light/10">
         <TouchableOpacity onPress={() => router.back()} className="p-2.5 bg-surface rounded-xl border border-surface-light/50">
           <ChevronLeft color="white" size={24} />
@@ -72,7 +71,6 @@ export default function JugadorDetailScreen() {
         </View>
       </View>
 
-      {/* Navegación de Pestañas */}
       <View className="flex-row px-4 border-b border-surface-light/20">
         {(['RESUMEN', 'PARTIDOS', 'STATS'] as const).map((tab) => (
           <TouchableOpacity
@@ -88,10 +86,8 @@ export default function JugadorDetailScreen() {
       </View>
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        {/* TAB: RESUMEN */}
         {activeTab === 'RESUMEN' && (
           <View className="p-4">
-            {/* Tarjeta Principal */}
             <View className="py-8 bg-surface rounded-[32px] border border-surface-light/30 shadow-sm mt-2 overflow-hidden relative">
               {jugador.equipoLecLogo && (
                 <Image
@@ -140,7 +136,6 @@ export default function JugadorDetailScreen() {
                 </View>
               </View>
 
-              {/* Dueño y Acciones */}
               <View className="mt-5 mx-6 pt-5 border-t border-surface-light/10">
                 <View className="bg-midnight/40 rounded-[28px] p-5 border border-surface-light/10 flex-row items-center justify-between">
                   <View className="flex-row items-center">
@@ -185,7 +180,6 @@ export default function JugadorDetailScreen() {
               </View>
             </View>
 
-            {/* Evolución Gráfica */}
             <View className="mt-8">
               <View className="flex-row items-center ml-1 mb-4">
                 <TrendingUp size={18} color="#00D1FF" />
@@ -198,7 +192,6 @@ export default function JugadorDetailScreen() {
               />
             </View>
 
-            {/* Radar Técnico */}
             <View className="mt-8 mb-4">
               <View className="flex-row items-center ml-1 mb-4">
                 <Activity size={18} color="#00D1FF" />
@@ -209,7 +202,6 @@ export default function JugadorDetailScreen() {
           </View>
         )}
 
-        {/* TAB: PARTIDOS */}
         {activeTab === 'PARTIDOS' && (
           <View className="p-4 mt-2">
             {allWeeks.length === 0 && (
@@ -255,7 +247,6 @@ export default function JugadorDetailScreen() {
           </View>
         )}
 
-        {/* TAB: STATS */}
         {activeTab === 'STATS' && (
           <PlayerSeasonStats estadisticas={estadisticas} statsSummary={statsSummary} />
         )}

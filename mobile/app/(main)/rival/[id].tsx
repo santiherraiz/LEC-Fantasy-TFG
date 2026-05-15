@@ -65,7 +65,6 @@ export default function RivalTeamScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00D1FF" />}
       >
-        {/* Header Hero */}
         <Animated.View
           entering={FadeInDown.duration(600).springify()}
           className="px-6 pt-8 pb-6"
@@ -84,7 +83,6 @@ export default function RivalTeamScreen() {
             </View>
           </View>
 
-          {/* Stats Grid */}
           <View className="flex-row gap-4 mb-4">
             <View className="flex-1 bg-surface/80 p-5 rounded-[32px] border border-surface-light/20 items-center">
               <View className="flex-row items-center mb-2">
@@ -114,7 +112,6 @@ export default function RivalTeamScreen() {
           </View>
         </Animated.View>
 
-        {/* Strategy Map Section */}
         <Animated.View entering={FadeIn.delay(200)} className="mb-10 px-4">
           <View className="flex-row items-center justify-between mb-6 px-2">
             <View className="flex-row items-center">
@@ -131,7 +128,6 @@ export default function RivalTeamScreen() {
           </View>
         </Animated.View>
 
-        {/* Player Lists Section */}
         <View className="bg-surface/50 rounded-t-[48px] px-6 pt-10 pb-32 border-t border-surface-light/20">
           <View className="flex-row items-center mb-8">
             <Shield color="#00D1FF" size={24} />

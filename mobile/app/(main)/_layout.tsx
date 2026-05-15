@@ -4,7 +4,7 @@ import { useNotifications } from '../../src/hooks/useNotifications';
 
 export default function MainLayout() {
   useNotifications();
-  
+
   return (
     <Drawer
       drawerContent={(props) => <CustomDrawerContent {...props} />}
@@ -16,30 +16,29 @@ export default function MainLayout() {
         },
       }}
     >
-      <Drawer.Screen 
-        name="(tabs)" 
-        options={{ 
+      <Drawer.Screen
+        name="(tabs)"
+        options={{
           drawerLabel: 'Competición',
-        }} 
+        }}
       />
-      <Drawer.Screen 
-        name="jugadores" 
-        options={{ 
+      <Drawer.Screen
+        name="jugadores"
+        options={{
           drawerLabel: 'Lista de Jugadores',
-        }} 
+        }}
       />
-      <Drawer.Screen 
-        name="calendario" 
-        options={{ 
+      <Drawer.Screen
+        name="calendario"
+        options={{
           drawerLabel: 'Calendario',
-        }} 
+        }}
       />
-      {/* Detail screens should be here if we want them reachable but hidden from drawer */}
-      <Drawer.Screen 
-        name="jugador/[id]" 
-        options={{ 
+      <Drawer.Screen
+        name="jugador/[id]"
+        options={{
           drawerItemStyle: { display: 'none' }
-        }} 
+        }}
       />
     </Drawer>
   );

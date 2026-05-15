@@ -7,5 +7,12 @@
     "src",
     "app",
     "nativewind-env.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "android",
+    "ios",
+    "dist",
+    ".expo"
   ]
 }

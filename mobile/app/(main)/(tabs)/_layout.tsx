@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Platform } from 'react-native';
+import { View } from 'react-native';
 import { Tabs } from 'expo-router';
 import { ShoppingBag, Trophy, Layout, Gavel, MessageSquare } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,8 +14,8 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: '#0B0E14',
           borderTopWidth: 0,
-          height: 80 + insets.bottom, // Subimos de 70 a 80
-          paddingBottom: insets.bottom > 0 ? insets.bottom + 10 : 20, // Añadimos más margen
+          height: 80 + insets.bottom,
+          paddingBottom: insets.bottom > 0 ? insets.bottom + 10 : 20,
           paddingTop: 12,
           elevation: 0,
         },

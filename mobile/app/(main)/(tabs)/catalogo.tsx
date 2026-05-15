@@ -39,11 +39,9 @@ export default function CatalogoScreen() {
     <View className="flex-1 bg-midnight">
       <CustomHeader />
 
-      {/* Contenedor de cabecera y filtros fijo arriba */}
       <View className="px-4 pt-4 pb-2 z-10">
         <Text className="text-white text-3xl font-black tracking-tighter mb-5 italic">CATÁLOGO</Text>
 
-        {/* Search Bar */}
         <View className="flex-row items-center bg-surface p-3.5 rounded-2xl border border-surface-light/30 mb-5">
           <Search size={20} color="#9CA3AF" />
           <TextInput
@@ -60,9 +58,7 @@ export default function CatalogoScreen() {
           )}
         </View>
 
-        {/* Dynamic Filter Section */}
         <View className="mb-2">
-          {/* GRUPO ORDENAR - Cabecera */}
           <View className="flex-row items-center mb-1.5 px-1">
             <TrendingUp size={12} color="#818CF8" />
             <Text className="ml-2 text-indigo-400 text-[10px] font-black uppercase tracking-[2px]">Ordenar</Text>
@@ -99,7 +95,6 @@ export default function CatalogoScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* GRUPO FILTRAR - Cabecera */}
           <View className="flex-row items-center mb-1.5 px-1">
             <Search size={12} color="#00D1FF" />
             <Text className="ml-2 text-accent-cyan text-[10px] font-black uppercase tracking-[2px]">Filtrar</Text>
@@ -126,7 +121,6 @@ export default function CatalogoScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* Sub-options based on selected Tab */}
           {activeTab && (
             <View className="bg-surface/50 p-2 rounded-2xl border border-surface-light/10 mb-4 mx-1">
               <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
@@ -177,7 +171,6 @@ export default function CatalogoScreen() {
         </View>
       </View>
 
-      {/* List content */}
       {loading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#00D1FF" />

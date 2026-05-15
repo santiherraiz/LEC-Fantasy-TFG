@@ -60,8 +60,8 @@ export default function MiEquipoScreen() {
       `¿Estás seguro de que quieres vender a ${nickname}? Recuperarás su valor de mercado actual.`,
       [
         { text: 'Cancelar', style: 'cancel' },
-        { 
-          text: 'Vender', 
+        {
+          text: 'Vender',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -137,12 +137,12 @@ export default function MiEquipoScreen() {
   return (
     <View className="flex-1 bg-midnight">
       <CustomHeader />
-      
-      <RosterRevealModal 
-        visible={showReveal} 
-        players={equipo?.jugadores || []} 
-        ligaNombre={selectedLigaNombre || 'la liga'} 
-        onClose={() => setShowReveal(false)} 
+
+      <RosterRevealModal
+        visible={showReveal}
+        players={equipo?.jugadores || []}
+        ligaNombre={selectedLigaNombre || 'la liga'}
+        onClose={() => setShowReveal(false)}
       />
 
       <ScrollView
@@ -156,13 +156,11 @@ export default function MiEquipoScreen() {
           </View>
         ) : (
           <>
-            {/* Header Section */}
             <View className="px-4 py-6">
               <Text className="text-gray-500 font-bold text-xs uppercase tracking-[2px] mb-1">Mi Alineación</Text>
               <Text className="text-white font-black text-3xl tracking-tight">{equipo?.nombreEquipo}</Text>
             </View>
 
-            {/* Stats Cards */}
             <View className="flex-row px-4 mb-6">
               <View className="flex-1 bg-surface p-4 rounded-3xl border border-surface-light/20 mr-2">
                 <View className="flex-row items-center mb-1">
@@ -171,6 +169,7 @@ export default function MiEquipoScreen() {
                 </View>
                 <Text className="text-neon-green text-lg font-black">{equipo?.presupuestoDisponible?.toLocaleString()} €</Text>
               </View>
+
               <View className="flex-1 bg-surface p-4 rounded-3xl border border-surface-light/20 ml-2 relative">
                 <View className="flex-row items-center mb-1">
                   <TrendingUp color="#00D1FF" size={14} />
@@ -188,7 +187,6 @@ export default function MiEquipoScreen() {
               </View>
             </View>
 
-            {/* Minimap Section */}
             <View className="mb-10">
               <View className="flex-row items-center justify-between mb-4 px-4">
                 <View className="flex-row items-center">
@@ -226,8 +224,6 @@ export default function MiEquipoScreen() {
               </View>
             </View>
 
-
-            {/* Player Lists Section */}
             <View className="bg-surface/50 rounded-t-[40px] px-6 pt-8 pb-32 border-t border-surface-light/20">
               <View className="flex-row items-center mb-6">
                 <Shield color="#00D1FF" size={22} />
@@ -246,7 +242,7 @@ export default function MiEquipoScreen() {
                       </View>
                       <View className="flex-1">
                         {jugador ? (
-                          <PlayerCard 
+                          <PlayerCard
                             id={jugador.idJugador}
                             nickname={jugador.nickname}
                             equipoLec={jugador.equipoLec}
@@ -275,7 +271,7 @@ export default function MiEquipoScreen() {
 
               {suplentes.length > 0 ? (
                 suplentes.map(j => (
-                  <PlayerCard 
+                  <PlayerCard
                     key={j.idJugador}
                     id={j.idJugador}
                     nickname={j.nickname}
@@ -305,6 +301,6 @@ export default function MiEquipoScreen() {
 const styles = StyleSheet.create({
   marker: {
     position: 'absolute',
-    transform: [{ translateX: -20 }, { translateY: -25 }], // Center the marker
+    transform: [{ translateX: -20 }, { translateY: -25 }],
   }
 });

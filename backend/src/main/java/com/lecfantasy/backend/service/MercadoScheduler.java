@@ -46,7 +46,6 @@ public class MercadoScheduler {
         List<Jugador> todosLosJugadores = jugadorRepository.findAll();
         int semanaActual = puntuacionService.obtenerSemanaActual();
 
-        // 1. Calcular media de puntos de todos los jugadores en la jornada actual
         double mediaPuntosGlobal = obtenerMediaPuntosJornada(semanaActual);
         System.out.println("[MERCADO] Media de puntos en semana " + semanaActual + ": " + mediaPuntosGlobal);
 
@@ -56,7 +55,7 @@ public class MercadoScheduler {
                         : jugador.getPrecioBase();
                 double variacionFinal = 0;
 
-                // --- FACTOR 1: Rendimiento Relativo (60%) ---
+                // FACTOR 1: Rendimiento Relativo (60%)
                 double puntosJugador = obtenerPuntosJugadorSemana(jugador.getId(), semanaActual);
                 double diferenciaPuntos = puntosJugador - mediaPuntosGlobal;
 
@@ -65,7 +64,7 @@ public class MercadoScheduler {
                 double impactoRendimiento = (diferenciaPuntos * 0.005) * 0.60;
                 variacionFinal += impactoRendimiento;
 
-                // --- FACTOR 2: Factor Calendario (25%) ---
+                // FACTOR 2: Factor Calendario (25%)
                 long numSeriesProximaSemana = contarSeriesEquipoSemana(jugador.getEquipoLec().getId(),
                         semanaActual + 1);
                 double impactoCalendario = 0;
@@ -76,12 +75,12 @@ public class MercadoScheduler {
                 }
                 variacionFinal += impactoCalendario;
 
-                // --- FACTOR 3: Oferta y Demanda (15%) ---
+                // FACTOR 3: Oferta y Demanda (15%)
                 int compras = jugador.getComprasHoy() != null ? jugador.getComprasHoy() : 0;
                 double impactoDemanda = (compras * 0.01) * 0.15; // +1% por compra ponderado al 15%
                 variacionFinal += impactoDemanda;
 
-                // --- CASTIGO POR INACTIVIDAD ---
+                // CASTIGO POR INACTIVIDAD
                 boolean suEquipoHaJugadoYa = equipoLecHaJugadoEnSemana(jugador.getEquipoLec().getId(), semanaActual);
                 boolean haJugado = haJugadoAlgunaVezEnSemana(jugador.getId(), semanaActual);
 
@@ -89,7 +88,7 @@ public class MercadoScheduler {
                     variacionFinal -= 0.04; // Caída del 4% (entre 3% y 5%)
                 }
 
-                // --- APLICACIÓN Y MUROS DE SEGURIDAD (FASE 3) ---
+                // APLICACIÓN Y MUROS DE SEGURIDAD
                 // 1. El Tope Diario (+/- 5%)
                 if (variacionFinal > 0.05)
                     variacionFinal = 0.05;
@@ -98,11 +97,11 @@ public class MercadoScheduler {
 
                 double nuevoPrecio = precioActual * (1 + variacionFinal);
 
-                // 2. El Suelo de Cristal (1.000 €)
+                // Precio mínimo
                 if (nuevoPrecio < 1000.0)
                     nuevoPrecio = 1000.0;
 
-                // Actualizar tendencia para la UI
+                // Actualizar tendencia
                 if (nuevoPrecio > precioActual * 1.001) {
                     jugador.setTendencia("SUBE");
                 } else if (nuevoPrecio < precioActual * 0.999) {
@@ -173,10 +172,10 @@ public class MercadoScheduler {
     @Scheduled(fixedRate = 60000)
     public void gestionarMercado() {
         try {
-            // 1. Resolver subastas que ya hayan expirado
+            // Resolver subastas que ya hayan expirado
             mercadoService.resolverSubastasExpiradas();
 
-            // 2. Comprobar si alguna liga necesita nuevos jugadores
+            // Comprobar si alguna liga necesita nuevos jugadores
             List<Liga> todasLasLigas = ligaRepository.findAll();
 
             for (Liga liga : todasLasLigas) {

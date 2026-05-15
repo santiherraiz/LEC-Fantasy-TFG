@@ -24,16 +24,16 @@ public class JornadaController {
     @GetMapping
     public ResponseEntity<List<Jornada>> obtenerTodas() {
         List<Jornada> todas = jornadaRepository.findAll();
-        
+
         return ResponseEntity.ok(todas.stream()
                 .filter(j -> {
-                    // No mostrar jornadas futuras que no tengan sentido (secuencialidad)
-                    // Una jornada se muestra si:
-                    // 1. Ya ha empezado o terminado (BLOQUEADA, PROCESANDO, FINALIZADA)
-                    // 2. Es la SIGUIENTE jornada programada tras la última jugada
-                    if (j.getEstado() != JornadaEstado.PROGRAMADA) return true;
-                    
-                    // Si es PROGRAMADA, solo la mostramos si es la inmediata siguiente
+                    // Se muestra una jornada si:
+                    // - Ya ha empezado o terminado (BLOQUEADA, PROCESANDO, FINALIZADA)
+                    // - Es la siguiente jornada programada tras la última jugada
+                    if (j.getEstado() != JornadaEstado.PROGRAMADA)
+                        return true;
+
+                    // Si es PROGRAMADA, solo se muestra si es la inmediata siguiente
                     Optional<Jornada> anterior = jornadaRepository.findByNumeroSemana(j.getNumeroSemana() - 1);
                     return anterior.isEmpty() || anterior.get().getEstado() != JornadaEstado.PROGRAMADA;
                 })

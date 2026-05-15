@@ -167,7 +167,7 @@ public class PuntuacionService {
 
     @Transactional
     public String calcularPuntos() {
-        // 1. Identificar todas las series que tienen al menos un mapa nuevo
+        // Identificar todas las series que tienen al menos un mapa nuevo
         List<String> seriesPendientes = partidoRepository.findByPuntosCalculadosFalse().stream()
                 .filter(p -> p.isEstadisticasImportadas() && p.getJornada() != null)
                 .map(p -> p.getSerieId() != null ? p.getSerieId() : p.getGameId())
@@ -215,7 +215,7 @@ public class PuntuacionService {
                     sumaPuntosReales += ptsReales;
                 }
 
-                // 1. Puntos FANTASY de la serie = (Suma Reales / Num Mapas) + ACE
+                // Puntos FANTASY de la serie = (Suma Reales / Num Mapas) + ACE
                 double mediaSerie = Math.round(sumaPuntosReales / mapasSerie.size());
 
                 String equipoJugador = statsJugador.get(0).getJugador().getEquipoLec() != null
@@ -226,7 +226,7 @@ public class PuntuacionService {
 
                 double puntosFantasySerie = mediaSerie + (ace ? 5.0 : 0.0);
 
-                // 2. Repartimos los puntos fantasy proporcionalmente entre los mapas para
+                // Repartimos los puntos fantasy proporcionalmente entre los mapas para
                 // facilitar los SUM() en SQL
                 // Pero guardamos los Puntos Reales intactos para la UI
                 double factor = (sumaPuntosReales == 0) ? 0 : puntosFantasySerie / sumaPuntosReales;
@@ -364,8 +364,8 @@ public class PuntuacionService {
                         LocalDateTime fechaPartido = LocalDateTime.parse(d.getDateTimeUtc().replace(" ", "T"));
                         p.setFechaUtc(fechaPartido);
 
-                        // LÓGICA DIOS DEL TIEMPO:
-                        // Solo importamos ganadores si el partido YA ha ocurrido en nuestro tiempo
+                        // LÓGICA DEL TIEMPO:
+                        // Solo importamos ganadores si el partido YA ha ocurrido en el tiempo
                         // virtual.
                         if (fechaPartido.isBefore(clockService.ahora())) {
                             p.setWinTeam(d.getWinTeam());
@@ -404,7 +404,7 @@ public class PuntuacionService {
             try {
                 int idx = lowerGid.indexOf("week");
                 String sub = gid.substring(idx + 4).trim();
-                // Tomamos solo los dígitos que siguen a "Week "
+                // Se toman solo los dígitos que siguen a "Week "
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < sub.length(); i++) {
                     char c = sub.charAt(i);
@@ -434,8 +434,8 @@ public class PuntuacionService {
         LocalDateTime ahoraVirtual = clockService.ahora();
 
         for (Partido p : pendientes) {
-            // LÓGICA DIOS DEL TIEMPO:
-            // No intentamos importar estadísticas de un partido que aún no ha ocurrido
+            // LÓGICA DEL TIEMPO:
+            // No se intenta importar estadísticas de un partido que aún no ha ocurrido
             if (p.getFechaUtc() != null && p.getFechaUtc().isAfter(ahoraVirtual)) {
                 continue;
             }

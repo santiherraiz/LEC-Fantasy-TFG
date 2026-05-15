@@ -26,12 +26,11 @@ export default function RankingScreen() {
   return (
     <View className="flex-1 bg-midnight">
       <CustomHeader />
-      
-      {/* Selector de Semanas */}
+
       <View className="bg-surface/30 py-4 border-b border-surface-light/10">
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false} 
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
           className="px-4"
           contentContainerStyle={{ paddingRight: 32 }}
         >
@@ -55,7 +54,7 @@ export default function RankingScreen() {
         </ScrollView>
       </View>
 
-      <ScrollView 
+      <ScrollView
         className="px-4"
         contentContainerStyle={{ paddingBottom: 100 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00D1FF" />}
@@ -71,7 +70,7 @@ export default function RankingScreen() {
             </View>
           )}
         </View>
-        
+
         {loading && !refreshing ? (
           <View className="py-20 justify-center items-center">
             <ActivityIndicator size="large" color="#00D1FF" />
@@ -80,7 +79,7 @@ export default function RankingScreen() {
           <View>
             {ranking.length > 0 ? (
               ranking.map((entry, index) => (
-                <RankingItem 
+                <RankingItem
                   key={`rank-item-${entry.equipoId || index}`}
                   entry={entry}
                   index={index}

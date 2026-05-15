@@ -38,7 +38,6 @@ export default function CalendarioScreen() {
         contentContainerStyle={{ paddingBottom: 40 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00D1FF" />}
       >
-        {/* Header Hero */}
         <View className="px-6 pt-6 pb-4">
           <Text className="text-white text-4xl font-black tracking-tighter italic uppercase">Calendario</Text>
           <View className="flex-row items-center mt-1">
@@ -47,7 +46,6 @@ export default function CalendarioScreen() {
           </View>
         </View>
 
-        {/* Proximo Partido Hero Card */}
         {proximoPartido && (
           <NextMatchHero
             partido={proximoPartido}
@@ -56,7 +54,6 @@ export default function CalendarioScreen() {
           />
         )}
 
-        {/* Timeline */}
         <View className="px-6">
           {calendario.map((jornada, jIdx) => (
             <View key={jornada.semana || jIdx} className="mb-10">

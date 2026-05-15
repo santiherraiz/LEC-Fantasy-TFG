@@ -40,8 +40,7 @@ export default function LeagueSelectionScreen() {
       const nuevaLiga = response.data;
       setNombreLiga('');
       setShowCreate(false);
-      
-      // Activar revelación y seleccionar liga (esto disparará la navegación automática en RootLayout)
+
       setPendingReveal(true);
       setSelectedLiga(nuevaLiga.id, nuevaLiga.nombre);
     } catch (error: any) {
@@ -57,7 +56,6 @@ export default function LeagueSelectionScreen() {
       setCodigo('');
       setShowJoin(false);
 
-      // Activar revelación y seleccionar liga
       setPendingReveal(true);
       setSelectedLiga(ligaUnida.id, ligaUnida.nombre);
     } catch (error: any) {
@@ -85,14 +83,14 @@ export default function LeagueSelectionScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView 
+      <ScrollView
         className="px-5"
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => {setRefreshing(true); fetchLigas();}} tintColor="#00D1FF" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchLigas(); }} tintColor="#00D1FF" />}
       >
         <View className="mt-6 mb-8">
           {ligas.map((liga) => (
-            <TouchableOpacity 
-              key={liga.id} 
+            <TouchableOpacity
+              key={liga.id}
               className="bg-surface p-5 rounded-2xl flex-row items-center mb-4 border border-surface-light/30 shadow-xl"
               onPress={() => setSelectedLiga(liga.id, liga.nombre)}
             >
@@ -115,7 +113,7 @@ export default function LeagueSelectionScreen() {
         </View>
 
         <View className="mb-10">
-          <TouchableOpacity 
+          <TouchableOpacity
             className="flex-row items-center justify-center bg-surface-light/30 p-5 rounded-2xl border border-surface-light/30"
             onPress={() => { setShowJoin(!showJoin); setShowCreate(false); }}
           >
@@ -125,7 +123,7 @@ export default function LeagueSelectionScreen() {
 
           {showJoin && (
             <View className="bg-surface p-5 rounded-2xl mt-3 border border-accent-cyan/20">
-              <TextInput 
+              <TextInput
                 className="bg-midnight text-white p-4 rounded-xl mb-4 border border-surface-light/50 font-medium"
                 placeholder="Código de acceso..."
                 placeholderTextColor="#4A5568"
@@ -139,7 +137,7 @@ export default function LeagueSelectionScreen() {
             </View>
           )}
 
-          <TouchableOpacity 
+          <TouchableOpacity
             className="flex-row items-center justify-center bg-accent-cyan p-5 rounded-2xl mt-4 shadow-lg shadow-accent-cyan/20"
             onPress={() => { setShowCreate(!showCreate); setShowJoin(false); }}
           >
@@ -149,7 +147,7 @@ export default function LeagueSelectionScreen() {
 
           {showCreate && (
             <View className="bg-surface p-5 rounded-2xl mt-3 border border-accent-cyan/20">
-              <TextInput 
+              <TextInput
                 className="bg-midnight text-white p-4 rounded-xl mb-4 border border-surface-light/50 font-medium"
                 placeholder="Nombre de la liga..."
                 placeholderTextColor="#4A5568"
