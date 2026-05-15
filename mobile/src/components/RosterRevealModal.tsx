@@ -223,7 +223,7 @@ function PlayerCard({ player, isLast, isFocused }: { player: Player, isLast: boo
       <View className={`flex-row items-center px-3 py-1.5 rounded-2xl ${isLast ? 'bg-accent-cyan/20' : 'bg-midnight/40'}`}>
         <Coins size={isFocused ? 14 : 10} color={isLast ? "#00D1FF" : "#9CA3AF"} className="mr-2" />
         <Text className={`${isLast ? 'text-accent-cyan' : 'text-gray-400'} ${isFocused ? 'text-base' : 'text-[10px]'} font-black tracking-tighter`}>
-          {player.precio.toLocaleString()} €
+          {player.precio ? player.precio.toLocaleString() : '0'} €
         </Text>
       </View>
 

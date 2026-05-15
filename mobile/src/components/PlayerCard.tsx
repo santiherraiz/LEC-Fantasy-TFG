@@ -84,7 +84,7 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({
         {puntos !== undefined && (
           <Text className="text-accent-cyan font-black text-xl italic mb-1">{Math.round(puntos)} <Text className="text-[10px]">PTS</Text></Text>
         )}
-        {precio !== undefined && (
+        {(precio !== undefined && precio !== null) && (
           <Text className="text-white font-black text-xs mb-2 italic tracking-tighter">{precio.toLocaleString()} €</Text>
         )}
 

@@ -120,6 +120,7 @@ public class JugadorService {
                     }
                 }
                 System.out.println("[JUGADOR] Importación de 2026 completada.");
+                asegurarPrecios();
                 forzarActualizacionImagenes();
             } else {
                 System.out.println("[JUGADOR] La respuesta de la API está vacía.");
@@ -127,6 +128,22 @@ public class JugadorService {
         } catch (Exception e) {
             System.err.println("[JUGADOR] Error crítico: " + e.getMessage());
         }
+    }
+
+    private void asegurarPrecios() {
+        System.out.println("[JUGADOR] Asegurando integridad de precios...");
+        // Tier S
+        jdbcTemplate.execute(
+                "UPDATE jugadores SET precio_base = 35000 WHERE (nickname LIKE 'Caps%' OR nickname LIKE 'BrokenBlade%' OR nickname LIKE 'Razork%' OR nickname LIKE 'Humanoid%' OR nickname LIKE 'Photon%') AND precio_base < 35000");
+        // Tier A/B
+        jdbcTemplate.execute(
+                "UPDATE jugadores SET precio_base = 15000 WHERE precio_base = 5000 AND nickname NOT LIKE 'Caps%' AND (nickname LIKE 'Elyoya%' OR nickname LIKE 'Supak%' OR nickname LIKE 'Caliste%')");
+
+        // Rellenar nulos
+        jdbcTemplate.execute(
+                "UPDATE jugadores SET precio_actual = precio_base WHERE precio_actual IS NULL OR precio_actual = 0");
+        jdbcTemplate.execute("UPDATE jugadores SET compras_hoy = 0 WHERE compras_hoy IS NULL");
+        jdbcTemplate.execute("UPDATE jugadores SET ventas_hoy = 0 WHERE ventas_hoy IS NULL");
     }
 
     public List<Jugador> obtenerTodosLosJugadores() {
@@ -215,13 +232,15 @@ public class JugadorService {
     }
 
     public void forzarActualizacionImagenes() {
-        System.out.println("[JUGADOR] Iniciando actualización de fotos y logos desde SQL...");
+        System.out.println("[JUGADOR] Iniciando actualización de fotos y logos desde recursos internos...");
         try {
-            String sqlPath = "../scratch/update_images_2026.sql";
-            java.util.List<String> lines = java.nio.file.Files.readAllLines(java.nio.file.Paths.get(sqlPath));
-
+            org.springframework.core.io.Resource resource = new org.springframework.core.io.ClassPathResource(
+                    "scripts/update_images.sql");
+            java.io.BufferedReader reader = new java.io.BufferedReader(
+                    new java.io.InputStreamReader(resource.getInputStream()));
+            String line;
             StringBuilder currentStatement = new StringBuilder();
-            for (String line : lines) {
+            while ((line = reader.readLine()) != null) {
                 String trimmedLine = line.trim();
                 if (trimmedLine.isEmpty() || trimmedLine.startsWith("--") || trimmedLine.startsWith("USE ")) {
                     continue;
@@ -236,6 +255,7 @@ public class JugadorService {
                     currentStatement.setLength(0);
                 }
             }
+            reader.close();
             System.out.println("[JUGADOR] Imágenes y logos actualizados correctamente.");
         } catch (Exception e) {
             System.err.println("[JUGADOR] Error al aplicar el script de imágenes: " + e.getMessage());

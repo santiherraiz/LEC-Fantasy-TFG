@@ -16,6 +16,4 @@ public interface EquipoRepository extends JpaRepository<Equipo, Long> {
     List<Equipo> findAllByLigaIdOrderByPuntuacionTotalDesc(Long ligaId);
 
     List<Equipo> findAllByOrderByPuntuacionTotalDesc();
-
-    List<Equipo> findByPuntuacionJornadaActualGreaterThan(int puntuacion);
 }

@@ -103,61 +103,49 @@ public class LigaService {
     }
 
     private void generarPlantillaInicial(Equipo equipo) {
-        log.info("Generando plantilla inicial para el equipo {} de la liga {}", equipo.getId(),
-                equipo.getLiga().getId());
-        String[] roles = { "TOP", "JUNGLE", "MID", "BOT", "SUPPORT" };
-        double targetValue = 60000.0;
-        double variance = 10000.0;
-        int maxAttempts = 50;
+        log.info("Generando plantilla inicial (Composición: 1 S, 2 A/B, 2 C) para el equipo {}...", equipo.getId());
+        List<String> rolesDisponibles = new ArrayList<>(Arrays.asList("TOP", "JUNGLE", "MID", "BOT", "SUPPORT"));
+        Collections.shuffle(rolesDisponibles);
 
-        Random random = new Random();
+        // Definimos el reparto de Tiers por roles (aleatorio cada vez)
+        // rolesDisponibles[0]: Tier S (35k)
+        // rolesDisponibles[1-2]: Tier A/B (15k)
+        // rolesDisponibles[3-4]: Tier C (5k)
         List<Jugador> seleccionFinal = new ArrayList<>();
+        Random random = new Random();
 
-        for (int attempt = 0; attempt < maxAttempts; attempt++) {
-            List<Jugador> seleccionIntento = new ArrayList<>();
-            double currentTotal = 0;
+        for (int i = 0; i < rolesDisponibles.size(); i++) {
+            String rol = rolesDisponibles.get(i);
+            double precioMin, precioMax;
 
-            for (String rol : roles) {
-                final List<Jugador> seleccionadosYa = new ArrayList<>(seleccionIntento);
-                List<Jugador> disponibles = jugadorRepository.findJugadoresLibresPorRolYLiga(rol,
-                        equipo.getLiga().getId())
-                        .stream()
-                        .filter(j -> seleccionadosYa.stream().noneMatch(s -> s.getId().equals(j.getId())))
-                        .toList();
-
-                if (disponibles.isEmpty()) {
-                    log.warn("No hay jugadores libres para el rol {} en la liga {}. Usando pool general de libres.", rol,
-                            equipo.getLiga().getId());
-                    // Fallback: Cualquier jugador de ese rol que no esté en uso en ESTA liga
-                    disponibles = jugadorRepository.findJugadoresLibresPorRolYLiga(rol, equipo.getLiga().getId())
-                            .stream()
-                            .filter(j -> seleccionadosYa.stream().noneMatch(s -> s.getId().equals(j.getId())))
-                            .toList();
-                }
-
-                if (!disponibles.isEmpty()) {
-                    Jugador elegido = disponibles.get(random.nextInt(disponibles.size()));
-                    seleccionIntento.add(elegido);
-                    currentTotal += (elegido.getPrecioActual() != null ? elegido.getPrecioActual()
-                            : elegido.getPrecioBase());
-                } else {
-                    log.error(
-                            "¡ERROR CRÍTICO! No se encontraron jugadores libres para el rol {} en la liga {}.",
-                            rol, equipo.getLiga().getId());
-                }
+            if (i == 0) { // 1 jugador Tier S
+                precioMin = 30000.0;
+                precioMax = 40000.0;
+            } else if (i == 1 || i == 2) { // 2 jugadores Tier A/B
+                precioMin = 10000.0;
+                precioMax = 20000.0;
+            } else { // 2 jugadores Tier C
+                precioMin = 0.0;
+                precioMax = 9000.0;
             }
 
-            if (seleccionIntento.size() == 5) {
-                if (Math.abs(currentTotal - targetValue) <= variance) {
-                    log.info("Selección de equipo aceptada en el intento {} con valor total: {}", attempt,
-                            currentTotal);
-                    seleccionFinal = seleccionIntento;
-                    break;
-                }
-                if (attempt == maxAttempts - 1) {
-                    log.warn("Se alcanzó el máximo de intentos. Usando última selección con valor: {}", currentTotal);
-                    seleccionFinal = seleccionIntento;
-                }
+            List<Jugador> candidatos = jugadorRepository.findJugadoresLibresPorRolYLiga(rol, equipo.getLiga().getId())
+                    .stream()
+                    .filter(j -> {
+                        double precio = (j.getPrecioActual() != null ? j.getPrecioActual() : j.getPrecioBase());
+                        return precio >= precioMin && precio <= precioMax;
+                    })
+                    .collect(Collectors.toList());
+
+            if (candidatos.isEmpty()) {
+                log.warn("No hay jugadores de Tier específico para el rol {} en el rango {}-{}. Usando cualquier libre.",
+                        rol, precioMin, precioMax);
+                candidatos = jugadorRepository.findJugadoresLibresPorRolYLiga(rol, equipo.getLiga().getId());
+            }
+
+            if (!candidatos.isEmpty()) {
+                Jugador elegido = candidatos.get(random.nextInt(candidatos.size()));
+                seleccionFinal.add(elegido);
             }
         }
 

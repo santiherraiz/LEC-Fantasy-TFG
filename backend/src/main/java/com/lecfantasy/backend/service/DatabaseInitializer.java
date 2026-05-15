@@ -28,22 +28,11 @@ public class DatabaseInitializer implements CommandLineRunner {
     public void run(String... args) throws Exception {
         System.out.println("[INIT] Comprobando integridad de la base de datos...");
 
-        // FASE 1: Reset de precios si detectamos valores antiguos o nulos
-        jdbcTemplate.execute(
-                "UPDATE jugadores SET precio_base = 35000 WHERE (nickname LIKE 'Caps%' OR nickname LIKE 'BrokenBlade%' OR nickname LIKE 'Razork%' OR nickname LIKE 'Humanoid%' OR nickname LIKE 'Photon%') AND precio_base < 35000");
-        jdbcTemplate.execute(
-                "UPDATE jugadores SET precio_base = 15000 WHERE precio_base = 5000 AND nickname NOT LIKE 'Caps%' AND (nickname LIKE 'Elyoya%' OR nickname LIKE 'Supak%' OR nickname LIKE 'Caliste%')");
-
-        jdbcTemplate.execute(
-                "UPDATE jugadores SET precio_actual = precio_base WHERE precio_actual IS NULL OR precio_actual = 0");
-        jdbcTemplate.execute("UPDATE jugadores SET compras_hoy = 0 WHERE compras_hoy IS NULL");
-        jdbcTemplate.execute("UPDATE jugadores SET ventas_hoy = 0 WHERE ventas_hoy IS NULL");
-
         if (Arrays.asList(env.getActiveProfiles()).contains("demo")) {
             prepararEscenarioDemo();
         }
 
-        System.out.println("[INIT] Precios dinámicos y contadores inicializados.");
+        System.out.println("[INIT] Inicialización completada.");
     }
 
     private void prepararEscenarioDemo() {
