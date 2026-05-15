@@ -11,7 +11,10 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Arrays;
 import java.util.Random;
+import java.util.Collections;
+import java.util.stream.Collectors;
 
 @Service
 public class LigaService {
@@ -138,7 +141,8 @@ public class LigaService {
                     .collect(Collectors.toList());
 
             if (candidatos.isEmpty()) {
-                log.warn("No hay jugadores de Tier específico para el rol {} en el rango {}-{}. Usando cualquier libre.",
+                log.warn(
+                        "No hay jugadores de Tier específico para el rol {} en el rango {}-{}. Usando cualquier libre.",
                         rol, precioMin, precioMax);
                 candidatos = jugadorRepository.findJugadoresLibresPorRolYLiga(rol, equipo.getLiga().getId());
             }
